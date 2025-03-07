@@ -65,7 +65,8 @@ class _LoginPageState extends State<LoginPage> {
               setState(() {
                 _isVisible = true;
               });
-              await controller.loadRequest(Uri.https(AUTHORITY, '/session/login/', query));
+              await controller
+                  .loadRequest(Uri.https(AUTHORITY, '/session/login/', query));
             }
           } else if (authority == 'sparcssso.kaist.ac.kr') {
             setState(() {
