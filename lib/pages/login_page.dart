@@ -56,10 +56,17 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
         },
-        onPageFinished: (url) {
+        onPageFinished: (url) async {
           String authority = Uri.parse(url).authority;
           if (authority == AUTHORITY) {
-            context.read<AuthModel>().authenticate('https://$AUTHORITY');
+            try {
+              context.read<AuthModel>().authenticate('https://$AUTHORITY');
+            } catch (e) {
+              setState(() {
+                _isVisible = true;
+              });
+              await controller.loadRequest(Uri.https(AUTHORITY, '/session/login/', query));
+            }
           } else if (authority == 'sparcssso.kaist.ac.kr') {
             setState(() {
               _isVisible = true;
