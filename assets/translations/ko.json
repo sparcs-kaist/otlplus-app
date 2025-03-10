@@ -19,7 +19,8 @@
     "all_selected": "전체 선택됨",
     "num_selected": "개 선택됨",
     "close": "닫기",
-    "coming": "준비 중입니다."
+    "coming": "준비 중입니다.",
+    "confirm": "확인"
   },
   "semester": {
     "spring": "봄",
@@ -164,12 +165,23 @@
     "send_error_log": "오류 로그 전송",
     "send_error_log_desc": "사용자의 제보 없이 자동으로 오류를 수집합니다.",
     "send_anonymously": "익명으로 전송",
+    "receive_promotion": "광고성 정보 수신 동의",
+    "receive_promotion_desc": "광고성 정보에 대한 푸시 알림 수신에 동의합니다.",
     "send_anonymously_desc": "오류 로그에 사용자 ID를 포함하지 않고 익명으로 전송합니다.",
     "reset_all": "모든 설정 데이터 초기화",
     "dialog": {
       "reset": "초기화",
+      "yes": "확인",
       "reset_settings": "설정 초기화",
-      "reset_settings_desc": "정말 모든 설정 데이터를 초기화하시겠습니까? 단, 로그인 정보는 제외하고 초기화됩니다."
+      "reset_settings_desc": "정말 모든 설정 데이터를 초기화하시겠습니까? 단, 로그인 정보는 제외하고 초기화됩니다.",
+      "disable_promotion": "광고성 정보 수신 거부 처리 결과",
+      "enable_promotion" : "광고성 정보 수신 동의 처리 결과",
+      "promotion_desc" : "광고성 정보 수신동의는 설정 > [광고성 정보 수신 동의] 에서 변경 가능합니다.",
+      "date" : "일시",
+      "user_name" : "전송자",
+      "detail" : "내용",
+      "disable" : "거부",
+      "enable" : "동의"
     },
     "throw_test": "테스트 오류 발생",
     "throw_test_desc": "Firebase crashlytics 테스트용",

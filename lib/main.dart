@@ -49,6 +49,7 @@ void main() {
     );
 
     final token = await FirebaseMessaging.instance.getToken();
+    debugPrint('firebase token : ${token}');
 
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 
