@@ -54,7 +54,9 @@ class _LoginPageState extends State<LoginPage> {
           String authority = Uri.parse(url).authority;
           if (authority == AUTHORITY) {
             try {
-              await context.read<AuthModel>().authenticate('https://$AUTHORITY');
+              await context
+                  .read<AuthModel>()
+                  .authenticate('https://$AUTHORITY');
             } catch (e) {
               setState(() {
                 _isVisible = true;
