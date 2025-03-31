@@ -7,6 +7,7 @@ import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:provider/provider.dart';
 import 'package:otlplus/providers/auth_model.dart';
+import 'package:otlplus/providers/info_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -18,7 +19,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  bool _isVisible = true;
+  bool _isVisible = false;
   late final WebViewController controller;
 
   @override
@@ -49,18 +50,13 @@ class _LoginPageState extends State<LoginPage> {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (url) {
-          if (Uri.parse(url).authority == AUTHORITY) {
-            setState(() {
-              _isVisible = false;
-            });
-          }
-        },
         onPageFinished: (url) async {
           String authority = Uri.parse(url).authority;
           if (authority == AUTHORITY) {
             try {
-              context.read<AuthModel>().authenticate('https://$AUTHORITY');
+              await context
+                  .read<AuthModel>()
+                  .authenticate('https://$AUTHORITY');
             } catch (e) {
               setState(() {
                 _isVisible = true;
@@ -68,10 +64,6 @@ class _LoginPageState extends State<LoginPage> {
               await controller
                   .loadRequest(Uri.https(AUTHORITY, '/session/login/', query));
             }
-          } else if (authority == 'sparcssso.kaist.ac.kr') {
-            setState(() {
-              _isVisible = true;
-            });
           } else {
             setState(() {
               _isVisible = true;

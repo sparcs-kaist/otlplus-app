@@ -14,17 +14,16 @@ class AuthModel extends ChangeNotifier {
       _isLogined = true;
       notifyListeners();
     } catch (exception) {
-      print(exception);
-      await cookieManager.clearCookies();
+      await logout();
       throw exception;
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
     try {
       final cookieManager = WebviewCookieManager();
       // cookieManager.removeCookie(url);
-      cookieManager.clearCookies();
+      await cookieManager.clearCookies();
       DioProvider().logout();
       _isLogined = false;
       notifyListeners();

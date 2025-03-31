@@ -1,5 +1,5 @@
 app_identifier("org.sparcs.otlplus") # The bundle identifier of your app
-apple_id("sboh021214@icloud.com") # Your Apple Developer Portal username
+apple_id("soungmin114@gmail.com") # Your Apple Developer Portal username
 
 itc_team_name("SPARCS") # App Store Connect Team Name
 team_id("N5V8W52U3U") # Developer Portal Team ID
