@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:otlplus/constants/text_styles.dart';
@@ -30,12 +31,18 @@ class LectureDetailPage extends StatelessWidget {
   final _scrollController = ScrollController();
 
   String _getSyllabusUrl(Lecture lecture) {
-    return Uri.https("cais.kaist.ac.kr", "/syllabusInfo", {
-      "year": lecture.year.toString(),
-      "term": lecture.semester.toString(),
-      "subject_no": lecture.code,
-      "lecture_class": lecture.classNo,
-      "dept_id": lecture.department.toString(),
+    final payload = {
+      "syy": lecture.year.toString(),
+      "smtDivCd": lecture.semester.toString(),
+      "subjtCd": lecture.oldCode,
+    };
+
+    final payloadJson = jsonEncode(payload);
+    final payloadBase64 = base64Encode(utf8.encode(payloadJson));
+
+    return Uri.https("erp.kaist.ac.kr", "/com/lgin/SsoCtr/initExtPageWork.do", {
+      "link": "estblSubjt",
+      "params": payloadBase64,
     }).toString();
   }
 
