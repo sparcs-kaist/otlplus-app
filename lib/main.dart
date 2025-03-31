@@ -75,7 +75,11 @@ void main() {
               ChangeNotifierProxyProvider<AuthModel, InfoModel>(
                 create: (context) => InfoModel(),
                 update: (context, authModel, infoModel) {
-                  if (authModel.isLogined) infoModel?.getInfo();
+                  if (authModel.isLogined)
+                    infoModel?.getInfo().catchError((error) async {
+                      await authModel.logout();
+                      throw error;
+                    });
                   return (infoModel is InfoModel) ? infoModel : InfoModel();
                 },
               ),
