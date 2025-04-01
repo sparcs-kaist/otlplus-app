@@ -4,8 +4,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/constants/url.dart';
+import 'package:otlplus/models/user.dart';
+import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
+import 'package:provider/provider.dart';
 
 enum OTLDialogType {
   /// namedArgs: 'lecture'
@@ -36,6 +39,10 @@ enum OTLDialogType {
   accountDeleted,
 
   resetSettings,
+
+  disablePromotion,
+
+  enablePromotion,
 
   about,
 }
@@ -133,7 +140,21 @@ extension OTLDialogTypeExt on OTLDialogType {
       title: 'settings.dialog.reset_settings',
       content: 'settings.dialog.reset_settings_desc',
       icon: 'alert',
-      posText: 'settings.dialog.reset',
+      posText: '.dialog.reset',
+    ),
+    OTLDialogType.disablePromotion: _OTLDialogData(
+      title: 'settings.dialog.disable_promotion',
+      content: 'settings.dialog.reset_settings_desc',
+      icon: 'OTL',
+      negText: 'common.close',
+      btnStyle: BtnStyle.one,
+    ),
+    OTLDialogType.enablePromotion: _OTLDialogData(
+      title: 'settings.dialog.enable_promotion',
+      content: 'settings.dialog.reset_settings_desc',
+      icon: 'OTL',
+      negText: 'common.close',
+      btnStyle: BtnStyle.one,
     ),
     OTLDialogType.about: _OTLDialogData(
       title: 'Online Timeplanner with Lectures Plus @ KAIST',
@@ -169,6 +190,8 @@ class OTLDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<InfoModel>().user;
+
     return Center(
       child: Container(
         width: 256,
@@ -200,7 +223,7 @@ class OTLDialog extends StatelessWidget {
                   children: [
                     Text(type.title.tr(), style: titleBold),
                     const SizedBox(height: 8),
-                    _buildContent(),
+                    _buildContent(user: user),
                   ],
                 ),
               ),
@@ -259,8 +282,11 @@ class OTLDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent({User? user}) {
     final content = type.content.tr(namedArgs: namedArgs);
+
+    user ?? null;
+
     switch (type) {
       case OTLDialogType.addLecture:
       case OTLDialogType.addLectureWithTab:
@@ -275,6 +301,57 @@ class OTLDialog extends StatelessWidget {
           content,
           style: bodyRegular,
         );
+
+      case OTLDialogType.disablePromotion:
+        return Column(
+          children: [
+            Container(
+              width: 200,
+              child: Column(
+                children: [
+                  Text(
+                      '${'settings.dialog.date'.tr(namedArgs: namedArgs)} : ${DateFormat('yyyy-MM-dd').format(DateTime.now())}'),
+                  Text(
+                      '${'settings.dialog.user_name'.tr(namedArgs: namedArgs)} : ${user?.firstName} ${user?.lastName}'),
+                  Text(
+                      '${'settings.dialog.detail'.tr(namedArgs: namedArgs)} : ${'settings.dialog.disable'.tr(namedArgs: namedArgs)}'),
+                ],
+              ),
+              color: OTLColor.grayE,
+            ),
+            SizedBox(
+              height: 5,
+            ),
+            Text(
+                '${'settings.dialog.promotion_desc'.tr(namedArgs: namedArgs)}'),
+          ],
+        );
+
+      case OTLDialogType.enablePromotion:
+        return Column(
+          children: [
+            Container(
+              width: 200,
+              child: Column(
+                children: [
+                  Text(
+                      '${'settings.dialog.date'.tr(namedArgs: namedArgs)} : ${DateFormat('yyyy-MM-dd').format(DateTime.now())}'),
+                  Text(
+                      '${'settings.dialog.user_name'.tr(namedArgs: namedArgs)} : ${user?.firstName} ${user?.lastName}'),
+                  Text(
+                      '${'settings.dialog.detail'.tr(namedArgs: namedArgs)} : ${'settings.dialog.enable'.tr(namedArgs: namedArgs)}'),
+                ],
+              ),
+              color: OTLColor.grayE,
+            ),
+            SizedBox(
+              height: 5,
+            ),
+            Text(
+                '${'settings.dialog.promotion_desc'.tr(namedArgs: namedArgs)}'),
+          ],
+        );
+
       case OTLDialogType.addOverlappingLecture:
       case OTLDialogType.addOverlappingLectureWithTab:
         return Text.rich(TextSpan(

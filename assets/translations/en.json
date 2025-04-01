@@ -19,7 +19,8 @@
     "all_selected": "All Selected",
     "num_selected": " Selected",
     "close": "Close",
-    "coming": "Coming Soon"
+    "coming": "Coming Soon",
+    "confirm": "Confirm"
   },
   "semester": {
     "spring": "Spring",
@@ -165,11 +166,21 @@
     "send_error_log_desc": "Automatically collect logs without user reporting",
     "send_anonymously": "Send anonymously",
     "send_anonymously_desc": "Not including user ID in error logs",
+    "receive_promotion": "Promotion consent",
+    "receive_promotion_desc": "Receive promotional notifications",
     "reset_all": "Reset all settings",
     "dialog": {
       "reset": "Reset",
       "reset_settings": "Reset settings",
-      "reset_settings_desc": "Are you really want to reset all data? However, it will be reset except for login data."
+      "reset_settings_desc": "Are you really want to reset all data? However, it will be reset except for login data.",
+      "disable_promotion" : "Refusal to Receive Promotional Information",
+      "promotion_desc" : "You can change your consent to receive promotional information in Settings > [Promoiton Consent].",
+      "enable_promotion" : "Consent to Receive Promotional Information",
+      "date" : "Date",
+      "user_name" : "Name",
+      "detail" : "Detail",
+      "disable" : "decline",
+      "enable" : "agree"
     },
     "throw_test": "Throw Test Exception",
     "throw_test_desc": "for testing firebase crashlytics",

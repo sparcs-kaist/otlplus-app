@@ -85,6 +85,24 @@ class SettingsPage extends StatelessWidget {
                   ],
                 ),
                 _buildListTile(
+                  title: "settings.receive_promotion".tr(),
+                  subtitle: "settings.receive_promotion_desc".tr(),
+                  trailing: CupertinoSwitch(
+                    value: context.watch<SettingsModel>().getReceivePromotion(),
+                    onChanged: (value) {
+                      context.read<SettingsModel>().setReceivePromotion(value);
+                      OTLNavigator.pushDialog(
+                        context: context,
+                        builder: (_) => OTLDialog(
+                          type: value
+                              ? OTLDialogType.enablePromotion
+                              : OTLDialogType.disablePromotion,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                _buildListTile(
                   title: "settings.send_error_log".tr(),
                   subtitle: "settings.send_error_log_desc".tr(),
                   trailing: CupertinoSwitch(
@@ -106,6 +124,14 @@ class SettingsPage extends StatelessWidget {
                           .read<SettingsModel>()
                           .setSendCrashlyticsAnonymously(value),
                     ),
+                  ),
+                ),
+                _buildListTile(
+                  title: "알림 받기",
+                  trailing: CupertinoSwitch(
+                    value: context.watch<SettingsModel>().getReceiveAlarm(),
+                    onChanged: (value) =>
+                        context.read<SettingsModel>().setReceiveAlarm(value),
                   ),
                 ),
                 _buildListTile(
