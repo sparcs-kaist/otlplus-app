@@ -19,6 +19,7 @@ environment:
 publish_to: none
 
 dependencies:
+  sentry_flutter: ^8.14.2
   flutter:
     sdk: flutter
 
@@ -51,6 +52,7 @@ dependencies:
       ref: main
 
 dev_dependencies:
+  sentry_dart_plugin: ^2.4.1
   test: ^1.25.7
   http: ^1.2.2
   flutter_test:
@@ -138,3 +140,9 @@ flutter:
 
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: true
+  project: otl-app
+  org: sentry

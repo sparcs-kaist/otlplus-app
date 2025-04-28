@@ -87,3 +87,4 @@ android/app/property*
 
 # FVM Version Cache
 .fvm/
+sentry.properties

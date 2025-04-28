@@ -28,8 +28,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 
 import 'firebase_options.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
-void main() {
+
+Future<void> main() async {
   runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
     await EasyLocalization.ensureInitialized();
@@ -64,7 +66,17 @@ void main() {
 
     await ChannelTalk.showChannelButton();
 
-    runApp(
+    await SentryFlutter.init(
+    (options) {
+      options.dsn = 'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
+      // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+      // We recommend adjusting this value in production.
+      options.tracesSampleRate = 1.0;
+      // The sampling rate for profiling is relative to tracesSampleRate
+      // Setting to 1.0 will profile 100% of sampled transactions:
+      options.profilesSampleRate = 1.0;
+    },
+    appRunner: () => runApp(SentryWidget(child: 
       EasyLocalization(
           supportedLocales: [Locale('en'), Locale('ko')],
           path: 'assets/translations',
@@ -106,10 +118,12 @@ void main() {
             ],
             child: OTLFirebaseApp(),
           )),
+      )
+      ),
     );
   },
-      (error, stack) =>
-          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true));
+  (error, stack) =>
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true));
 }
 
 class OTLFirebaseApp extends StatelessWidget {
