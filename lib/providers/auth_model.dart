@@ -1,34 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:otlplus/dio_provider.dart';
-import 'package:webview_cookie_manager/webview_cookie_manager.dart';
+import 'package:otlplus/services/storage_service.dart';
 
 class AuthModel extends ChangeNotifier {
   bool _isLogined = false;
   bool get isLogined => _isLogined;
 
-  Future<void> authenticate(String url) async {
-    final cookieManager = WebviewCookieManager();
-    try {
-      final cookies = await cookieManager.getCookies(url);
-      DioProvider().authenticate(cookies);
-      _isLogined = true;
+  final StorageService _storageService;
+
+  AuthModel(this._storageService) {
+    _checkInitialLoginState();
+  }
+
+  Future<void> _checkInitialLoginState() async {
+    _isLogined = await _storageService.hasTokens();
+    notifyListeners();
+  }
+
+  void setLoggedIn(bool loggedIn) {
+    if (_isLogined != loggedIn) {
+      _isLogined = loggedIn;
       notifyListeners();
-    } catch (exception) {
-      await logout();
-      throw exception;
     }
   }
 
   Future<void> logout() async {
     try {
-      final cookieManager = WebviewCookieManager();
-      // cookieManager.removeCookie(url);
-      await cookieManager.clearCookies();
-      DioProvider().logout();
+      await _storageService.deleteTokens();
       _isLogined = false;
       notifyListeners();
     } catch (exception) {
-      print(exception);
+      print("Error during logout: $exception");
     }
   }
 }

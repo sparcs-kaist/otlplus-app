@@ -2,7 +2,9 @@ import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
+import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/semester.dart';
+import 'package:otlplus/models/timetable.dart';
 import 'package:otlplus/models/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,20 +20,20 @@ const SCHEDULE_NAME = [
 ];
 
 class InfoModel extends ChangeNotifier {
-  late Set<int> _years;
-  Set<int> get years => _years;
-
-  late List<Semester> _semesters;
-  List<Semester> get semesters => _semesters;
-
-  late User _user;
-  User get user => _user;
-
-  late Map<String, dynamic>? _currentSchedule;
-  Map<String, dynamic>? get currentSchedule => _currentSchedule;
-
   bool _hasData = false;
   bool get hasData => _hasData;
+
+  User? _user;
+  User get user => _user!;
+
+  List<Semester> _semesters = <Semester>[];
+  List<Semester> get semesters => _semesters;
+
+  List<Timetable> _currentSchedule = <Timetable>[];
+  List<Timetable> get currentSchedule => _currentSchedule;
+
+  Set<int> _years = <int>{};
+  Set<int> get years => _years;
 
   InfoModel({bool forTest = false}) {
     if (forTest) {
@@ -53,54 +55,89 @@ class InfoModel extends ChangeNotifier {
             beginning: DateTime(2000),
             end: DateTime(2001))
       ];
-      _currentSchedule = {
-        "semester": _semesters.first,
-        "name": 'home.schedule.beginning',
-        "time": DateTime.now()
-      };
+      _currentSchedule = [
+        Timetable(id: 1, year: 2000, semester: 1, lectures: [])
+      ];
     }
   }
 
-  void logout() {
-    ChannelTalk.isBooted().then((isBooted) => {
-          if (isBooted == true)
-            {
-              ChannelTalk.updateUser(
-                name: "",
-                email: "",
-                customAttributes: {
-                  "id": 0,
-                  "studentId": "",
-                },
-              )
-            }
-        });
-
+  void clearData() {
+    _user = null;
+    _semesters = [];
+    _currentSchedule = [];
+    _years = {};
     _hasData = false;
     notifyListeners();
+    _updateChannelTalkUser(null);
+  }
+
+  void _updateChannelTalkUser(User? user) {
+    ChannelTalk.isBooted().then((isBooted) {
+      if (isBooted == true) {
+        if (user != null) {
+          ChannelTalk.updateUser(
+            name: "${user.firstName} ${user.lastName}",
+            email: user.email,
+            customAttributes: {
+              "id": user.id,
+              "studentId": user.studentId,
+            },
+          );
+        } else {
+          ChannelTalk.updateUser(
+            name: "",
+            email: "",
+            customAttributes: {
+              "id": 0,
+              "studentId": "",
+            },
+          );
+        }
+      }
+    });
   }
 
   Future<void> getInfo() async {
-    if ((await SharedPreferences.getInstance()).getBool('hasAccount') ?? true) {
-      _semesters = await getSemesters();
-      _years = _semesters.map((semester) => semester.year).toSet();
-      _user = await getUser();
-      _currentSchedule = getCurrentSchedule();
-      _hasData = true;
+    try {
+      if (!_hasData) {
+        _semesters = await getSemesters();
+        _years = _semesters.map((semester) => semester.year).toSet();
+        _user = await getUser();
+        if (_user != null) {
+          _populateCurrentScheduleFromUser(_user!);
+        }
+        _hasData = true;
+        _updateChannelTalkUser(_user);
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Failed to get user info: $e");
+      throw e;
+    }
+  }
+
+  void _populateCurrentScheduleFromUser(User user) {
+    Map<String, List<Lecture>> lecturesBySemester = {};
+    for (var lecture in user.myTimetableLectures) {
+      String key = "${lecture.year}-${lecture.semester}";
+      if (lecturesBySemester[key] == null) {
+        lecturesBySemester[key] = [];
+      }
+      lecturesBySemester[key]!.add(lecture);
     }
 
-    if (await ChannelTalk.isBooted() == true) {
-      ChannelTalk.updateUser(
-        name: "${user.firstName} ${user.lastName}",
-        email: user.email,
-        customAttributes: {
-          "id": user.id,
-          "studentId": user.studentId,
-        },
-      );
-    }
+    _currentSchedule = lecturesBySemester.entries.map((entry) {
+      final parts = entry.key.split('-');
+      final year = int.parse(parts[0]);
+      final semester = int.parse(parts[1]);
+      return Timetable(id: -1, year: year, semester: semester, lectures: entry.value);
+    }).toList();
 
-    notifyListeners();
+    _currentSchedule.sort((a, b) {
+      int yearComp = a.year.compareTo(b.year);
+      if (yearComp != 0) return yearComp;
+      return a.semester.compareTo(b.semester);
+    });
   }
 
   Future<List<Semester>> getSemesters() async {
@@ -114,24 +151,22 @@ class InfoModel extends ChangeNotifier {
     return User.fromJson(response.data);
   }
 
-  Map<String, dynamic>? getCurrentSchedule() {
+  Timetable getCurrentSchedule() {
     final now = DateTime.now();
-    final schedules = _semesters
-        .map((semester) => SCHEDULE_NAME.map((name) {
-              final time = semester.toJson()[name];
-              if (time == null) return null;
-              return <String, dynamic>{
-                "semester": semester,
-                "name": 'home.schedule.$name',
-                "time": time,
-              };
-            }))
-        .expand((e) => e)
-        .where((e) => e != null)
-        .toList();
-    schedules.sort((a, b) => a!["time"].compareTo(b!["time"]));
-    return schedules.firstWhere((e) => e!["time"].isAfter(now),
-        orElse: () => null);
+    int year = now.year;
+    int month = now.month;
+    int semester = 1;
+    if (month >= 7) {
+      semester = 3;
+    }
+
+    try {
+      return _currentSchedule.firstWhere(
+        (timetable) => timetable.year == year && timetable.semester == semester
+      );
+    } catch (e) {
+      return Timetable(id: -1, year: year, semester: semester, lectures: []);
+    }
   }
 
   Future<void> deleteAccount() async {
