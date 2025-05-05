@@ -29,8 +29,8 @@ class InfoModel extends ChangeNotifier {
   List<Semester> _semesters = <Semester>[];
   List<Semester> get semesters => _semesters;
 
-  List<Timetable> _currentSchedule = <Timetable>[];
-  List<Timetable> get currentSchedule => _currentSchedule;
+  Map<String, dynamic>? _currentSchedule;
+  Map<String, dynamic>? get currentSchedule => _currentSchedule;
 
   Set<int> _years = <int>{};
   Set<int> get years => _years;
@@ -55,16 +55,18 @@ class InfoModel extends ChangeNotifier {
             beginning: DateTime(2000),
             end: DateTime(2001))
       ];
-      _currentSchedule = [
-        Timetable(id: 1, year: 2000, semester: 1, lectures: [])
-      ];
+      _currentSchedule = {
+        "semester": _semesters.first,
+        "name": 'home.schedule.beginning',
+        "time": DateTime.now()
+      };
     }
   }
 
   void clearData() {
     _user = null;
     _semesters = [];
-    _currentSchedule = [];
+    _currentSchedule = null;
     _years = {};
     _hasData = false;
     notifyListeners();
@@ -103,9 +105,7 @@ class InfoModel extends ChangeNotifier {
         _semesters = await getSemesters();
         _years = _semesters.map((semester) => semester.year).toSet();
         _user = await getUser();
-        if (_user != null) {
-          _populateCurrentScheduleFromUser(_user!);
-        }
+        _currentSchedule = getCurrentSchedule();
         _hasData = true;
         _updateChannelTalkUser(_user);
         notifyListeners();
@@ -114,30 +114,6 @@ class InfoModel extends ChangeNotifier {
       print("Failed to get user info: $e");
       throw e;
     }
-  }
-
-  void _populateCurrentScheduleFromUser(User user) {
-    Map<String, List<Lecture>> lecturesBySemester = {};
-    for (var lecture in user.myTimetableLectures) {
-      String key = "${lecture.year}-${lecture.semester}";
-      if (lecturesBySemester[key] == null) {
-        lecturesBySemester[key] = [];
-      }
-      lecturesBySemester[key]!.add(lecture);
-    }
-
-    _currentSchedule = lecturesBySemester.entries.map((entry) {
-      final parts = entry.key.split('-');
-      final year = int.parse(parts[0]);
-      final semester = int.parse(parts[1]);
-      return Timetable(id: -1, year: year, semester: semester, lectures: entry.value);
-    }).toList();
-
-    _currentSchedule.sort((a, b) {
-      int yearComp = a.year.compareTo(b.year);
-      if (yearComp != 0) return yearComp;
-      return a.semester.compareTo(b.semester);
-    });
   }
 
   Future<List<Semester>> getSemesters() async {
@@ -151,22 +127,8 @@ class InfoModel extends ChangeNotifier {
     return User.fromJson(response.data);
   }
 
-  Timetable getCurrentSchedule() {
-    final now = DateTime.now();
-    int year = now.year;
-    int month = now.month;
-    int semester = 1;
-    if (month >= 7) {
-      semester = 3;
-    }
-
-    try {
-      return _currentSchedule.firstWhere(
-        (timetable) => timetable.year == year && timetable.semester == semester
-      );
-    } catch (e) {
-      return Timetable(id: -1, year: year, semester: semester, lectures: []);
-    }
+  Map<String, dynamic>? getCurrentSchedule() {
+    return null;
   }
 
   Future<void> deleteAccount() async {
