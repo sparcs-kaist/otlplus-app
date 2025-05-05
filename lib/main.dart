@@ -77,7 +77,9 @@ void main() {
           child: MultiProvider(
             providers: [
               Provider(create: (_) => StorageService()),
-              ChangeNotifierProvider(create: (context) => AuthModel(context.read<StorageService>())),
+              ChangeNotifierProvider(
+                  create: (context) =>
+                      AuthModel(context.read<StorageService>())),
               ChangeNotifierProxyProvider<AuthModel, InfoModel>(
                 create: (context) => InfoModel(),
                 update: (context, authModel, infoModel) {
@@ -98,8 +100,7 @@ void main() {
                   if (infoModel.hasData && timetableModel != null) {
                     timetableModel.loadSemesters(
                         user: infoModel.user, semesters: infoModel.semesters);
-                  } else if (!infoModel.hasData && timetableModel != null) {
-                  }
+                  } else if (!infoModel.hasData && timetableModel != null) {}
                   return timetableModel ?? TimetableModel();
                 },
               ),
@@ -213,24 +214,27 @@ class _OTLAppState extends State<OTLApp> {
     });
   }
 
-  Future<void> _handleLoginTokens(String accessToken, String refreshToken) async {
+  Future<void> _handleLoginTokens(
+      String accessToken, String refreshToken) async {
     await _storageService.saveTokens(
         accessToken: accessToken, refreshToken: refreshToken);
     Provider.of<AuthModel>(context, listen: false).setLoggedIn(true);
     if (_isLoading) {
-      setState(() { _isLoading = false; });
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (DioProvider.navigatorContext == null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-             if (mounted && context != null) {
-                 DioProvider.setNavigatorContext(context);
-             }
-        });
-     }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && context != null) {
+          DioProvider.setNavigatorContext(context);
+        }
+      });
+    }
 
     if (_isLoading) {
       return MaterialApp(
@@ -245,21 +249,25 @@ class _OTLAppState extends State<OTLApp> {
     return MaterialApp(
       builder: (context, child) {
         try {
-          final sendCrashlytics = context.watch<SettingsModel>().getSendCrashlytics();
-          final sendCrashlyticsAnonymously = context.watch<SettingsModel>().getSendCrashlyticsAnonymously();
+          final sendCrashlytics =
+              context.watch<SettingsModel>().getSendCrashlytics();
+          final sendCrashlyticsAnonymously =
+              context.watch<SettingsModel>().getSendCrashlyticsAnonymously();
           final hasData = context.watch<InfoModel>().hasData;
 
-          FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(sendCrashlytics);
+          FirebaseCrashlytics.instance
+              .setCrashlyticsCollectionEnabled(sendCrashlytics);
           if (!sendCrashlyticsAnonymously && hasData) {
-             final user = context.read<InfoModel>().user;
-             if (user != null) {
-                 FirebaseCrashlytics.instance.setUserIdentifier(user.id.toString());
-             }
+            final user = context.read<InfoModel>().user;
+            if (user != null) {
+              FirebaseCrashlytics.instance
+                  .setUserIdentifier(user.id.toString());
+            }
           } else if (!sendCrashlytics) {
-              FirebaseCrashlytics.instance.setUserIdentifier('');
+            FirebaseCrashlytics.instance.setUserIdentifier('');
           }
         } catch (e) {
-            print("Error accessing settings/info for Crashlytics: $e");
+          print("Error accessing settings/info for Crashlytics: $e");
         }
 
         return ScrollConfiguration(
@@ -283,7 +291,7 @@ class _OTLAppState extends State<OTLApp> {
     );
   }
 
-   ThemeData _buildTheme() {
+  ThemeData _buildTheme() {
     final base = ThemeData(
       useMaterial3: false,
       fontFamily: 'NotoSansKR',

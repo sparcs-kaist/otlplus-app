@@ -15,8 +15,7 @@ class Timetable {
   @override
   int get hashCode => id.hashCode;
 
-  Timetable.fromJson(Map<String, dynamic> json)
-      : id = json['id'] {
+  Timetable.fromJson(Map<String, dynamic> json) : id = json['id'] {
     if (json['lectures'] != null) {
       lectures = [];
       json['lectures'].forEach((v) {

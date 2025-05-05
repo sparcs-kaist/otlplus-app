@@ -22,7 +22,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   late final WebViewController _controller;
   bool _isLoadingPage = true;
-  final String _loginUrl = Uri.https(BASE_AUTHORITY, 'session/login/').toString();
+  final String _loginUrl =
+      Uri.https(BASE_AUTHORITY, 'session/login/').toString();
   final String _redirectScheme = "org.sparcs.otl";
   final String _redirectHost = "login";
 
@@ -55,7 +56,9 @@ class _LoginPageState extends State<LoginPage> {
             });
             // Show error message to user if needed
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('login.webviewError'.tr() + ' (${error.errorCode})')),
+              SnackBar(
+                  content: Text(
+                      'login.webviewError'.tr() + ' (${error.errorCode})')),
             );
           },
           onNavigationRequest: (NavigationRequest request) {
@@ -97,7 +100,8 @@ class _LoginPageState extends State<LoginPage> {
 
     if (accessToken != null && refreshToken != null) {
       // print('Tokens received from WebView redirect. Saving...'); // Remove print
-      final storageService = Provider.of<StorageService>(context, listen: false);
+      final storageService =
+          Provider.of<StorageService>(context, listen: false);
       final authModel = Provider.of<AuthModel>(context, listen: false);
 
       try {

@@ -45,13 +45,15 @@ class DioProvider {
         if (e.response?.statusCode == 401) {
           if (_navigatorContext != null) {
             try {
-              Provider.of<AuthModel>(_navigatorContext!, listen: false).logout();
+              Provider.of<AuthModel>(_navigatorContext!, listen: false)
+                  .logout();
             } catch (err) {
               print("Error accessing AuthModel for logout: $err");
               await _storageService.deleteTokens();
             }
           } else {
-            print("Navigator context not set in DioProvider. Cannot trigger logout via AuthModel.");
+            print(
+                "Navigator context not set in DioProvider. Cannot trigger logout via AuthModel.");
             await _storageService.deleteTokens();
           }
           return handler.next(e);
