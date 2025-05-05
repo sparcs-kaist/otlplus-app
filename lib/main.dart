@@ -230,7 +230,7 @@ class _OTLAppState extends State<OTLApp> {
   Widget build(BuildContext context) {
     if (DioProvider.navigatorContext == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && context != null) {
+        if (mounted) {
           DioProvider.setNavigatorContext(context);
         }
       });
@@ -259,10 +259,9 @@ class _OTLAppState extends State<OTLApp> {
               .setCrashlyticsCollectionEnabled(sendCrashlytics);
           if (!sendCrashlyticsAnonymously && hasData) {
             final user = context.read<InfoModel>().user;
-            if (user != null) {
-              FirebaseCrashlytics.instance
-                  .setUserIdentifier(user.id.toString());
-            }
+
+            FirebaseCrashlytics.instance
+                .setUserIdentifier(user.id.toString());
           } else if (!sendCrashlytics) {
             FirebaseCrashlytics.instance.setUserIdentifier('');
           }

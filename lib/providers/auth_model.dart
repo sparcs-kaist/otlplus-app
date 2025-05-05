@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/services/storage_service.dart';
 
 class AuthModel extends ChangeNotifier {
