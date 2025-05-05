@@ -2,6 +2,7 @@ const BASE_AUTHORITY = "otl.sparcs.org";
 
 const SESSION_URL = "session/";
 const SESSION_INFO_URL = SESSION_URL + "info";
+const SESSION_REFRESH_URL = SESSION_URL + "refresh";
 
 const API_URL = "api/";
 const API_SEMESTER_URL = API_URL + "semesters";

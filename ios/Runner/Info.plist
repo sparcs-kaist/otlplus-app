@@ -89,5 +89,19 @@
 		
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>사용자 요청 시 고객센터에서 사진을 주고받기 위해 필요합니다.</string>
+
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>org.sparcs.otlplus</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>org.sparcs.otl</string>
+				</array>
+			</dict>
+		</array>
 	</dict>
 </plist>
