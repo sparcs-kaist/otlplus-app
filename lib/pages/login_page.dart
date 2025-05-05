@@ -33,6 +33,7 @@ class _LoginPageState extends State<LoginPage> {
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setUserAgent("otl-app")
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
