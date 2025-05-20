@@ -4,11 +4,15 @@ class Timetable {
   final int id;
   late List<Lecture> lectures;
 
-  Timetable({required this.id, required this.lectures});
+  Timetable({
+    required this.id,
+    required this.lectures,
+  });
 
   bool operator ==(Object other) =>
       identical(this, other) || (other is Timetable && other.id == id);
 
+  @override
   int get hashCode => id.hashCode;
 
   Timetable.fromJson(Map<String, dynamic> json) : id = json['id'] {
@@ -17,6 +21,8 @@ class Timetable {
       json['lectures'].forEach((v) {
         lectures.add(Lecture.fromJson(v));
       });
+    } else {
+      lectures = [];
     }
   }
 
