@@ -1,4 +1,6 @@
 PODS:
+  - app_links (0.0.2):
+    - Flutter
   - channel_talk_flutter (3.1.3):
     - ChannelIOSDK (= 11.7.3)
     - Flutter
@@ -93,6 +95,8 @@ PODS:
   - Flutter (1.0.0)
   - flutter_native_splash (2.4.3):
     - Flutter
+  - flutter_secure_storage (6.0.0):
+    - Flutter
   - flutter_web_browser (0.17.1):
     - Flutter
   - flutter_widgetkit (0.0.1):
@@ -174,6 +178,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - app_links (from `.symlinks/plugins/app_links/ios`)
   - channel_talk_flutter (from `.symlinks/plugins/channel_talk_flutter/ios`)
   - ChannelIOSDK (from `https://mobile-static.channel.io/ios/11.7.3/xcframework.podspec`)
   - firebase_analytics (from `.symlinks/plugins/firebase_analytics/ios`)
@@ -182,6 +187,7 @@ DEPENDENCIES:
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
+  - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - flutter_web_browser (from `.symlinks/plugins/flutter_web_browser/ios`)
   - flutter_widgetkit (from `.symlinks/plugins/flutter_widgetkit/ios`)
   - open_app_file (from `.symlinks/plugins/open_app_file/ios`)
@@ -212,6 +218,8 @@ SPEC REPOS:
     - PromisesSwift
 
 EXTERNAL SOURCES:
+  app_links:
+    :path: ".symlinks/plugins/app_links/ios"
   channel_talk_flutter:
     :path: ".symlinks/plugins/channel_talk_flutter/ios"
   ChannelIOSDK:
@@ -228,6 +236,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_native_splash:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
+  flutter_secure_storage:
+    :path: ".symlinks/plugins/flutter_secure_storage/ios"
   flutter_web_browser:
     :path: ".symlinks/plugins/flutter_web_browser/ios"
   flutter_widgetkit:
@@ -248,6 +258,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
 SPEC CHECKSUMS:
+  app_links: 76b66b60cc809390ca1ad69bfd66b998d2387ac7
   channel_talk_flutter: c479a334a8383bcf7e6ca9ce0384d616673249a3
   ChannelIOSDK: 3d4bee1e1a077cf60394b439801e5078bb69a3b1
   Firebase: 374a441a91ead896215703a674d58cdb3e9d772b
@@ -266,6 +277,7 @@ SPEC CHECKSUMS:
   FirebaseSessions: 9529d14180868e29a8da164b3a729c036204918b
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_native_splash: 6cad9122ea0fad137d23137dd14b937f3e90b145
+  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
   flutter_web_browser: 8fe4d18e7b1328ab3fbec6e67029d6996c2335d9
   flutter_widgetkit: 21fcf04a99462110a8c855b614b97532d7d759b7
   GoogleAppMeasurement: 6a9e6317b6a6d810ad03d4a66564ca6c4c5818a3
@@ -284,4 +296,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: b34ba01b6d31eabe4d020b5ccb7ac5cba06d49cf
 
-COCOAPODS: 1.16.1
+COCOAPODS: 1.16.2
