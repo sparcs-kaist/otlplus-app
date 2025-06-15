@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:otlplus/services/storage_service.dart';
+import 'package:webview_cookie_manager/webview_cookie_manager.dart';
 
 class AuthModel extends ChangeNotifier {
   bool _isLogined = false;
@@ -25,6 +26,8 @@ class AuthModel extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
+      final cookieManager = WebviewCookieManager();
+      await cookieManager.clearCookies();
       await _storageService.deleteTokens();
       _isLogined = false;
       notifyListeners();

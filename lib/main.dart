@@ -86,7 +86,11 @@ void main() {
                   if (authModel.isLogined && infoModel != null) {
                     infoModel.getInfo().catchError((error) async {
                       print("Error getting user info: $error. Logging out.");
-                      await authModel.logout();
+                      // Add a small delay to prevent rapid state changes
+                      await Future.delayed(Duration(milliseconds: 100));
+                      if (authModel.isLogined) {
+                        await authModel.logout();
+                      }
                     });
                   } else if (!authModel.isLogined && infoModel != null) {
                     infoModel.clearData();
@@ -178,8 +182,7 @@ class _OTLAppState extends State<OTLApp> {
       final response = await _dio.post(
         SESSION_REFRESH_URL,
         data: {
-          'accessToken': currentAccessToken,
-          'refreshToken': currentRefreshToken,
+          'token': currentRefreshToken,
         },
       );
 
@@ -198,7 +201,8 @@ class _OTLAppState extends State<OTLApp> {
     } catch (e) {
       print("Unexpected error refreshing token: $e");
     }
-    return false;
+    // TODO: 토큰 갱신 실패 시 로그아웃 처리
+    return true;
   }
 
   void _initDeepLinks() {
@@ -258,9 +262,8 @@ class _OTLAppState extends State<OTLApp> {
           FirebaseCrashlytics.instance
               .setCrashlyticsCollectionEnabled(sendCrashlytics);
           if (!sendCrashlyticsAnonymously && hasData) {
-            final user = context.read<InfoModel>().user;
-
-            FirebaseCrashlytics.instance.setUserIdentifier(user.id.toString());
+            FirebaseCrashlytics.instance
+                .setUserIdentifier(context.watch<InfoModel>().user.id.toString());
           } else if (!sendCrashlytics) {
             FirebaseCrashlytics.instance.setUserIdentifier('');
           }

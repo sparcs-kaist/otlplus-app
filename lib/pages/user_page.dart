@@ -69,6 +69,7 @@ class UserPage extends StatelessWidget {
                   'assets/icons/logout.svg',
                   () {
                     context.read<AuthModel>().logout();
+                    OTLNavigator.pop(context);
                   },
                   'user.logout'.tr(),
                 ),

@@ -6,9 +6,9 @@ final _kSendCrashlyticsAnonymously = 'sendCrashlyticsAnonymously';
 final _kShowsChannelTalkButton = 'showsChannelTalkButton';
 
 class SettingsModel extends ChangeNotifier {
-  late bool _sendCrashlytics;
-  late bool _sendCrashlyticsAnonymously;
-  late bool _showsChannelTalkButton;
+  bool _sendCrashlytics = true;
+  bool _sendCrashlyticsAnonymously = false;
+  bool _showsChannelTalkButton = true;
 
   bool getSendCrashlytics() => _sendCrashlytics;
   void setSendCrashlytics(bool newValue) {
@@ -35,24 +35,39 @@ class SettingsModel extends ChangeNotifier {
   }
 
   SettingsModel({bool forTest = false}) {
-    SharedPreferences.getInstance().then((instance) {
-      getAllValues(instance);
-    });
-
     if (forTest) {
       _sendCrashlytics = true;
       _sendCrashlyticsAnonymously = false;
       _showsChannelTalkButton = true;
+    } else {
+      _loadPreferences();
     }
   }
 
-  getAllValues(SharedPreferences instance) {
-    _sendCrashlytics = instance.getBool(_kSendCrashlytics) ?? true;
-    _sendCrashlyticsAnonymously =
+  Future<void> _loadPreferences() async {
+    try {
+      final instance = await SharedPreferences.getInstance();
+      getAllValues(instance);
+    } catch (e) {
+      print("Error loading preferences: $e");
+    }
+  }
+
+  void getAllValues(SharedPreferences instance) {
+    final newSendCrashlytics = instance.getBool(_kSendCrashlytics) ?? true;
+    final newSendCrashlyticsAnonymously = 
         instance.getBool(_kSendCrashlyticsAnonymously) ?? false;
-    _showsChannelTalkButton =
+    final newShowsChannelTalkButton = 
         instance.getBool(_kShowsChannelTalkButton) ?? true;
-    notifyListeners();
+    
+    if (_sendCrashlytics != newSendCrashlytics ||
+        _sendCrashlyticsAnonymously != newSendCrashlyticsAnonymously ||
+        _showsChannelTalkButton != newShowsChannelTalkButton) {
+      _sendCrashlytics = newSendCrashlytics;
+      _sendCrashlyticsAnonymously = newSendCrashlyticsAnonymously;
+      _showsChannelTalkButton = newShowsChannelTalkButton;
+      notifyListeners();
+    }
   }
 
   Future<bool> clearAllValues() async {
