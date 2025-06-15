@@ -180,7 +180,10 @@ class _OTLAppState extends State<OTLApp> {
 
     try {
       final response = await _dio.post(
-        SESSION_REFRESH_URL
+        SESSION_REFRESH_URL,
+        data: {
+          'token': currentRefreshToken,
+        },
       );
 
       if (response.statusCode == 200 && response.data != null) {

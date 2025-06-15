@@ -62,7 +62,7 @@ class InfoModel extends ChangeNotifier {
   }
 
   void clearData() {
-    _user = null;
+    // _user = null;
     _semesters = [];
     _currentSchedule = null;
     _years = {};
@@ -141,7 +141,7 @@ class InfoModel extends ChangeNotifier {
         .where((e) => e != null)
         .toList();
     schedules.sort((a, b) => a!["time"].compareTo(b!["time"]));
-    
+
     return schedules.firstWhere((e) => e!["time"].isAfter(now),
         orElse: () => null);
   }

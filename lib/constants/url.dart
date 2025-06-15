@@ -1,4 +1,4 @@
-const BASE_AUTHORITY = "otl.sparcs.org";
+const BASE_AUTHORITY = "otl.kaist.ac.kr";
 
 const SESSION_URL = "session/";
 const SESSION_INFO_URL = SESSION_URL + "info";
