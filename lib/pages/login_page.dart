@@ -27,6 +27,8 @@ class _LoginPageState extends State<LoginPage> {
       Uri.https(BASE_AUTHORITY, 'session/login/').toString();
   final String _redirectScheme = "org.sparcs.otl";
   final String _redirectHost = "login";
+  
+  final GlobalKey _webViewKey = GlobalKey();
 
   @override
   void initState() {
@@ -163,7 +165,10 @@ class _LoginPageState extends State<LoginPage> {
       child: Stack(
         children: [
           if (!_isDisposed)
-            WebViewWidget(controller: _controller),
+            WebViewWidget(
+              key: _webViewKey, // 고유 키 추가
+              controller: _controller,
+            ),
           if (_isLoadingPage && !_isDisposed)
             const Center(
               child: CircularProgressIndicator(color: OTLColor.pinksMain),
