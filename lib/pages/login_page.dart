@@ -93,8 +93,6 @@ class _LoginPageState extends State<LoginPage> {
             },
             onNavigationRequest: (NavigationRequest request) {
               final uri = Uri.parse(request.url);
-              print(uri);
-
               if (uri.scheme == _redirectScheme && uri.host == _redirectHost) {
                 _handleTokenRedirect(uri);
                 return NavigationDecision.prevent;
