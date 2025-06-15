@@ -113,6 +113,10 @@ class _MainPageState extends State<MainPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (infoModel.semesters.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final semester = infoModel.semesters.firstWhere(
         (semester) =>
             semester.beginning.isBefore(now) && semester.end.isAfter(now),

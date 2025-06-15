@@ -86,7 +86,11 @@ void main() {
                   if (authModel.isLogined && infoModel != null) {
                     infoModel.getInfo().catchError((error) async {
                       print("Error getting user info: $error. Logging out.");
-                      await authModel.logout();
+                      // Add a small delay to prevent rapid state changes
+                      await Future.delayed(Duration(milliseconds: 100));
+                      if (authModel.isLogined) {
+                        await authModel.logout();
+                      }
                     });
                   } else if (!authModel.isLogined && infoModel != null) {
                     infoModel.clearData();

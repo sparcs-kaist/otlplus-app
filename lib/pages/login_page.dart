@@ -22,6 +22,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   late final WebViewController _controller;
   bool _isLoadingPage = true;
+  bool _isDisposed = false;
   final String _loginUrl =
       Uri.https(BASE_AUTHORITY, 'session/login/').toString();
   final String _redirectScheme = "org.sparcs.otl";
@@ -31,53 +32,69 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
 
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setUserAgent("otl-app")
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            // Update loading bar progress (optional)
-          },
-          onPageStarted: (String url) {
-            setState(() {
-              _isLoadingPage = true;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              _isLoadingPage = false;
-            });
-          },
-          onWebResourceError: (WebResourceError error) {
-            // Keep error print for actual errors
-            print('WebView Error: ${error.description}');
-            setState(() {
-              _isLoadingPage = false; // Stop loading on error
-            });
-            // Show error message to user if needed
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text(
-                      'login.webviewError'.tr() + ' (${error.errorCode})')),
-            );
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            final uri = Uri.parse(request.url);
+    try {
+      _controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setUserAgent("otl-app")
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onProgress: (int progress) {
+              // Update loading bar progress (optional)
+            },
+            onPageStarted: (String url) {
+              if (!_isDisposed && mounted) {
+                setState(() {
+                  _isLoadingPage = true;
+                });
+              }
+            },
+            onPageFinished: (String url) {
+              if (!_isDisposed && mounted) {
+                setState(() {
+                  _isLoadingPage = false;
+                });
+              }
+            },
+            onWebResourceError: (WebResourceError error) {
+              // Keep error print for actual errors
+              print('WebView Error: ${error.description}');
+              if (!_isDisposed && mounted) {
+                setState(() {
+                  _isLoadingPage = false; // Stop loading on error
+                });
+                // Show error message to user if needed
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text(
+                          'login.webviewError'.tr() + ' (${error.errorCode})')),
+                );
+              }
+            },
+            onNavigationRequest: (NavigationRequest request) {
+              final uri = Uri.parse(request.url);
 
-            // Check if the URL is the custom redirect scheme
-            if (uri.scheme == _redirectScheme && uri.host == _redirectHost) {
-              // Handle the token extraction
-              _handleTokenRedirect(uri);
-              // Prevent the WebView from navigating to this pseudo-URL
-              return NavigationDecision.prevent;
-            }
-            // Allow navigation for all other URLs
-            return NavigationDecision.navigate;
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(_loginUrl)); // Load initial login URL
+              // Check if the URL is the custom redirect scheme
+              if (uri.scheme == _redirectScheme && uri.host == _redirectHost) {
+                // Handle the token extraction
+                _handleTokenRedirect(uri);
+                // Prevent the WebView from navigating to this pseudo-URL
+                return NavigationDecision.prevent;
+              }
+              // Allow navigation for all other URLs
+              return NavigationDecision.navigate;
+            },
+          ),
+        )
+        ..loadRequest(Uri.parse(_loginUrl)); // Load initial login URL
+    } catch (e) {
+      print('Error initializing WebViewController: $e');
+      // Handle initialization error gracefully
+      if (mounted) {
+        setState(() {
+          _isLoadingPage = false;
+        });
+      }
+    }
 
     WidgetsBinding.instance.addPostFrameCallback(
       (_) async {
@@ -96,6 +113,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleTokenRedirect(Uri uri) async {
+    if (_isDisposed || !mounted) return;
+    
     final accessToken = uri.queryParameters['accessToken'];
     final refreshToken = uri.queryParameters['refreshToken'];
 
@@ -109,21 +128,33 @@ class _LoginPageState extends State<LoginPage> {
         await storageService.saveTokens(
             accessToken: accessToken, refreshToken: refreshToken);
         // Update AuthModel state - this should trigger navigation in main.dart
-        authModel.setLoggedIn(true);
+        if (!_isDisposed && mounted) {
+          authModel.setLoggedIn(true);
+        }
         // print("Tokens saved and login state updated."); // Remove print
       } catch (e) {
         // Keep error print for actual errors
         print("Error saving tokens: $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('login.tokenSaveError'.tr())),
-        );
+        if (!_isDisposed && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('login.tokenSaveError'.tr())),
+          );
+        }
       }
     } else {
       // print('Missing tokens in redirect URL.'); // Remove print
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('login.tokenMissingError'.tr())),
-      );
+      if (!_isDisposed && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('login.tokenMissingError'.tr())),
+        );
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 
   @override
@@ -131,8 +162,9 @@ class _LoginPageState extends State<LoginPage> {
     return OTLScaffold(
       child: Stack(
         children: [
-          WebViewWidget(controller: _controller),
-          if (_isLoadingPage)
+          if (!_isDisposed)
+            WebViewWidget(controller: _controller),
+          if (_isLoadingPage && !_isDisposed)
             const Center(
               child: CircularProgressIndicator(color: OTLColor.pinksMain),
             ),
