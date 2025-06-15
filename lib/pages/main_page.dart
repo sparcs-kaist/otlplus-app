@@ -108,11 +108,16 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final infoModel = context.watch<InfoModel>();
+
+    if (!infoModel.hasData) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final semester = infoModel.semesters.firstWhere(
-      (semester) =>
-          semester.beginning.isBefore(now) && semester.end.isAfter(now),
-      orElse: () => infoModel.semesters.last,
-    );
+        (semester) =>
+            semester.beginning.isBefore(now) && semester.end.isAfter(now),
+        orElse: () => infoModel.semesters.last,
+      );
     return OTLLayout(
       extendBodyBehindAppBar: true,
       leading: Padding(

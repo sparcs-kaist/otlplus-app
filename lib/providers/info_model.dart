@@ -126,7 +126,24 @@ class InfoModel extends ChangeNotifier {
   }
 
   Map<String, dynamic>? getCurrentSchedule() {
-    return null;
+    final now = DateTime.now();
+    final schedules = _semesters
+        .map((semester) => SCHEDULE_NAME.map((name) {
+              final time = semester.toJson()[name];
+              if (time == null) return null;
+              return <String, dynamic>{
+                "semester": semester,
+                "name": 'home.schedule.$name',
+                "time": time,
+              };
+            }))
+        .expand((e) => e)
+        .where((e) => e != null)
+        .toList();
+    schedules.sort((a, b) => a!["time"].compareTo(b!["time"]));
+    
+    return schedules.firstWhere((e) => e!["time"].isAfter(now),
+        orElse: () => null);
   }
 
   Future<void> deleteAccount() async {
