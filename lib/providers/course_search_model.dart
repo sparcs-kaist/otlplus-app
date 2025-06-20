@@ -175,7 +175,9 @@ class CourseSearchModel extends ChangeNotifier {
               children: [
                 if (_selectedFilters.length > 0 && _courseSearchText.length > 0)
                   TextSpan(text: ", "),
-                TextSpan(text: _selectedFilters.join(", ")),
+                TextSpan(
+                  text: _selectedFilters.map((e) => e.tr()).join(", "),
+                ),
               ],
             )
           ],
