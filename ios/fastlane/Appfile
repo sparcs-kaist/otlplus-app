@@ -1,8 +1,8 @@
 app_identifier("org.sparcs.otlplus") # The bundle identifier of your app
-apple_id("soungmin114@gmail.com") # Your Apple Developer Portal username
+apple_id(ENV["FASTLANE_USER"] || "soungmin114@gmail.com") # Your Apple Developer Portal username
 
 itc_team_name("SPARCS") # App Store Connect Team Name
-team_id("N5V8W52U3U") # Developer Portal Team ID
+team_id(ENV["FASTLANE_TEAM_ID"] || "N5V8W52U3U") # Developer Portal Team ID
 
 # For more information about the Appfile, see:
 #     https://docs.fastlane.tools/advanced/#appfile

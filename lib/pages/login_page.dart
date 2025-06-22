@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:otlplus/constants/color.dart';
@@ -29,14 +28,14 @@ class _LoginPageState extends State<LoginPage> {
       Uri.https(BASE_AUTHORITY, 'session/login/').toString();
   final String _redirectScheme = "org.sparcs.otl";
   final String _redirectHost = "login";
-  
+
   final GlobalKey _webViewKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _initializeWebView();
-    
+
     WidgetsBinding.instance.addPostFrameCallback(
       (_) async {
         if (!((await SharedPreferences.getInstance()).getBool('hasAccount') ??
@@ -62,8 +61,7 @@ class _LoginPageState extends State<LoginPage> {
         ..setUserAgent("otl-app")
         ..setNavigationDelegate(
           NavigationDelegate(
-            onProgress: (int progress) {
-            },
+            onProgress: (int progress) {},
             onPageStarted: (String url) {
               if (!_isDisposed && mounted) {
                 setState(() {
@@ -110,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       print('Error initializing WebViewController: $e');
-      
+
       if (mounted) {
         setState(() {
           _isLoadingPage = false;
@@ -122,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _handleTokenRedirect(Uri uri) async {
     if (_isDisposed || !mounted) return;
-    
+
     final accessToken = uri.queryParameters['accessToken'];
     final refreshToken = uri.queryParameters['refreshToken'];
 

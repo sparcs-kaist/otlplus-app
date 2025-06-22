@@ -55,11 +55,11 @@ class SettingsModel extends ChangeNotifier {
 
   void getAllValues(SharedPreferences instance) {
     final newSendCrashlytics = instance.getBool(_kSendCrashlytics) ?? true;
-    final newSendCrashlyticsAnonymously = 
+    final newSendCrashlyticsAnonymously =
         instance.getBool(_kSendCrashlyticsAnonymously) ?? false;
-    final newShowsChannelTalkButton = 
+    final newShowsChannelTalkButton =
         instance.getBool(_kShowsChannelTalkButton) ?? true;
-    
+
     if (_sendCrashlytics != newSendCrashlytics ||
         _sendCrashlyticsAnonymously != newSendCrashlyticsAnonymously ||
         _showsChannelTalkButton != newShowsChannelTalkButton) {
