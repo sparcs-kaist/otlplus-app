@@ -52,6 +52,72 @@ jobs:
         run: |
           echo '${{ secrets.ANDROID_KEYSTORE }}' | base64 -d > android/fastlane/upload-keystore.jks
 
+      - name: Validate Android Keystore
+        run: |
+          echo "🔍 Validating Android Keystore..."
+          
+          # 1. Check if keystore file exists
+          if [ ! -f android/fastlane/upload-keystore.jks ]; then
+            echo "❌ ERROR: Keystore file not found"
+            exit 1
+          fi
+          
+          # 2. Check file size (should be > 1KB for a valid keystore)
+          file_size=$(stat -c%s android/fastlane/upload-keystore.jks 2>/dev/null || stat -f%z android/fastlane/upload-keystore.jks)
+          echo "📦 Keystore file size: $file_size bytes"
+          if [ "$file_size" -lt 1000 ]; then
+            echo "❌ ERROR: Keystore file too small ($file_size bytes), likely corrupted"
+            exit 1
+          fi
+          
+          # 3. Check if it's a valid keystore format
+          file_type=$(file android/fastlane/upload-keystore.jks)
+          echo "📄 File type: $file_type"
+          if [[ ! "$file_type" == *"Java KeyStore"* ]] && [[ ! "$file_type" == *"data"* ]]; then
+            echo "⚠️  WARNING: File type might not be a valid keystore"
+          fi
+          
+          # 4. Test keystore with keytool (list contents)
+          echo "🔐 Testing keystore accessibility..."
+          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' -v > /dev/null 2>&1; then
+            echo "✅ Keystore is accessible with provided password"
+          else
+            echo "❌ ERROR: Cannot access keystore with provided password"
+            echo "Possible causes:"
+            echo "  - Wrong ANDROID_KEYSTORE_PASSWORD"
+            echo "  - Corrupted keystore file"
+            echo "  - Invalid base64 encoding"
+            exit 1
+          fi
+          
+          # 5. Check if specific alias exists
+          echo "🔑 Checking for alias '${{ secrets.ANDROID_KEY_ALIAS }}'..."
+          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' -alias '${{ secrets.ANDROID_KEY_ALIAS }}' > /dev/null 2>&1; then
+            echo "✅ Alias '${{ secrets.ANDROID_KEY_ALIAS }}' found in keystore"
+          else
+            echo "❌ ERROR: Alias '${{ secrets.ANDROID_KEY_ALIAS }}' not found in keystore"
+            echo "Available aliases:"
+            keytool -list -keystore android/fastlane/upload-keystore.jks -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' | grep "Alias name:" || echo "Could not list aliases"
+            exit 1
+          fi
+          
+          # 6. Test key password
+          echo "🔓 Testing key password..."
+          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' -alias '${{ secrets.ANDROID_KEY_ALIAS }}' -keypass '${{ secrets.ANDROID_KEY_PASSWORD }}' > /dev/null 2>&1; then
+            echo "✅ Key password is correct"
+          else
+            echo "❌ ERROR: Wrong key password for alias '${{ secrets.ANDROID_KEY_ALIAS }}'"
+            exit 1
+          fi
+          
+          # 7. Display keystore summary
+          echo "📋 Keystore validation summary:"
+          echo "  • File size: $file_size bytes"
+          echo "  • Store password: ✅ Valid"
+          echo "  • Alias '${{ secrets.ANDROID_KEY_ALIAS }}': ✅ Found"
+          echo "  • Key password: ✅ Valid"
+          echo "🎉 All keystore validations passed!"
+
       - name: Create key.properties
         run: |
           echo "storeFile=../fastlane/upload-keystore.jks" > android/key.properties
@@ -117,17 +183,70 @@ jobs:
 
       - name: Import iOS certificates and provisioning profiles
         run: |
+          # 키체인 생성
           security create-keychain -p "temp_password" build.keychain
           security default-keychain -s build.keychain
           security set-keychain-settings -t 3600 -l build.keychain
           security unlock-keychain -p "temp_password" build.keychain
           
+          # 인증서 디코딩 및 검증
+          echo "🔍 Validating iOS certificate..."
           echo '${{ secrets.IOS_CERTIFICATES_P12 }}' | base64 -d > certificates.p12
+          
+          # P12 파일 크기 검증
+          cert_size=$(stat -f%z certificates.p12)
+          echo "📦 Certificate file size: $cert_size bytes"
+          if [ "$cert_size" -lt 1000 ]; then
+            echo "❌ ERROR: Certificate file too small ($cert_size bytes), likely corrupted"
+            exit 1
+          fi
+          
+          # P12 파일 유효성 검증
+          if openssl pkcs12 -info -in certificates.p12 -passin pass:'${{ secrets.IOS_CERTIFICATES_PASSWORD }}' -noout > /dev/null 2>&1; then
+            echo "✅ P12 certificate is valid and password is correct"
+          else
+            echo "❌ ERROR: Invalid P12 certificate or wrong password"
+            exit 1
+          fi
+          
+          # 인증서 키체인에 가져오기
           security import certificates.p12 -k build.keychain -P '${{ secrets.IOS_CERTIFICATES_PASSWORD }}' -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "temp_password" build.keychain
           
+          # 프로비저닝 프로파일 검증 및 설치
+          echo "🔍 Validating provisioning profile..."
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo '${{ secrets.IOS_PROVISIONING_PROFILE }}' | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          
+          # 프로비저닝 프로파일 크기 검증
+          profile_size=$(stat -f%z ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision)
+          echo "📱 Provisioning profile size: $profile_size bytes"
+          if [ "$profile_size" -lt 1000 ]; then
+            echo "❌ ERROR: Provisioning profile too small ($profile_size bytes), likely corrupted"
+            exit 1
+          fi
+          
+          # 프로비저닝 프로파일 내용 검증
+          if security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision > /dev/null 2>&1; then
+            echo "✅ Provisioning profile is valid"
+            # Bundle ID 확인
+            bundle_id=$(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision | grep -A1 "application-identifier" | grep "string" | sed 's/.*<string>//g' | sed 's/<\/string>.*//g' | sed 's/.*\.//g')
+            echo "📋 Bundle ID from profile: $bundle_id"
+          else
+            echo "❌ ERROR: Invalid provisioning profile"
+            exit 1
+          fi
+          
+          # 키체인에서 인증서 확인
+          echo "🔑 Verifying certificate in keychain..."
+          if security find-identity -v -p codesigning build.keychain | grep -q "iPhone Distribution\|Apple Distribution"; then
+            echo "✅ Distribution certificate found in keychain"
+          else
+            echo "❌ ERROR: No valid distribution certificate found"
+            exit 1
+          fi
+          
+          echo "🎉 All iOS certificate and profile validations passed!"
 
       - name: Install Flutter dependencies
         run: flutter pub get
