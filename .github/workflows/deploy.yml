@@ -55,6 +55,12 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Set Gradle JVM options for CI
+        run: |
+          echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" >> android/gradle.properties
+          echo "org.gradle.daemon=false" >> android/gradle.properties
+          echo "org.gradle.parallel=false" >> android/gradle.properties
+
       - name: Deploy to Google Play Alpha
         working-directory: android
         run: bundle exec fastlane alpha
