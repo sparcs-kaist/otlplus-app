@@ -14,6 +14,12 @@ jobs:
   deploy-android:
     name: Deploy Android to Google Play
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,13 +50,64 @@ jobs:
           bundle config set --local deployment false
           bundle install --jobs 4 --retry 3
 
+      - name: Debug GitHub Secrets
+        run: |
+          echo "🔍 Debugging GitHub Secrets availability..."
+          
+          # Check environment variables (safer than direct secret access)
+          if [ -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            secret_length=$(echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" | wc -c)
+            echo "✅ GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: Available ($secret_length characters)"
+          else
+            echo "❌ GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: Not set or empty"
+          fi
+          
+          if [ -n "$ANDROID_KEYSTORE" ]; then
+            keystore_length=$(echo "$ANDROID_KEYSTORE" | wc -c)
+            echo "✅ ANDROID_KEYSTORE: Available ($keystore_length characters)"
+          else
+            echo "❌ ANDROID_KEYSTORE: Not set or empty"
+          fi
+          
+          if [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "✅ ANDROID_KEYSTORE_PASSWORD: Available"
+          else
+            echo "❌ ANDROID_KEYSTORE_PASSWORD: Not set or empty"
+          fi
+          
+          if [ -n "$ANDROID_KEY_ALIAS" ]; then
+            echo "✅ ANDROID_KEY_ALIAS: Available ($ANDROID_KEY_ALIAS)"
+          else
+            echo "❌ ANDROID_KEY_ALIAS: Not set or empty"
+          fi
+          
+          if [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            echo "✅ ANDROID_KEY_PASSWORD: Available"
+          else
+            echo "❌ ANDROID_KEY_PASSWORD: Not set or empty"
+          fi
+          
+          echo "🎯 Required secrets check completed!"
+
       - name: Create Google Play service account JSON
         run: |
-          echo '${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}' > android/fastlane/otlplus-fastlane.json
+          if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "❌ ERROR: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret is not set!"
+            echo "Please add this secret in GitHub Repository Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > android/fastlane/otlplus-fastlane.json
+          echo "✅ Google Play service account JSON created"
 
       - name: Decode and create keystore
         run: |
-          echo '${{ secrets.ANDROID_KEYSTORE }}' | base64 -d > android/fastlane/upload-keystore.jks
+          if [ -z "$ANDROID_KEYSTORE" ]; then
+            echo "❌ ERROR: ANDROID_KEYSTORE secret is not set!"
+            echo "Please add this secret in GitHub Repository Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE" | base64 -d > android/fastlane/upload-keystore.jks
+          echo "✅ Android keystore decoded"
 
       - name: Validate Android Keystore
         run: |
@@ -79,7 +136,7 @@ jobs:
           
           # 4. Test keystore with keytool (list contents)
           echo "🔐 Testing keystore accessibility..."
-          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' -v > /dev/null 2>&1; then
+          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -v > /dev/null 2>&1; then
             echo "✅ Keystore is accessible with provided password"
           else
             echo "❌ ERROR: Cannot access keystore with provided password"
@@ -91,22 +148,22 @@ jobs:
           fi
           
           # 5. Check if specific alias exists
-          echo "🔑 Checking for alias '${{ secrets.ANDROID_KEY_ALIAS }}'..."
-          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' -alias '${{ secrets.ANDROID_KEY_ALIAS }}' > /dev/null 2>&1; then
-            echo "✅ Alias '${{ secrets.ANDROID_KEY_ALIAS }}' found in keystore"
+          echo "🔑 Checking for alias '$ANDROID_KEY_ALIAS'..."
+          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" > /dev/null 2>&1; then
+            echo "✅ Alias '$ANDROID_KEY_ALIAS' found in keystore"
           else
-            echo "❌ ERROR: Alias '${{ secrets.ANDROID_KEY_ALIAS }}' not found in keystore"
+            echo "❌ ERROR: Alias '$ANDROID_KEY_ALIAS' not found in keystore"
             echo "Available aliases:"
-            keytool -list -keystore android/fastlane/upload-keystore.jks -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' | grep "Alias name:" || echo "Could not list aliases"
+            keytool -list -keystore android/fastlane/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" | grep "Alias name:" || echo "Could not list aliases"
             exit 1
           fi
           
           # 6. Test key password
           echo "🔓 Testing key password..."
-          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' -alias '${{ secrets.ANDROID_KEY_ALIAS }}' -keypass '${{ secrets.ANDROID_KEY_PASSWORD }}' > /dev/null 2>&1; then
+          if keytool -list -keystore android/fastlane/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" -keypass "$ANDROID_KEY_PASSWORD" > /dev/null 2>&1; then
             echo "✅ Key password is correct"
           else
-            echo "❌ ERROR: Wrong key password for alias '${{ secrets.ANDROID_KEY_ALIAS }}'"
+            echo "❌ ERROR: Wrong key password for alias '$ANDROID_KEY_ALIAS'"
             exit 1
           fi
           
@@ -114,16 +171,16 @@ jobs:
           echo "📋 Keystore validation summary:"
           echo "  • File size: $file_size bytes"
           echo "  • Store password: ✅ Valid"
-          echo "  • Alias '${{ secrets.ANDROID_KEY_ALIAS }}': ✅ Found"
+          echo "  • Alias '$ANDROID_KEY_ALIAS': ✅ Found"
           echo "  • Key password: ✅ Valid"
           echo "🎉 All keystore validations passed!"
 
       - name: Create key.properties
         run: |
           echo "storeFile=../fastlane/upload-keystore.jks" > android/key.properties
-          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/key.properties
-          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+          echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" >> android/key.properties
+          echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
+          echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
 
       - name: Install Flutter dependencies
         run: flutter pub get
@@ -148,6 +205,13 @@ jobs:
   deploy-ios:
     name: Deploy iOS to TestFlight
     runs-on: macos-15
+    env:
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      IOS_CERTIFICATES_P12: ${{ secrets.IOS_CERTIFICATES_P12 }}
+      IOS_CERTIFICATES_PASSWORD: ${{ secrets.IOS_CERTIFICATES_PASSWORD }}
+      IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -174,12 +238,60 @@ jobs:
           bundle config set --local deployment false
           bundle install --jobs 4 --retry 3
 
+      - name: Debug iOS Secrets
+        run: |
+          echo "🔍 Debugging iOS Secrets availability..."
+          
+          if [ -n "$APPLE_ID" ]; then
+            echo "✅ APPLE_ID: Available"
+          else
+            echo "❌ APPLE_ID: Not set or empty"
+          fi
+          
+          if [ -n "$APPLE_PASSWORD" ]; then
+            echo "✅ APPLE_PASSWORD: Available"
+          else
+            echo "❌ APPLE_PASSWORD: Not set or empty"
+          fi
+          
+          if [ -n "$APPLE_TEAM_ID" ]; then
+            echo "✅ APPLE_TEAM_ID: Available ($APPLE_TEAM_ID)"
+          else
+            echo "❌ APPLE_TEAM_ID: Not set or empty"
+          fi
+          
+          if [ -n "$IOS_CERTIFICATES_P12" ]; then
+            cert_length=$(echo "$IOS_CERTIFICATES_P12" | wc -c)
+            echo "✅ IOS_CERTIFICATES_P12: Available ($cert_length characters)"
+          else
+            echo "❌ IOS_CERTIFICATES_P12: Not set or empty"
+          fi
+          
+          if [ -n "$IOS_CERTIFICATES_PASSWORD" ]; then
+            echo "✅ IOS_CERTIFICATES_PASSWORD: Available"
+          else
+            echo "❌ IOS_CERTIFICATES_PASSWORD: Not set or empty"
+          fi
+          
+          if [ -n "$IOS_PROVISIONING_PROFILE" ]; then
+            profile_length=$(echo "$IOS_PROVISIONING_PROFILE" | wc -c)
+            echo "✅ IOS_PROVISIONING_PROFILE: Available ($profile_length characters)"
+          else
+            echo "❌ IOS_PROVISIONING_PROFILE: Not set or empty"
+          fi
+
       - name: Create Fastlane environment file
         run: |
-          echo "FASTLANE_USER=${{ secrets.APPLE_ID }}" > ios/fastlane/.env.default
-          echo "FASTLANE_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> ios/fastlane/.env.default
-          echo "FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> ios/fastlane/.env.default
-          echo "FASTLANE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> ios/fastlane/.env.default
+          if [ -z "$APPLE_ID" ] || [ -z "$APPLE_PASSWORD" ] || [ -z "$APPLE_TEAM_ID" ]; then
+            echo "❌ ERROR: Required Apple secrets are not set!"
+            echo "Please add APPLE_ID, APPLE_PASSWORD, and APPLE_TEAM_ID in GitHub Repository Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          echo "FASTLANE_USER=$APPLE_ID" > ios/fastlane/.env.default
+          echo "FASTLANE_PASSWORD=$APPLE_PASSWORD" >> ios/fastlane/.env.default
+          echo "FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD=$APPLE_PASSWORD" >> ios/fastlane/.env.default
+          echo "FASTLANE_TEAM_ID=$APPLE_TEAM_ID" >> ios/fastlane/.env.default
+          echo "✅ Fastlane environment file created"
 
       - name: Import iOS certificates and provisioning profiles
         run: |
@@ -191,7 +303,7 @@ jobs:
           
           # 인증서 디코딩 및 검증
           echo "🔍 Validating iOS certificate..."
-          echo '${{ secrets.IOS_CERTIFICATES_P12 }}' | base64 -d > certificates.p12
+          echo "$IOS_CERTIFICATES_P12" | base64 -d > certificates.p12
           
           # P12 파일 크기 검증
           cert_size=$(stat -f%z certificates.p12)
@@ -202,7 +314,7 @@ jobs:
           fi
           
           # P12 파일 유효성 검증
-          if openssl pkcs12 -info -in certificates.p12 -passin pass:'${{ secrets.IOS_CERTIFICATES_PASSWORD }}' -noout > /dev/null 2>&1; then
+          if openssl pkcs12 -info -in certificates.p12 -passin pass:"$IOS_CERTIFICATES_PASSWORD" -noout > /dev/null 2>&1; then
             echo "✅ P12 certificate is valid and password is correct"
           else
             echo "❌ ERROR: Invalid P12 certificate or wrong password"
@@ -210,13 +322,13 @@ jobs:
           fi
           
           # 인증서 키체인에 가져오기
-          security import certificates.p12 -k build.keychain -P '${{ secrets.IOS_CERTIFICATES_PASSWORD }}' -T /usr/bin/codesign
+          security import certificates.p12 -k build.keychain -P "$IOS_CERTIFICATES_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "temp_password" build.keychain
           
           # 프로비저닝 프로파일 검증 및 설치
           echo "🔍 Validating provisioning profile..."
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo '${{ secrets.IOS_PROVISIONING_PROFILE }}' | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          echo "$IOS_PROVISIONING_PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
           
           # 프로비저닝 프로파일 크기 검증
           profile_size=$(stat -f%z ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision)
