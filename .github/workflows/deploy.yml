@@ -34,8 +34,15 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
-          bundler-cache: true
+          bundler-cache: false
           working-directory: android
+
+      - name: Install Ruby dependencies
+        working-directory: android
+        run: |
+          gem install bundler
+          bundle config set --local deployment false
+          bundle install --jobs 4 --retry 3
 
       - name: Create Google Play service account JSON
         run: |
@@ -90,9 +97,16 @@ jobs:
       - name: Set up Ruby for Fastlane
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.0'
-          bundler-cache: true
+          ruby-version: '3.3'
+          bundler-cache: false
           working-directory: ios
+
+      - name: Install Ruby dependencies
+        working-directory: ios
+        run: |
+          gem install bundler
+          bundle config set --local deployment false
+          bundle install --jobs 4 --retry 3
 
       - name: Create Fastlane environment file
         run: |
