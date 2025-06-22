@@ -1,0 +1,148 @@
+name: Deploy to Stores
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  FLUTTER_VERSION: "3.32.x"
+  JAVA_VERSION: "17"
+  XCODE_VERSION: "Xcode_16.2"
+
+jobs:
+  deploy-android:
+    name: Deploy Android to Google Play
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Set up Ruby for Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+          working-directory: android
+
+      - name: Install Ruby dependencies
+        working-directory: android
+        run: |
+          gem install bundler
+          bundle config set --local deployment false
+          bundle install --jobs 4 --retry 3
+
+      - name: Create Google Play service account JSON
+        run: |
+          echo '${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}' > android/fastlane/otlplus-fastlane.json
+
+      - name: Decode and create keystore
+        run: |
+          echo '${{ secrets.ANDROID_KEYSTORE }}' | base64 -d > android/fastlane/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          echo "storeFile=../fastlane/upload-keystore.jks" > android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Set Gradle JVM options for CI
+        run: |
+          echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" >> android/gradle.properties
+          echo "org.gradle.daemon=false" >> android/gradle.properties
+          echo "org.gradle.parallel=false" >> android/gradle.properties
+
+      - name: Deploy to Google Play Alpha
+        working-directory: android
+        run: bundle exec fastlane alpha
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f android/fastlane/otlplus-fastlane.json
+          rm -f android/fastlane/upload-keystore.jks
+          rm -f android/key.properties
+
+  deploy-ios:
+    name: Deploy iOS to TestFlight
+    runs-on: macos-15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s '/Applications/${{ env.XCODE_VERSION }}.app/Contents/Developer'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Set up Ruby for Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+          working-directory: ios
+
+      - name: Install Ruby dependencies
+        working-directory: ios
+        run: |
+          gem install bundler
+          bundle config set --local deployment false
+          bundle install --jobs 4 --retry 3
+
+      - name: Create Fastlane environment file
+        run: |
+          echo "FASTLANE_USER=${{ secrets.APPLE_ID }}" > ios/fastlane/.env.default
+          echo "FASTLANE_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> ios/fastlane/.env.default
+          echo "FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> ios/fastlane/.env.default
+          echo "FASTLANE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> ios/fastlane/.env.default
+
+      - name: Import iOS certificates and provisioning profiles
+        run: |
+          security create-keychain -p "temp_password" build.keychain
+          security default-keychain -s build.keychain
+          security set-keychain-settings -t 3600 -l build.keychain
+          security unlock-keychain -p "temp_password" build.keychain
+          
+          echo '${{ secrets.IOS_CERTIFICATES_P12 }}' | base64 -d > certificates.p12
+          security import certificates.p12 -k build.keychain -P '${{ secrets.IOS_CERTIFICATES_PASSWORD }}' -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "temp_password" build.keychain
+          
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo '${{ secrets.IOS_PROVISIONING_PROFILE }}' | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install
+
+      - name: Deploy to TestFlight
+        working-directory: ios
+        run: bundle exec fastlane alpha
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f ios/fastlane/.env.default
+          rm -f certificates.p12
+          security delete-keychain build.keychain || true

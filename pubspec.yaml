@@ -1,146 +1,105 @@
+---
 name: otlplus
 description: Online Timeplanner with Lectures Plus App @ KAIST
-
-# The following defines the version and build number for your application.
-# A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
-# Both the version and the builder number may be overridden in flutter
-# build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
-# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
-# Read more about iOS versioning at
-# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 2.5.3+23
-
+version: 2.5.6+406202251
 environment:
   sdk: ">=3.2.0 <4.0.0"
   flutter: 3.24.3
 publish_to: none
-
 dependencies:
   flutter:
     sdk: flutter
-
-  # Secure Storage
-  flutter_secure_storage: ^9.2.2
-
-  # App Links / Deep Links
-  app_links: ^6.1.1
-
-  dio: ^5.7.0
-  dotted_border: ^2.1.0
-  flutter_web_browser: ^0.17.1
-  webview_flutter: ^4.10.0
-  webview_cookie_manager: ^2.0.6
-  path_provider: ^2.1.5
-  permission_handler: ^11.3.1
-  provider: ^6.1.2
-  url_launcher: ^6.3.1
-  equatable: ^2.0.7
-  shared_preferences: ^2.3.5
-  easy_localization: ^3.0.7
-  flutter_widgetkit: ^1.0.3
-  flutter_svg: ^2.0.17
-  open_app_file: ^4.0.2
-  flutter_native_splash: ^2.4.4
-  mailto: ^2.0.0
-  dropdown_button2: ^3.0.0-beta.21
-  # Firebase
-  firebase_core: ^3.10.0
-  firebase_analytics: ^11.4.0
-  firebase_crashlytics: ^4.3.0
-  firebase_messaging: ^15.2.0
+  flutter_secure_storage: "^9.2.2"
+  app_links: "^6.1.1"
+  dio: "^5.7.0"
+  dotted_border: "^2.1.0"
+  flutter_web_browser: "^0.17.3"
+  webview_flutter: "^4.10.0"
+  webview_cookie_manager:
+    git:
+      url: https://github.com/fryette/webview_cookie_manager.git
+      ref: master
+  path_provider: "^2.1.5"
+  permission_handler: "^11.3.1"
+  provider: "^6.1.2"
+  url_launcher: "^6.3.1"
+  equatable: "^2.0.7"
+  shared_preferences: "^2.3.5"
+  easy_localization: "^3.0.7"
+  flutter_widgetkit: "^1.0.3"
+  flutter_svg: "^2.0.17"
+  open_app_file: "^4.0.2"
+  flutter_native_splash: "^2.4.4"
+  mailto: "^2.0.0"
+  dropdown_button2: "^3.0.0-beta.21"
+  firebase_core: "^3.10.0"
+  firebase_analytics: "^11.4.0"
+  firebase_crashlytics: "^4.3.0"
+  firebase_messaging: "^15.2.0"
   channel_talk_flutter:
     git:
       url: https://github.com/happycastle114/channel_talk_flutter
       ref: main
-
 dev_dependencies:
-  test: ^1.25.7
-  http: ^1.2.2
+  test: "^1.25.7"
+  http: "^1.2.2"
   flutter_test:
     sdk: flutter
   flutter_driver:
     sdk: flutter
-
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/icons/icon-512.png"
+  image_path: assets/icons/icon-512.png
   adaptive_icon_background: "#F9F0F0"
-  adaptive_icon_foreground: "assets/icons/icon-512-foreground.png"
-
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter.
+  adaptive_icon_foreground: assets/icons/icon-512-foreground.png
 flutter:
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
-
-  # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/
-    - assets/people/
-    - assets/images/
-    - assets/translations/
-    - assets/icons/
-    - assets/popups/
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/assets-and-images/#resolution-aware.
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/assets-and-images/#from-packages
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
+  - assets/
+  - assets/people/
+  - assets/images/
+  - assets/translations/
+  - assets/icons/
+  - assets/popups/
   fonts:
-    - family: NotoSansKR
-      fonts:
-        - asset: assets/fonts/NotoSansKR-Thin.otf
-          weight: 100
-        - asset: assets/fonts/NotoSansKR-Light.otf
-          weight: 300
-        - asset: assets/fonts/NotoSansKR-Regular.otf
-          weight: 400
-        - asset: assets/fonts/NotoSansKR-Medium.otf
-          weight: 500
-        - asset: assets/fonts/NotoSansKR-Bold.otf
-          weight: 700
-        - asset: assets/fonts/NotoSansKR-Black.otf
-          weight: 900
-    - family: Raleway
-      fonts:
-        - asset: assets/fonts/Raleway-Thin.ttf
-          weight: 100
-        - asset: assets/fonts/Raleway-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Raleway-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Raleway-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Raleway-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Raleway-ExtraBold.ttf
-          weight: 800
-        - asset: assets/fonts/Raleway-Black.ttf
-          weight: 900
-    - family: NanumSquare
-      fonts:
-        - asset: assets/fonts/NanumSquareL.otf
-          weight: 300
-        - asset: assets/fonts/NanumSquareR.otf
-          weight: 400
-        - asset: assets/fonts/NanumSquareB.otf
-          weight: 700
-        - asset: assets/fonts/NanumSquareEB.otf
-          weight: 800
-
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/custom-fonts/#from-packages
+  - family: NotoSansKR
+    fonts:
+    - asset: assets/fonts/NotoSansKR-Thin.otf
+      weight: 100
+    - asset: assets/fonts/NotoSansKR-Light.otf
+      weight: 300
+    - asset: assets/fonts/NotoSansKR-Regular.otf
+      weight: 400
+    - asset: assets/fonts/NotoSansKR-Medium.otf
+      weight: 500
+    - asset: assets/fonts/NotoSansKR-Bold.otf
+      weight: 700
+    - asset: assets/fonts/NotoSansKR-Black.otf
+      weight: 900
+  - family: Raleway
+    fonts:
+    - asset: assets/fonts/Raleway-Thin.ttf
+      weight: 100
+    - asset: assets/fonts/Raleway-Light.ttf
+      weight: 300
+    - asset: assets/fonts/Raleway-Regular.ttf
+      weight: 400
+    - asset: assets/fonts/Raleway-Medium.ttf
+      weight: 500
+    - asset: assets/fonts/Raleway-Bold.ttf
+      weight: 700
+    - asset: assets/fonts/Raleway-ExtraBold.ttf
+      weight: 800
+    - asset: assets/fonts/Raleway-Black.ttf
+      weight: 900
+  - family: NanumSquare
+    fonts:
+    - asset: assets/fonts/NanumSquareL.otf
+      weight: 300
+    - asset: assets/fonts/NanumSquareR.otf
+      weight: 400
+    - asset: assets/fonts/NanumSquareB.otf
+      weight: 700
+    - asset: assets/fonts/NanumSquareEB.otf
+      weight: 800

@@ -261,8 +261,8 @@ class _OTLAppState extends State<OTLApp> {
           FirebaseCrashlytics.instance
               .setCrashlyticsCollectionEnabled(sendCrashlytics);
           if (!sendCrashlyticsAnonymously && hasData) {
-            FirebaseCrashlytics.instance
-                .setUserIdentifier(context.watch<InfoModel>().user.id.toString());
+            FirebaseCrashlytics.instance.setUserIdentifier(
+                context.watch<InfoModel>().user.id.toString());
           } else if (!sendCrashlytics) {
             FirebaseCrashlytics.instance.setUserIdentifier('');
           }
