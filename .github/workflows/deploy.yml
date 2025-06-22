@@ -97,18 +97,15 @@ jobs:
 
       - name: Import iOS certificates and provisioning profiles
         run: |
-          # 키체인 생성
           security create-keychain -p "temp_password" build.keychain
           security default-keychain -s build.keychain
           security set-keychain-settings -t 3600 -l build.keychain
           security unlock-keychain -p "temp_password" build.keychain
           
-          # 인증서 가져오기
           echo '${{ secrets.IOS_CERTIFICATES_P12 }}' | base64 -d > certificates.p12
           security import certificates.p12 -k build.keychain -P '${{ secrets.IOS_CERTIFICATES_PASSWORD }}' -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "temp_password" build.keychain
           
-          # 프로비저닝 프로파일 설치
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo '${{ secrets.IOS_PROVISIONING_PROFILE }}' | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
 
