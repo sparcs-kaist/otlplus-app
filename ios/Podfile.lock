@@ -275,7 +275,7 @@ SPEC CHECKSUMS:
   FirebaseMessaging: 195bbdb73e6ca1dbc76cd46e73f3552c084ef6e4
   FirebaseRemoteConfigInterop: 7b74ceaa54e28863ed17fa39da8951692725eced
   FirebaseSessions: eaa8ec037e7793769defe4201c20bd4d976f9677
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_native_splash: c32d145d68aeda5502d5f543ee38c192065986cf
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
   flutter_web_browser: 68b27d2c4773b059cef19e12c890cb204518d3c3
@@ -296,4 +296,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 9e83d58f89088f9715dde85f326d35c2382145ed
 
-COCOAPODS: 1.16.1
+COCOAPODS: 1.16.2

@@ -22,6 +22,7 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -183,7 +184,10 @@ jobs:
           echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" >> android/key.properties
           echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
           echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
-
+      - name: Create Sentry environment file
+        run: |
+          echo "auth_token=$SENTRY_AUTH_TOKEN" > sentry.properties
+          echo "✅ Sentry environment file created" 
       - name: Install Flutter dependencies
         run: flutter pub get
 
@@ -215,6 +219,7 @@ jobs:
       IOS_CERTIFICATES_P12: ${{ secrets.IOS_CERTIFICATES_P12 }}
       IOS_CERTIFICATES_PASSWORD: ${{ secrets.IOS_CERTIFICATES_PASSWORD }}
       IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -295,6 +300,10 @@ jobs:
           echo "FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD=$APPLE_PASSWORD" >> ios/fastlane/.env.default
           echo "FASTLANE_TEAM_ID=$APPLE_TEAM_ID" >> ios/fastlane/.env.default
           echo "✅ Fastlane environment file created"
+      - name: Create Sentry environment file
+        run: |
+          echo "auth_token=$SENTRY_AUTH_TOKEN" > sentry.properties
+          echo "✅ Sentry environment file created"
 
       - name: Import iOS certificates and provisioning profiles
         run: |
