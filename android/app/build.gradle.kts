@@ -72,10 +72,6 @@ android {
         }
     }
 
-    packaging {
-        jniLibs.keepDebugSymbols.add("**/*.so")
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -86,15 +82,6 @@ android {
     }
     buildFeatures {
         viewBinding = true
-    }
-}
-
-androidComponents {
-    onVariants(selector().withBuildType("debug")) { variant ->
-        variant.packaging.jniLibs.keepDebugSymbols.add("**/*.so")
-    }
-    onVariants(selector().withBuildType("release")) { variant ->
-        variant.packaging.jniLibs.keepDebugSymbols.add("**/*.so")
     }
 }
 
