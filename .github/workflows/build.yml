@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  FLUTTER_VERSION: "3.32.x"
+  FLUTTER_VERSION: "3.29.x"
   JAVA_VERSION: "17"
   XCODE_VERSION: "Xcode_16.2"
 
