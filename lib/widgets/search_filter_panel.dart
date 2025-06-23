@@ -23,6 +23,7 @@ class SearchFilterPanel extends StatefulWidget {
 
 class _SearchFilterPanelState extends State<SearchFilterPanel> {
   final _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -45,7 +46,7 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
                 return Padding(
                   padding: EdgeInsets.only(bottom: 24.0),
                   child: Selector(
-                    title: widget.filter.values.elementAt(index).label,
+                    title: widget.filter.values.elementAt(index).label.tr(),
                     selectList: widget.filter.values.elementAt(index).options,
                     type: widget.filter.values.elementAt(index).type,
                     isMultiSelect:
@@ -259,7 +260,7 @@ class _RadioSelectButtonState extends State<RadioSelectButton> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  widget.option.label,
+                  widget.option.label.tr(),
                   style: labelRegular.copyWith(
                     color: widget.option.selected
                         ? OTLColor.gray0
@@ -382,7 +383,8 @@ class _SilderSelectionState extends State<SilderSelection> {
                               widget.selectList.reversed
                                   .elementAt(index ~/ 2)
                                   .first
-                                  .label,
+                                  .label
+                                  .tr(),
                               style: labelTextStyle,
                               textAlign: TextAlign.center,
                             ),

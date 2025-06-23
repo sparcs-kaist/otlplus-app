@@ -249,7 +249,6 @@ class _OTLAppState extends State<OTLApp> {
     }
 
     final authModel = context.watch<AuthModel>();
-
     return MaterialApp(
       builder: (context, child) {
         try {
