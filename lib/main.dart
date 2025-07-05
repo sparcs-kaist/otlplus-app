@@ -201,8 +201,8 @@ class _OTLAppState extends State<OTLApp> {
     } catch (e) {
       print("Unexpected error refreshing token: $e");
     }
-    // TODO: 토큰 갱신 실패 시 로그아웃 처리
-    return true;
+    // Token refresh failed
+    return false;
   }
 
   void _initDeepLinks() {
