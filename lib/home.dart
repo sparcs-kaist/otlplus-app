@@ -45,17 +45,27 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return OTLScaffold(
-      // extendBodyBehindAppBar: _currentIndex == 0,
-      bottomNavigationBar: _buildBottomNavigationBar(),
-      child: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-        },
-        child: LayoutBuilder(builder: _buildStack),
-      ),
-      resizeToAvoidBottomInset: false,
-    );
+    // Localization이 초기화되지 않는 오류가 있는 것으로 파악 > 일단 야매로 딜레이 줌
+    return FutureBuilder(
+        future: Future.delayed(Duration(milliseconds: 10)),
+        builder: (context, asyncSnapshot) {
+          if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+            return Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return OTLScaffold(
+            // extendBodyBehindAppBar: _currentIndex == 0,
+            bottomNavigationBar: _buildBottomNavigationBar(context),
+            child: GestureDetector(
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
+              child: LayoutBuilder(builder: _buildStack),
+            ),
+            resizeToAvoidBottomInset: false,
+          );
+        });
   }
 
   Widget _buildStack(BuildContext context, BoxConstraints constraints) {
@@ -95,7 +105,7 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
     );
   }
 
-  BottomNavigationBar _buildBottomNavigationBar() {
+  BottomNavigationBar _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
       selectedFontSize: 12.0,
       unselectedFontSize: 12.0,
@@ -112,19 +122,19 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
       items: <BottomNavigationBarItem>[
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
-          label: tr("title.home"),
+          label: context.tr('title.home'),
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.table_chart_outlined),
-          label: tr("title.timetable"),
+          label: context.tr("title.timetable"),
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.library_books_outlined),
-          label: tr("title.dictionary"),
+          label: context.tr("title.dictionary"),
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.rate_review_outlined),
-          label: tr("title.review"),
+          label: context.tr("title.review"),
         ),
       ],
     );

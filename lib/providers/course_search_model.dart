@@ -19,96 +19,93 @@ class CourseSearchModel extends ChangeNotifier {
 
   Map<String, FilterGroupInfo> _courseFilter = {
     "departments": FilterGroupInfo(
-        label: "department.department".tr(),
+        label: "department.department",
         isMultiSelect: true,
         options: [
           [
-            CodeLabelPair(code: "HSS", label: "department.hss".tr()),
-            CodeLabelPair(code: "CE", label: "department.ce".tr()),
-            CodeLabelPair(code: "MSB", label: "department.msb".tr()),
-            CodeLabelPair(code: "ME", label: "department.me".tr()),
+            CodeLabelPair(code: "HSS", label: "department.hss"),
+            CodeLabelPair(code: "CE", label: "department.ce"),
+            CodeLabelPair(code: "MSB", label: "department.msb"),
+            CodeLabelPair(code: "ME", label: "department.me"),
           ],
           [
-            CodeLabelPair(code: "PH", label: "department.ph".tr()),
-            CodeLabelPair(code: "BiS", label: "department.bis".tr()),
-            CodeLabelPair(code: "IE", label: "department.ie".tr()),
-            CodeLabelPair(code: "ID", label: "department.id".tr()),
+            CodeLabelPair(code: "PH", label: "department.ph"),
+            CodeLabelPair(code: "BiS", label: "department.bis"),
+            CodeLabelPair(code: "IE", label: "department.ie"),
+            CodeLabelPair(code: "ID", label: "department.id"),
           ],
           [
-            CodeLabelPair(code: "BS", label: "department.bs".tr()),
-            CodeLabelPair(code: "CBE", label: "department.cbe".tr()),
-            CodeLabelPair(code: "MAS", label: "department.mas".tr()),
-            CodeLabelPair(code: "MS", label: "department.ms".tr()),
+            CodeLabelPair(code: "BS", label: "department.bs"),
+            CodeLabelPair(code: "CBE", label: "department.cbe"),
+            CodeLabelPair(code: "MAS", label: "department.mas"),
+            CodeLabelPair(code: "MS", label: "department.ms"),
           ],
           [
-            CodeLabelPair(code: "NQE", label: "department.nqe".tr()),
-            CodeLabelPair(code: "TS", label: "department.ts".tr()),
-            CodeLabelPair(code: "CS", label: "department.cs".tr()),
-            CodeLabelPair(code: "EE", label: "department.ee".tr()),
+            CodeLabelPair(code: "NQE", label: "department.nqe"),
+            CodeLabelPair(code: "TS", label: "department.ts"),
+            CodeLabelPair(code: "CS", label: "department.cs"),
+            CodeLabelPair(code: "EE", label: "department.ee"),
           ],
           [
-            CodeLabelPair(code: "AE", label: "department.ae".tr()),
-            CodeLabelPair(code: "CH", label: "department.ch".tr()),
-            CodeLabelPair(code: "ETC", label: "department.etc".tr()),
+            CodeLabelPair(code: "AE", label: "department.ae"),
+            CodeLabelPair(code: "CH", label: "department.ch"),
+            CodeLabelPair(code: "ETC", label: "department.etc"),
           ]
         ]),
-    "types":
-        FilterGroupInfo(label: "type.type".tr(), isMultiSelect: true, options: [
+    "types": FilterGroupInfo(label: "type.type", isMultiSelect: true, options: [
       [
-        CodeLabelPair(code: "BR", label: "type.br".tr()),
-        CodeLabelPair(code: "BE", label: "type.be".tr()),
-        CodeLabelPair(code: "MR", label: "type.mr".tr()),
-        CodeLabelPair(code: "ME", label: "type.me".tr()),
+        CodeLabelPair(code: "BR", label: "type.br"),
+        CodeLabelPair(code: "BE", label: "type.be"),
+        CodeLabelPair(code: "MR", label: "type.mr"),
+        CodeLabelPair(code: "ME", label: "type.me"),
       ],
       [
-        CodeLabelPair(code: "MGC", label: "type.mgc".tr()),
-        CodeLabelPair(code: "HSE", label: "type.hse".tr()),
-        CodeLabelPair(code: "GR", label: "type.gr".tr()),
-        CodeLabelPair(code: "EG", label: "type.eg".tr()),
+        CodeLabelPair(code: "MGC", label: "type.mgc"),
+        CodeLabelPair(code: "HSE", label: "type.hse"),
+        CodeLabelPair(code: "GR", label: "type.gr"),
+        CodeLabelPair(code: "EG", label: "type.eg"),
       ],
       [
-        CodeLabelPair(code: "OE", label: "type.oe".tr()),
-        CodeLabelPair(code: "ETC", label: "type.etc".tr()),
+        CodeLabelPair(code: "OE", label: "type.oe"),
+        CodeLabelPair(code: "ETC", label: "type.etc"),
       ]
     ]),
-    "levels": FilterGroupInfo(
-        label: "level.level".tr(),
-        isMultiSelect: true,
-        options: [
-          [
-            CodeLabelPair(code: "100", label: "level.100s".tr()),
-            CodeLabelPair(code: "200", label: "level.200s".tr()),
-            CodeLabelPair(code: "300", label: "level.300s".tr()),
-            CodeLabelPair(code: "400", label: "level.400s".tr()),
-          ],
-          [
-            CodeLabelPair(code: "ETC", label: "level.etc".tr()),
-          ]
-        ]),
+    "levels":
+        FilterGroupInfo(label: "level.level", isMultiSelect: true, options: [
+      [
+        CodeLabelPair(code: "100", label: "level.100s"),
+        CodeLabelPair(code: "200", label: "level.200s"),
+        CodeLabelPair(code: "300", label: "level.300s"),
+        CodeLabelPair(code: "400", label: "level.400s"),
+      ],
+      [
+        CodeLabelPair(code: "ETC", label: "level.etc"),
+      ]
+    ]),
     "terms": FilterGroupInfo(
-        label: "term.term".tr(),
+        label: "term.term",
         isMultiSelect: false,
         type: "slider",
         options: [
-          [CodeLabelPair(code: "ALL", label: "term.all".tr(), selected: true)],
+          [CodeLabelPair(code: "ALL", label: "term.all", selected: true)],
           [
             CodeLabelPair(
               code: "3",
-              label: "term.3_years".tr(),
+              label: "term.3_years",
               selected: false,
             )
           ],
           [
             CodeLabelPair(
               code: "2",
-              label: "term.2_years".tr(),
+              label: "term.2_years",
               selected: false,
             )
           ],
           [
             CodeLabelPair(
               code: "1",
-              label: "term.1_years".tr(),
+              label: "term.1_years",
               selected: false,
             )
           ],
