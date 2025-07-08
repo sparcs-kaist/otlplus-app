@@ -52,8 +52,7 @@ class CourseSearchModel extends ChangeNotifier {
             CodeLabelPair(code: "ETC", label: "department.etc"),
           ]
         ]),
-    "types":
-        FilterGroupInfo(label: "type.type", isMultiSelect: true, options: [
+    "types": FilterGroupInfo(label: "type.type", isMultiSelect: true, options: [
       [
         CodeLabelPair(code: "BR", label: "type.br"),
         CodeLabelPair(code: "BE", label: "type.be"),
@@ -71,20 +70,18 @@ class CourseSearchModel extends ChangeNotifier {
         CodeLabelPair(code: "ETC", label: "type.etc"),
       ]
     ]),
-    "levels": FilterGroupInfo(
-        label: "level.level",
-        isMultiSelect: true,
-        options: [
-          [
-            CodeLabelPair(code: "100", label: "level.100s"),
-            CodeLabelPair(code: "200", label: "level.200s"),
-            CodeLabelPair(code: "300", label: "level.300s"),
-            CodeLabelPair(code: "400", label: "level.400s"),
-          ],
-          [
-            CodeLabelPair(code: "ETC", label: "level.etc"),
-          ]
-        ]),
+    "levels":
+        FilterGroupInfo(label: "level.level", isMultiSelect: true, options: [
+      [
+        CodeLabelPair(code: "100", label: "level.100s"),
+        CodeLabelPair(code: "200", label: "level.200s"),
+        CodeLabelPair(code: "300", label: "level.300s"),
+        CodeLabelPair(code: "400", label: "level.400s"),
+      ],
+      [
+        CodeLabelPair(code: "ETC", label: "level.etc"),
+      ]
+    ]),
     "terms": FilterGroupInfo(
         label: "term.term",
         isMultiSelect: false,

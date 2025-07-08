@@ -279,12 +279,7 @@ class _OTLAppState extends State<OTLApp> {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       title: "OTL",
-      home: Builder(
-        builder: (context) {
-          final isLogined = authModel.isLogined;
-          return isLogined ? OTLHome() : LoginPage();
-        },
-      ),
+      home: authModel.isLogined ? OTLHome() : LoginPage(),
       routes: {
         LikedReviewPage.route: (_) => LikedReviewPage(),
         MyReviewPage.route: (_) => MyReviewPage(),
