@@ -35,7 +35,6 @@ platform :ios do
       clean: true,
       export_method: "app-store",
       destination: "generic/platform=iOS",
-      xcargs: "-allowProvisioningUpdates"
     )
     upload_to_testflight(
       skip_waiting_for_build_processing: true,
