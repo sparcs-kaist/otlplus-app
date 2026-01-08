@@ -240,9 +240,22 @@ jobs:
       - name: Select Xcode version
         run: sudo xcode-select -s '/Applications/${{ env.XCODE_VERSION }}.app/Contents/Developer'
 
-      - name: Install iOS 18.2 Simulator Runtime
+      - name: Install iOS SDK Platform
         run: |
-          xcodebuild -downloadPlatform iOS || true
+          # Check if iOS SDK is available
+          echo "🔍 Checking iOS SDK availability..."
+          xcodebuild -showsdks
+          
+          # Download iOS platform if needed (this includes device SDK, not just simulator)
+          echo "📥 Downloading iOS platform..."
+          xcodebuild -downloadPlatform iOS -quiet || true
+          
+          # Wait for download to complete
+          sleep 10
+          
+          # Show available destinations
+          echo "📋 Available destinations:"
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -showdestinations 2>/dev/null | head -20 || true
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
