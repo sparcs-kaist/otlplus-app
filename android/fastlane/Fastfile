@@ -1,4 +1,5 @@
-update_fastlane
+# Removed update_fastlane to avoid Bundler gem version conflicts in CI
+# update_fastlane
 
 default_platform(:android)
 
