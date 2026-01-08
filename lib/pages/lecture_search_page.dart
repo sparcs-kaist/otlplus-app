@@ -13,7 +13,7 @@ import 'package:provider/provider.dart';
 class LectureSearchPage extends StatefulWidget {
   final bool openKeyboard;
   const LectureSearchPage({Key? key, this.openKeyboard = true})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<LectureSearchPage> createState() => _LectureSearchPageState();
@@ -26,12 +26,13 @@ class _LectureSearchPageState extends State<LectureSearchPage> {
   @override
   void initState() {
     super.initState();
-    _searchTextController.text =
-        context.read<LectureSearchModel>().lectureSearchText;
+    _searchTextController.text = context
+        .read<LectureSearchModel>()
+        .lectureSearchText;
     _searchTextController.addListener(() {
-      context
-          .read<LectureSearchModel>()
-          .setLectureSearchText(_searchTextController.text);
+      context.read<LectureSearchModel>().setLectureSearchText(
+        _searchTextController.text,
+      );
     });
     _focusNode = FocusNode();
   }
@@ -67,8 +68,9 @@ class _LectureSearchPageState extends State<LectureSearchPage> {
                   children: [
                     Flexible(
                       child: SearchFilterPanel(
-                        filter:
-                            context.watch<LectureSearchModel>().lectureFilter,
+                        filter: context
+                            .watch<LectureSearchModel>()
+                            .lectureFilter,
                         setFilter: context
                             .read<LectureSearchModel>()
                             .setLectureFilterSelected,
@@ -101,9 +103,7 @@ class _LectureSearchPageState extends State<LectureSearchPage> {
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: 12,
-                  ),
+                  SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
                       style: ButtonStyle(

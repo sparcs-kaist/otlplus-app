@@ -32,11 +32,15 @@ class _SearchTextfieldState extends State<SearchTextfield> {
           padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
           child: Row(
             children: [
-              SvgPicture.asset('assets/icons/search.svg',
-                  height: 24.0,
-                  width: 24.0,
-                  colorFilter:
-                      ColorFilter.mode(OTLColor.pinksMain, BlendMode.srcIn)),
+              SvgPicture.asset(
+                'assets/icons/search.svg',
+                height: 24.0,
+                width: 24.0,
+                colorFilter: ColorFilter.mode(
+                  OTLColor.pinksMain,
+                  BlendMode.srcIn,
+                ),
+              ),
               const SizedBox(width: 12.0),
               Expanded(
                 child: TextField(

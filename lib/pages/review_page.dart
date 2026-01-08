@@ -21,8 +21,9 @@ class ReviewPage extends StatefulWidget {
 class _ReviewPageState extends State<ReviewPage> {
   @override
   Widget build(BuildContext context) {
-    final _selectedMode =
-        context.select<HallOfFameModel, int>((m) => m.selectedMode);
+    final _selectedMode = context.select<HallOfFameModel, int>(
+      (m) => m.selectedMode,
+    );
 
     return OTLLayout(
       leading: ReviewModeControl(
@@ -68,7 +69,7 @@ class _ReviewPageState extends State<ReviewPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                _selectedMode == 1 ? LatestReviewsPage() : HallOfFamePage()
+                _selectedMode == 1 ? LatestReviewsPage() : HallOfFamePage(),
               ],
             ),
           ),
@@ -97,39 +98,37 @@ class LatestReviewsPage extends StatelessWidget {
             controller: _scrollController,
             slivers: [
               SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return ReviewBlock(
-                      review: latestReviews[index],
-                      onTap: () async {
-                        context
-                            .read<CourseDetailModel>()
-                            .loadCourse(latestReviews[index].course.id);
-                        OTLNavigator.push(context, CourseDetailPage());
-                      },
-                    );
-                  },
-                  childCount: latestReviews.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return ReviewBlock(
+                    review: latestReviews[index],
+                    onTap: () async {
+                      context.read<CourseDetailModel>().loadCourse(
+                        latestReviews[index].course.id,
+                      );
+                      OTLNavigator.push(context, CourseDetailPage());
+                    },
+                  );
+                }, childCount: latestReviews.length),
               ),
               if (latestReviewPage * 10 == latestReviews.length) ...[
                 SliverList(
-                    delegate: SliverChildListDelegate([
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
-                    child: const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: OTLColor.grayE,
-                          strokeWidth: 2,
+                  delegate: SliverChildListDelegate([
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: OTLColor.grayE,
+                            strokeWidth: 2,
+                          ),
                         ),
                       ),
                     ),
-                  )
-                ]))
-              ]
+                  ]),
+                ),
+              ],
             ],
           ),
         ),
@@ -157,39 +156,37 @@ class HallOfFamePage extends StatelessWidget {
             controller: _scrollController,
             slivers: [
               SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return ReviewBlock(
-                      review: hallOfFames[index],
-                      onTap: () async {
-                        context
-                            .read<CourseDetailModel>()
-                            .loadCourse(hallOfFames[index].course.id);
-                        OTLNavigator.push(context, CourseDetailPage());
-                      },
-                    );
-                  },
-                  childCount: hallOfFames.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return ReviewBlock(
+                    review: hallOfFames[index],
+                    onTap: () async {
+                      context.read<CourseDetailModel>().loadCourse(
+                        hallOfFames[index].course.id,
+                      );
+                      OTLNavigator.push(context, CourseDetailPage());
+                    },
+                  );
+                }, childCount: hallOfFames.length),
               ),
               if (hallOfFamesPage * 10 == hallOfFames.length) ...[
                 SliverList(
-                    delegate: SliverChildListDelegate([
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
-                    child: const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: OTLColor.grayE,
-                          strokeWidth: 2,
+                  delegate: SliverChildListDelegate([
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: OTLColor.grayE,
+                            strokeWidth: 2,
+                          ),
                         ),
                       ),
                     ),
-                  )
-                ]))
-              ]
+                  ]),
+                ),
+              ],
             ],
           ),
         ),

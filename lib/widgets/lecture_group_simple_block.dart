@@ -15,8 +15,11 @@ class LectureGroupSimpleBlock extends StatelessWidget {
   final int semester;
   final String? filter;
 
-  LectureGroupSimpleBlock(
-      {required this.lectures, required this.semester, this.filter});
+  LectureGroupSimpleBlock({
+    required this.lectures,
+    required this.semester,
+    this.filter,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,64 +35,72 @@ class LectureGroupSimpleBlock extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: ListTile.divideTiles(
               color: OTLColor.gray0,
-              tiles: lectures.map((lecture) => Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.vertical(
-                        top: (lectures.first == lecture)
-                            ? const Radius.circular(4.0)
-                            : Radius.zero,
-                        bottom: (lectures.last == lecture)
-                            ? const Radius.circular(4.0)
-                            : Radius.zero,
-                      ),
-                      color: (lecture.professors.any((professor) =>
-                              professor.professorId.toString() == filter))
-                          ? OTLColor.pinksSub
-                          : OTLColor.grayE,
+              tiles: lectures.map(
+                (lecture) => Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      top: (lectures.first == lecture)
+                          ? const Radius.circular(4.0)
+                          : Radius.zero,
+                      bottom: (lectures.last == lecture)
+                          ? const Radius.circular(4.0)
+                          : Radius.zero,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.vertical(
-                        top: (lectures.first == lecture)
-                            ? const Radius.circular(4.0)
-                            : Radius.zero,
-                        bottom: (lectures.last == lecture)
-                            ? const Radius.circular(4.0)
-                            : Radius.zero,
-                      ),
-                      child: BackgroundButton(
-                        onTap: () {
-                          context
-                              .read<LectureDetailModel>()
-                              .loadLecture(lecture.id, false);
-                          OTLNavigator.push(context,
-                              LectureDetailPage(fromCourseDetailPage: true));
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8.0,
-                            vertical: 4.0,
-                          ),
-                          child: Text.rich(
-                            TextSpan(
-                              style: bodyRegular,
-                              children: [
-                                TextSpan(
-                                  text: lecture.classTitle,
-                                  style: bodyBold,
-                                ),
-                                TextSpan(text: ' '),
-                                TextSpan(
-                                  text: isEn
-                                      ? lecture.professorsStrShortEn
-                                      : lecture.professorsStrShort,
-                                )
-                              ],
-                            ),
+                    color:
+                        (lecture.professors.any(
+                          (professor) =>
+                              professor.professorId.toString() == filter,
+                        ))
+                        ? OTLColor.pinksSub
+                        : OTLColor.grayE,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.vertical(
+                      top: (lectures.first == lecture)
+                          ? const Radius.circular(4.0)
+                          : Radius.zero,
+                      bottom: (lectures.last == lecture)
+                          ? const Radius.circular(4.0)
+                          : Radius.zero,
+                    ),
+                    child: BackgroundButton(
+                      onTap: () {
+                        context.read<LectureDetailModel>().loadLecture(
+                          lecture.id,
+                          false,
+                        );
+                        OTLNavigator.push(
+                          context,
+                          LectureDetailPage(fromCourseDetailPage: true),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0,
+                          vertical: 4.0,
+                        ),
+                        child: Text.rich(
+                          TextSpan(
+                            style: bodyRegular,
+                            children: [
+                              TextSpan(
+                                text: lecture.classTitle,
+                                style: bodyBold,
+                              ),
+                              TextSpan(text: ' '),
+                              TextSpan(
+                                text: isEn
+                                    ? lecture.professorsStrShortEn
+                                    : lecture.professorsStrShort,
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                  )),
+                  ),
+                ),
+              ),
             ).toList(),
           ),
         ),

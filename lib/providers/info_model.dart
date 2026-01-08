@@ -36,27 +36,29 @@ class InfoModel extends ChangeNotifier {
   InfoModel({bool forTest = false}) {
     if (forTest) {
       _user = User(
-          id: 0,
-          email: "email",
-          studentId: "studentId",
-          firstName: "firstName",
-          lastName: "lastName",
-          majors: [],
-          departments: [],
-          myTimetableLectures: [],
-          reviewWritableLectures: [],
-          reviews: []);
+        id: 0,
+        email: "email",
+        studentId: "studentId",
+        firstName: "firstName",
+        lastName: "lastName",
+        majors: [],
+        departments: [],
+        myTimetableLectures: [],
+        reviewWritableLectures: [],
+        reviews: [],
+      );
       _semesters = [
         Semester(
-            year: 2000,
-            semester: 1,
-            beginning: DateTime(2000),
-            end: DateTime(2001))
+          year: 2000,
+          semester: 1,
+          beginning: DateTime(2000),
+          end: DateTime(2001),
+        ),
       ];
       _currentSchedule = {
         "semester": _semesters.first,
         "name": 'home.schedule.beginning',
-        "time": DateTime.now()
+        "time": DateTime.now(),
       };
     }
   }
@@ -78,19 +80,13 @@ class InfoModel extends ChangeNotifier {
           ChannelTalk.updateUser(
             name: "${user.firstName} ${user.lastName}",
             email: user.email,
-            customAttributes: {
-              "id": user.id,
-              "studentId": user.studentId,
-            },
+            customAttributes: {"id": user.id, "studentId": user.studentId},
           );
         } else {
           ChannelTalk.updateUser(
             name: "",
             email: "",
-            customAttributes: {
-              "id": 0,
-              "studentId": "",
-            },
+            customAttributes: {"id": 0, "studentId": ""},
           );
         }
       }
@@ -128,22 +124,26 @@ class InfoModel extends ChangeNotifier {
   Map<String, dynamic>? getCurrentSchedule() {
     final now = DateTime.now();
     final schedules = _semesters
-        .map((semester) => SCHEDULE_NAME.map((name) {
-              final time = semester.toJson()[name];
-              if (time == null) return null;
-              return <String, dynamic>{
-                "semester": semester,
-                "name": 'home.schedule.$name',
-                "time": time,
-              };
-            }))
+        .map(
+          (semester) => SCHEDULE_NAME.map((name) {
+            final time = semester.toJson()[name];
+            if (time == null) return null;
+            return <String, dynamic>{
+              "semester": semester,
+              "name": 'home.schedule.$name',
+              "time": time,
+            };
+          }),
+        )
         .expand((e) => e)
         .where((e) => e != null)
         .toList();
     schedules.sort((a, b) => a!["time"].compareTo(b!["time"]));
 
-    return schedules.firstWhere((e) => e!["time"].isAfter(now),
-        orElse: () => null);
+    return schedules.firstWhere(
+      (e) => e!["time"].isAfter(now),
+      orElse: () => null,
+    );
   }
 
   Future<void> deleteAccount() async {

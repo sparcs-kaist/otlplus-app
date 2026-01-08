@@ -24,8 +24,10 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoadingPage = true;
   bool _isDisposed = false;
   bool _isWebViewInitialized = false;
-  final String _loginUrl =
-      Uri.https(BASE_AUTHORITY, 'session/login/').toString();
+  final String _loginUrl = Uri.https(
+    BASE_AUTHORITY,
+    'session/login/',
+  ).toString();
   final String _redirectScheme = "org.sparcs.otl";
   final String _redirectHost = "login";
 
@@ -36,20 +38,18 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _initializeWebView();
 
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) async {
-        if (!((await SharedPreferences.getInstance()).getBool('hasAccount') ??
-            true)) {
-          OTLNavigator.pushDialog(
-            context: context,
-            builder: (_) => OTLDialog(
-              type: OTLDialogType.accountDeleted,
-              onTapNeg: () => SystemNavigator.pop(),
-            ),
-          );
-        }
-      },
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!((await SharedPreferences.getInstance()).getBool('hasAccount') ??
+          true)) {
+        OTLNavigator.pushDialog(
+          context: context,
+          builder: (_) => OTLDialog(
+            type: OTLDialogType.accountDeleted,
+            onTapNeg: () => SystemNavigator.pop(),
+          ),
+        );
+      }
+    });
   }
 
   void _initializeWebView() async {
@@ -84,8 +84,10 @@ class _LoginPageState extends State<LoginPage> {
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text(
-                          'login.webviewError'.tr() + ' (${error.errorCode})')),
+                    content: Text(
+                      'login.webviewError'.tr() + ' (${error.errorCode})',
+                    ),
+                  ),
                 );
               }
             },
@@ -125,13 +127,17 @@ class _LoginPageState extends State<LoginPage> {
     final refreshToken = uri.queryParameters['refreshToken'];
 
     if (accessToken != null && refreshToken != null) {
-      final storageService =
-          Provider.of<StorageService>(context, listen: false);
+      final storageService = Provider.of<StorageService>(
+        context,
+        listen: false,
+      );
       final authModel = Provider.of<AuthModel>(context, listen: false);
 
       try {
         await storageService.saveTokens(
-            accessToken: accessToken, refreshToken: refreshToken);
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
         if (!_isDisposed && mounted) {
           authModel.setLoggedIn(true);
         }
@@ -139,16 +145,16 @@ class _LoginPageState extends State<LoginPage> {
         // Keep error print for actual errors
         print("Error saving tokens: $e");
         if (!_isDisposed && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('login.tokenSaveError'.tr())),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('login.tokenSaveError'.tr())));
         }
       }
     } else {
       if (!_isDisposed && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('login.tokenMissingError'.tr())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('login.tokenMissingError'.tr())));
       }
     }
   }
@@ -165,10 +171,7 @@ class _LoginPageState extends State<LoginPage> {
       child: Stack(
         children: [
           if (_isWebViewInitialized && !_isDisposed)
-            WebViewWidget(
-              key: _webViewKey,
-              controller: _controller,
-            ),
+            WebViewWidget(key: _webViewKey, controller: _controller),
           if (_isLoadingPage && !_isDisposed)
             const Center(
               child: CircularProgressIndicator(color: OTLColor.pinksMain),

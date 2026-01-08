@@ -10,8 +10,9 @@ void main() {
     });
 
     test('fromJson', () {
-      final classtimeFromJson =
-          Classtime.fromJson(jsonDecode(SampleClasstime.json));
+      final classtimeFromJson = Classtime.fromJson(
+        jsonDecode(SampleClasstime.json),
+      );
       expect(classtimeFromJson == SampleClasstime.shared, true);
     });
 

@@ -9,9 +9,7 @@ import 'package:otlplus/widgets/dropdown.dart';
 import 'package:provider/provider.dart';
 
 class HallOfFameControl extends StatefulWidget {
-  HallOfFameControl({
-    Key? key,
-  }) : super(key: key);
+  HallOfFameControl({Key? key}) : super(key: key);
 
   @override
   State<HallOfFameControl> createState() => _HallOfFameControlState();
@@ -27,11 +25,14 @@ class _HallOfFameControlState extends State<HallOfFameControl> {
     _targetSemesters = context
         .watch<InfoModel>()
         .semesters
-        .where((s) =>
-            s.year >= 2013 &&
-            (s.gradePosting == null ||
-                DateTime.now()
-                    .isAfter(s.gradePosting!.add(Duration(days: 30)))))
+        .where(
+          (s) =>
+              s.year >= 2013 &&
+              (s.gradePosting == null ||
+                  DateTime.now().isAfter(
+                    s.gradePosting!.add(Duration(days: 30)),
+                  )),
+        )
         .toList();
     _currentSemester = context.read<HallOfFameModel>().semeseter;
 
@@ -49,9 +50,7 @@ class _HallOfFameControlState extends State<HallOfFameControl> {
               _currentSemester == null
                   ? "common.all".tr()
                   : "${_currentSemester?.year} ${_currentSemester?.semester == 1 ? 'semester.spring'.tr() : 'semester.fall'.tr()}",
-              style: bodyBold.copyWith(
-                color: OTLColor.pinksMain,
-              ),
+              style: bodyBold.copyWith(color: OTLColor.pinksMain),
             ),
             const SizedBox(width: 2.0),
             Icon(

@@ -48,10 +48,9 @@ class _LectureSearchState extends State<LectureSearch> {
                       borderRadius: BorderRadius.all(Radius.circular(8.0)),
                       child: BackgroundButton(
                         onTap: () => OTLNavigator.push(
-                            context,
-                            LectureSearchPage(
-                              openKeyboard: true,
-                            )),
+                          context,
+                          LectureSearchPage(openKeyboard: true),
+                        ),
                         color: OTLColor.pinksLight,
                         child: Padding(
                           padding: EdgeInsets.all(8.0),
@@ -89,14 +88,12 @@ class _LectureSearchState extends State<LectureSearch> {
                   icon: Icons.close_outlined,
                   iconSize: 24,
                   onTap: widget.onClosed,
-                )
+                ),
               ],
             ),
             Expanded(
               child: searchModel.isSearching
-                  ? Center(
-                      child: const CircularProgressIndicator(),
-                    )
+                  ? Center(child: const CircularProgressIndicator())
                   : Scrollbar(
                       controller: _scrollController,
                       child: _buildListView(
@@ -116,18 +113,17 @@ class _LectureSearchState extends State<LectureSearch> {
     ScrollController scrollController,
   ) {
     return ListView.separated(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-        controller: scrollController,
-        itemCount: lectures.length,
-        itemBuilder: (context, index) => LectureGroupBlock(
-              lectures: lectures[index],
-              onLongPress: (lecture) {
-                context
-                    .read<LectureDetailModel>()
-                    .loadLecture(lecture.id, true);
-                OTLNavigator.push(context, LectureDetailPage());
-              },
-            ),
-        separatorBuilder: (context, index) => SizedBox(height: 8));
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+      controller: scrollController,
+      itemCount: lectures.length,
+      itemBuilder: (context, index) => LectureGroupBlock(
+        lectures: lectures[index],
+        onLongPress: (lecture) {
+          context.read<LectureDetailModel>().loadLecture(lecture.id, true);
+          OTLNavigator.push(context, LectureDetailPage());
+        },
+      ),
+      separatorBuilder: (context, index) => SizedBox(height: 8),
+    );
   }
 }

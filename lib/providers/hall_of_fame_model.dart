@@ -66,21 +66,25 @@ class HallOfFameModel extends ChangeNotifier {
     try {
       Response response;
       if (_semester == null) {
-        response =
-            await DioProvider().dio.get(API_REVIEW_URL, queryParameters: {
-          "order": "-like",
-          "offset": _page * 10,
-          "limit": 10,
-        });
+        response = await DioProvider().dio.get(
+          API_REVIEW_URL,
+          queryParameters: {
+            "order": "-like",
+            "offset": _page * 10,
+            "limit": 10,
+          },
+        );
       } else {
-        response =
-            await DioProvider().dio.get(API_REVIEW_URL, queryParameters: {
-          "lecture_year": _semester?.year,
-          "lecture_semester": _semester?.semester,
-          "order": "-like",
-          "offset": _page * 10,
-          "limit": 10,
-        });
+        response = await DioProvider().dio.get(
+          API_REVIEW_URL,
+          queryParameters: {
+            "lecture_year": _semester?.year,
+            "lecture_semester": _semester?.semester,
+            "order": "-like",
+            "offset": _page * 10,
+            "limit": 10,
+          },
+        );
       }
       final rawReviews = response.data as List;
       _hallOfFame.addAll(rawReviews.map((review) => Review.fromJson(review)));

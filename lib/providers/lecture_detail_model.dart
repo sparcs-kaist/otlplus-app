@@ -25,9 +25,9 @@ class LectureDetailModel extends ChangeNotifier {
     _hasData = false;
     notifyListeners();
 
-    final response = await DioProvider()
-        .dio
-        .get(API_LECTURE_URL + "/" + lectureId.toString());
+    final response = await DioProvider().dio.get(
+      API_LECTURE_URL + "/" + lectureId.toString(),
+    );
 
     _lecture = Lecture.fromJson(response.data);
     _course = await getLectureCourse();
@@ -39,16 +39,20 @@ class LectureDetailModel extends ChangeNotifier {
   }
 
   Future<List<Review>> getLectureReviews() async {
-    final response = await DioProvider().dio.get(API_LECTURE_RELATED_REVIEWS_URL
-        .replaceFirst("{id}", _lecture.id.toString()));
+    final response = await DioProvider().dio.get(
+      API_LECTURE_RELATED_REVIEWS_URL.replaceFirst(
+        "{id}",
+        _lecture.id.toString(),
+      ),
+    );
     final rawReviews = response.data as List;
     return rawReviews.map((review) => Review.fromJson(review)).toList();
   }
 
   Future<Course> getLectureCourse() async {
-    final response = await DioProvider()
-        .dio
-        .get(API_COURSE_URL + "/" + _lecture.course.toString());
+    final response = await DioProvider().dio.get(
+      API_COURSE_URL + "/" + _lecture.course.toString(),
+    );
     return Course.fromJson(response.data);
   }
 

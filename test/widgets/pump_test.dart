@@ -34,13 +34,13 @@ void main() {
   });
 
   testWidgets('pump Dropdown', (WidgetTester tester) async {
-    await tester.pumpWidget(Dropdown(
-      customButton: Text('Dropdown'),
-      items: [
-        ItemData(value: 1, text: 'Item 1'),
-      ],
-      onChanged: (_) {},
-    ).scaffold);
+    await tester.pumpWidget(
+      Dropdown(
+        customButton: Text('Dropdown'),
+        items: [ItemData(value: 1, text: 'Item 1')],
+        onChanged: (_) {},
+      ).scaffold,
+    );
   });
 
   testWidgets('pump ExpandableText', (WidgetTester tester) async {
@@ -48,70 +48,87 @@ void main() {
   });
 
   testWidgets('pump LectureGroupBlockRow', (WidgetTester tester) async {
-    await tester.pumpWidget(LectureGroupBlockRow(lecture: SampleLecture.shared)
-        .materialAndNotifier(TimetableModel(forTest: true)));
+    await tester.pumpWidget(
+      LectureGroupBlockRow(
+        lecture: SampleLecture.shared,
+      ).materialAndNotifier(TimetableModel(forTest: true)),
+    );
   });
 
   testWidgets('pump LectureGroupBlock', (WidgetTester tester) async {
-    await tester.pumpWidget(LectureGroupBlock(
+    await tester.pumpWidget(
+      LectureGroupBlock(
         lectures: [SampleLecture.shared],
         onLongPress: (_) {
           return;
-        }).materialAndNotifier(TimetableModel(forTest: true)));
+        },
+      ).materialAndNotifier(TimetableModel(forTest: true)),
+    );
   });
 
   testWidgets('pump LectureGroupSimpleBlock', (WidgetTester tester) async {
     await tester.pumpWidget(
-        LectureGroupSimpleBlock(lectures: [], semester: 1).material);
+      LectureGroupSimpleBlock(lectures: [], semester: 1).material,
+    );
   });
 
   testWidgets('pump LectureSearch', (WidgetTester tester) async {
-    await tester
-        .pumpWidget(LectureSearch().scaffoldAndNotifier(LectureSearchModel()));
+    await tester.pumpWidget(
+      LectureSearch().scaffoldAndNotifier(LectureSearchModel()),
+    );
   });
 
   testWidgets('pump LectureSimpleBlock', (WidgetTester tester) async {
-    await tester
-        .pumpWidget(LectureSimpleBlock(lecture: SampleLecture.shared).material);
+    await tester.pumpWidget(
+      LectureSimpleBlock(lecture: SampleLecture.shared).material,
+    );
   });
 
   testWidgets('pump ReviewWriteBlock', (WidgetTester tester) async {
-    await tester.pumpWidget(ReviewWriteBlock(
-      lecture: SampleLecture.shared,
-    ).scaffold);
+    await tester.pumpWidget(
+      ReviewWriteBlock(lecture: SampleLecture.shared).scaffold,
+    );
   });
 
   testWidgets('pump SemesterPicker', (WidgetTester tester) async {
-    await tester.pumpWidget(SemesterPicker(onSemesterChanged: () => null)
-        .scaffoldAndNotifier(TimetableModel(forTest: true)));
+    await tester.pumpWidget(
+      SemesterPicker(
+        onSemesterChanged: () => null,
+      ).scaffoldAndNotifier(TimetableModel(forTest: true)),
+    );
   });
 
   testWidgets('pump TimetableBlock', (WidgetTester tester) async {
-    await tester
-        .pumpWidget(TimetableBlock(lecture: SampleLecture.shared).scaffold);
+    await tester.pumpWidget(
+      TimetableBlock(lecture: SampleLecture.shared).scaffold,
+    );
   });
 
   testWidgets('pump TimetableSummary', (WidgetTester tester) async {
     tester.pumpWidget(
-        TimetableSummary().scaffoldAndNotifier(TimetableModel(forTest: true)));
+      TimetableSummary().scaffoldAndNotifier(TimetableModel(forTest: true)),
+    );
   });
 
   testWidgets('pump TimetableTabs', (WidgetTester tester) async {
-    await tester.pumpWidget(TimetableTabs(
-      length: 1,
-      onTap: (_) {},
-      onCopyTap: () {},
-      onDeleteTap: (_) {},
-      onExportTap: (_) {},
-    ).scaffold);
+    await tester.pumpWidget(
+      TimetableTabs(
+        length: 1,
+        onTap: (_) {},
+        onCopyTap: () {},
+        onDeleteTap: (_) {},
+        onExportTap: (_) {},
+      ).scaffold,
+    );
   });
 
   testWidgets('pump Timetable', (WidgetTester tester) async {
-    await tester.pumpWidget(Timetable(
-            lectures: [],
-            builder: (lecture, _, __) => TimetableBlock(lecture: lecture))
-        .inScrollView
-        .material);
+    await tester.pumpWidget(
+      Timetable(
+        lectures: [],
+        builder: (lecture, _, __) => TimetableBlock(lecture: lecture),
+      ).inScrollView.material,
+    );
   });
 
   testWidgets('pump TodayTimetable', (WidgetTester tester) async {

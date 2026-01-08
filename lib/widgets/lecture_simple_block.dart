@@ -10,8 +10,11 @@ class LectureSimpleBlock extends StatelessWidget {
   final bool hasReview;
   final VoidCallback? onTap;
 
-  LectureSimpleBlock(
-      {required this.lecture, this.hasReview = false, this.onTap});
+  LectureSimpleBlock({
+    required this.lecture,
+    this.hasReview = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

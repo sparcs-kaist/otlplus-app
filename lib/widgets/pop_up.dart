@@ -90,11 +90,8 @@ Widget _build23fRecruiting() {
                 style: ButtonStyle(
                   backgroundColor: WidgetStatePropertyAll(Color(0xFFEBA12A)),
                 ),
-                onPressed: () => launchUrl(
-                  Uri.parse(
-                    'https://apply.sparcs.org/',
-                  ),
-                ),
+                onPressed: () =>
+                    launchUrl(Uri.parse('https://apply.sparcs.org/')),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -104,10 +101,7 @@ Widget _build23fRecruiting() {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(width: 8.0),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: OTLColor.gray0,
-                    )
+                    Icon(Icons.arrow_forward, color: OTLColor.gray0),
                   ],
                 ),
               ),
@@ -149,7 +143,7 @@ Widget _buildAppEvent(BuildContext context) {
                   children: [
                     Text('popup.join_the_event'.tr(), style: bodyBold),
                     const SizedBox(width: 8.0),
-                    Icon(Icons.arrow_forward)
+                    Icon(Icons.arrow_forward),
                   ],
                 ),
               ),
@@ -180,15 +174,10 @@ Widget _buildGraduatePlanner() {
         const SizedBox(height: 16.0),
         Image.asset('assets/popups/graduate-planner.png', height: 128.0),
         const SizedBox(height: 8.0),
-        Text(
-          '웹에서 지금 바로 만나보세요!',
-          style: bodyRegular,
-        ),
+        Text('웹에서 지금 바로 만나보세요!', style: bodyRegular),
         const SizedBox(height: 8.0),
         FilledButton(
-          onPressed: () => launchUrl(
-            Uri.https("otl.sparcs.org", "planner"),
-          ),
+          onPressed: () => launchUrl(Uri.https("otl.sparcs.org", "planner")),
           child: Text.rich(
             TextSpan(
               style: titleBold,

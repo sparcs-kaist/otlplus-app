@@ -26,15 +26,18 @@ class LatestReviewsModel extends ChangeNotifier {
     _isLoading = true;
 
     try {
-      final response =
-          await DioProvider().dio.get(API_REVIEW_URL, queryParameters: {
-        "order": "-written_datetime",
-        "offset": _page * 10,
-        "limit": 10,
-      });
+      final response = await DioProvider().dio.get(
+        API_REVIEW_URL,
+        queryParameters: {
+          "order": "-written_datetime",
+          "offset": _page * 10,
+          "limit": 10,
+        },
+      );
       final rawReviews = response.data as List;
-      _latestReviews
-          .addAll(rawReviews.map((review) => Review.fromJson(review)));
+      _latestReviews.addAll(
+        rawReviews.map((review) => Review.fromJson(review)),
+      );
       _page++;
       _isLoading = false;
       notifyListeners();

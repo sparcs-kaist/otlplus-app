@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 
 class TimetableModeControl extends StatefulWidget {
-  const TimetableModeControl(
-      {Key? key, this.dropdownIndex = 0, required this.onTap})
-      : super(key: key);
+  const TimetableModeControl({
+    Key? key,
+    this.dropdownIndex = 0,
+    required this.onTap,
+  }) : super(key: key);
   final int dropdownIndex;
   final Function(int) onTap;
 
@@ -17,7 +19,7 @@ class _TimetableModeControlState extends State<TimetableModeControl> {
   static const List<IconData> _iconList = [
     Icons.schedule,
     Icons.menu_book,
-    Icons.map_outlined
+    Icons.map_outlined,
   ];
 
   @override

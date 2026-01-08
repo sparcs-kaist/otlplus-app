@@ -55,10 +55,12 @@ class _MainPageState extends State<MainPage> {
 
   Future<void> initAndroidWidgetData(List<Cookie> cookies) async {
     final prefs = await SharedPreferences.getInstance();
-    final cookieHeader =
-        cookies.map((cookie) => "${cookie.name}=${cookie.value}").join("; ");
-    final csrfToken =
-        cookies.firstWhere((cookie) => cookie.name == "csrftoken").value;
+    final cookieHeader = cookies
+        .map((cookie) => "${cookie.name}=${cookie.value}")
+        .join("; ");
+    final csrfToken = cookies
+        .firstWhere((cookie) => cookie.name == "csrftoken")
+        .value;
     await prefs.setString("cookie_header", cookieHeader);
     await prefs.setString("csrf_token", csrfToken);
   }
@@ -69,7 +71,10 @@ class _MainPageState extends State<MainPage> {
         if (cookie.name == 'refreshToken') {
           if (Platform.isIOS) {
             WidgetKit.setItem(
-                'refreshToken', cookie.value, 'group.org.sparcs.otl');
+              'refreshToken',
+              cookie.value,
+              'group.org.sparcs.otl',
+            );
             WidgetKit.reloadAllTimelines();
           }
         }
@@ -77,7 +82,10 @@ class _MainPageState extends State<MainPage> {
         if (cookie.name == 'csrftoken') {
           if (Platform.isIOS) {
             WidgetKit.setItem(
-                'csrftoken', cookie.value, 'group.org.sparcs.otl');
+              'csrftoken',
+              cookie.value,
+              'group.org.sparcs.otl',
+            );
             WidgetKit.reloadAllTimelines();
           }
         }
@@ -85,7 +93,10 @@ class _MainPageState extends State<MainPage> {
         if (cookie.name == 'accessToken') {
           if (Platform.isIOS) {
             WidgetKit.setItem(
-                'accessToken', cookie.value, 'group.org.sparcs.otl');
+              'accessToken',
+              cookie.value,
+              'group.org.sparcs.otl',
+            );
             WidgetKit.reloadAllTimelines();
           }
         }
@@ -95,7 +106,10 @@ class _MainPageState extends State<MainPage> {
       if (infoModel.hasData) {
         if (Platform.isIOS) {
           WidgetKit.setItem(
-              'uid', infoModel.user.id.toString(), 'group.org.sparcs.otl');
+            'uid',
+            infoModel.user.id.toString(),
+            'group.org.sparcs.otl',
+          );
           WidgetKit.reloadAllTimelines();
         }
       }
@@ -126,16 +140,16 @@ class _MainPageState extends State<MainPage> {
       extendBodyBehindAppBar: true,
       leading: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Image.asset(
-          "assets/images/logo.png",
-          height: 27.0,
-        ),
+        child: Image.asset("assets/images/logo.png", height: 27.0),
       ),
       trailing: Row(
         children: [
           IconTextButton(
-            onTap: () => OTLNavigator.push(context, UserPage(),
-                transition: OTLNavigatorTransition.downUp),
+            onTap: () => OTLNavigator.push(
+              context,
+              UserPage(),
+              transition: OTLNavigatorTransition.downUp,
+            ),
             icon: 'assets/icons/person.svg',
             iconSize: 24,
             color: OTLColor.pinksMain,
@@ -143,8 +157,11 @@ class _MainPageState extends State<MainPage> {
             padding: EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
           ),
           IconTextButton(
-            onTap: () => OTLNavigator.push(context, SettingsPage(),
-                transition: OTLNavigatorTransition.downUp),
+            onTap: () => OTLNavigator.push(
+              context,
+              SettingsPage(),
+              transition: OTLNavigatorTransition.downUp,
+            ),
             icon: 'assets/icons/gear.svg',
             iconSize: 24,
             color: OTLColor.pinksMain,
@@ -156,10 +173,7 @@ class _MainPageState extends State<MainPage> {
       body: Stack(
         alignment: Alignment.topCenter,
         children: [
-          Image.asset(
-            "assets/images/bg.4556cdee.jpg",
-            fit: BoxFit.cover,
-          ),
+          Image.asset("assets/images/bg.4556cdee.jpg", fit: BoxFit.cover),
           Container(
             constraints: const BoxConstraints.expand(),
             child: Column(
@@ -170,137 +184,153 @@ class _MainPageState extends State<MainPage> {
                   width: MediaQuery.of(context).size.width,
                   child: Center(
                     child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: BackgroundButton(
-                            tapEffectColorRatio: 0.04,
-                            onTap: () {
-                              context
-                                  .read<CourseSearchModel>()
-                                  .resetCourseFilter();
-                              OTLNavigator.push(context, CourseSearchPage())
-                                  .then((e) {
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: BackgroundButton(
+                          tapEffectColorRatio: 0.04,
+                          onTap: () {
+                            context
+                                .read<CourseSearchModel>()
+                                .resetCourseFilter();
+                            OTLNavigator.push(context, CourseSearchPage()).then(
+                              (e) {
                                 if (e == true) {
                                   widget.changeIndex(2);
                                 }
-                              });
-                            },
-                            tapEffect: ButtonTapEffect.darken,
-                            color: OTLColor.grayF,
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 12.0, vertical: 6.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  SvgPicture.asset('assets/icons/search.svg',
-                                      height: 24.0,
-                                      width: 24.0,
-                                      colorFilter: ColorFilter.mode(
-                                          OTLColor.pinksMain, BlendMode.srcIn)),
-                                  const SizedBox(width: 12.0),
-                                  Expanded(
-                                    child: Text(
-                                      "common.search_hint".tr(),
-                                      style: bodyRegular.copyWith(
-                                          color: OTLColor.grayA, height: 1.24),
+                              },
+                            );
+                          },
+                          tapEffect: ButtonTapEffect.darken,
+                          color: OTLColor.grayF,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.0,
+                              vertical: 6.0,
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/icons/search.svg',
+                                  height: 24.0,
+                                  width: 24.0,
+                                  colorFilter: ColorFilter.mode(
+                                    OTLColor.pinksMain,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                                const SizedBox(width: 12.0),
+                                Expanded(
+                                  child: Text(
+                                    "common.search_hint".tr(),
+                                    style: bodyRegular.copyWith(
+                                      color: OTLColor.grayA,
+                                      height: 1.24,
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                        )),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 Flexible(
                   child: ClipRRect(
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(16.0)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16.0),
+                    ),
                     child: Container(
-                        color: OTLColor.grayF,
-                        constraints: const BoxConstraints.expand(),
-                        child: CustomScrollView(
-                          reverse: true,
-                          slivers: [
-                            SliverFillRemaining(
-                              hasScrollBody: false,
-                              child: ColoredBox(
-                                color: OTLColor.grayF,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0,
-                                    vertical: 16.0,
-                                  ),
-                                  child: Column(
-                                    children: <Widget>[
-                                      Column(
-                                        children: <Widget>[
-                                          _buildTimetable(
-                                              infoModel.user, semester, now),
-                                          const SizedBox(height: 24.0),
-                                          _buildDivider(),
-                                          const SizedBox(height: 24.0),
-                                          _buildSchedule(
-                                              now, infoModel.currentSchedule),
-                                          const SizedBox(height: 24.0),
-                                          _buildDivider(),
-                                        ],
-                                      ),
-                                      Spacer(),
-                                      Column(
-                                        children: <Widget>[
-                                          _buildLogo(),
-                                          const SizedBox(height: 4.0),
-                                          _buildCopyRight(),
-                                          _buildTextButtons(context),
-                                        ],
-                                      )
-                                    ],
-                                  ),
+                      color: OTLColor.grayF,
+                      constraints: const BoxConstraints.expand(),
+                      child: CustomScrollView(
+                        reverse: true,
+                        slivers: [
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: ColoredBox(
+                              color: OTLColor.grayF,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                  vertical: 16.0,
+                                ),
+                                child: Column(
+                                  children: <Widget>[
+                                    Column(
+                                      children: <Widget>[
+                                        _buildTimetable(
+                                          infoModel.user,
+                                          semester,
+                                          now,
+                                        ),
+                                        const SizedBox(height: 24.0),
+                                        _buildDivider(),
+                                        const SizedBox(height: 24.0),
+                                        _buildSchedule(
+                                          now,
+                                          infoModel.currentSchedule,
+                                        ),
+                                        const SizedBox(height: 24.0),
+                                        _buildDivider(),
+                                      ],
+                                    ),
+                                    Spacer(),
+                                    Column(
+                                      children: <Widget>[
+                                        _buildLogo(),
+                                        const SizedBox(height: 4.0),
+                                        _buildCopyRight(),
+                                        _buildTextButtons(context),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
-                        )
+                          ),
+                        ],
+                      ),
 
-                        // SingleChildScrollView(
-                        //   child: ColoredBox(
-                        //     color: Colors.white,
-                        //     child: Padding(
-                        //       padding: const EdgeInsets.symmetric(
-                        //         horizontal: 16.0,
-                        //         vertical: 16.0,
-                        //       ),
-                        //       child: Column(
-                        //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        //         children: [
-                        //           Column(
-                        //             children: <Widget>[
-                        //               _buildTimetable(infoModel.user, semester, now),
-                        //               const SizedBox(height: 24.0),
-                        //               _buildDivider(),
-                        //               const SizedBox(height: 24.0),
-                        //               _buildSchedule(now, infoModel.currentSchedule),
-                        //               const SizedBox(height: 24.0),
-                        //               _buildDivider(),
-                        //             ],
-                        //           ),
-                        //           Column(
-                        //             children: <Widget>[
-                        //               _buildLogo(),
-                        //               const SizedBox(height: 4.0),
-                        //               _buildCopyRight(),
-                        //               _buildTextButtons(context),
-                        //             ],
-                        //           )
-                        //         ],
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
-                        ),
+                      // SingleChildScrollView(
+                      //   child: ColoredBox(
+                      //     color: Colors.white,
+                      //     child: Padding(
+                      //       padding: const EdgeInsets.symmetric(
+                      //         horizontal: 16.0,
+                      //         vertical: 16.0,
+                      //       ),
+                      //       child: Column(
+                      //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      //         children: [
+                      //           Column(
+                      //             children: <Widget>[
+                      //               _buildTimetable(infoModel.user, semester, now),
+                      //               const SizedBox(height: 24.0),
+                      //               _buildDivider(),
+                      //               const SizedBox(height: 24.0),
+                      //               _buildSchedule(now, infoModel.currentSchedule),
+                      //               const SizedBox(height: 24.0),
+                      //               _buildDivider(),
+                      //             ],
+                      //           ),
+                      //           Column(
+                      //             children: <Widget>[
+                      //               _buildLogo(),
+                      //               const SizedBox(height: 4.0),
+                      //               _buildCopyRight(),
+                      //               _buildTextButtons(context),
+                      //             ],
+                      //           )
+                      //         ],
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
+                    ),
                   ),
                 ),
               ],
@@ -321,8 +351,11 @@ class _MainPageState extends State<MainPage> {
       children: [
         IconTextButton(
           onTap: () {
-            OTLNavigator.push(context, PrivacyPage(),
-                transition: OTLNavigatorTransition.downUp);
+            OTLNavigator.push(
+              context,
+              PrivacyPage(),
+              transition: OTLNavigatorTransition.downUp,
+            );
           },
           text: 'title.privacy'.tr(),
           textStyle: labelRegular.copyWith(color: OTLColor.gray75),
@@ -331,8 +364,11 @@ class _MainPageState extends State<MainPage> {
         ),
         IconTextButton(
           onTap: () {
-            OTLNavigator.push(context, PeoplePage(),
-                transition: OTLNavigatorTransition.downUp);
+            OTLNavigator.push(
+              context,
+              PeoplePage(),
+              transition: OTLNavigatorTransition.downUp,
+            );
           },
           text: 'title.credit'.tr(),
           textStyle: labelRegular.copyWith(color: OTLColor.gray75),
@@ -344,10 +380,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildLogo() {
-    return Image.asset(
-      "assets/sparcs.png",
-      height: 27,
-    );
+    return Image.asset("assets/sparcs.png", height: 27);
   }
 
   Widget _buildCopyRight() {
@@ -380,7 +413,9 @@ class _MainPageState extends State<MainPage> {
               ? "common.no_info".tr()
               : "home.schedule.remained_datetime".tr(
                   args: getRemainedTime(
-                      currentSchedule["time"].difference(now) as Duration)),
+                    currentSchedule["time"].difference(now) as Duration,
+                  ),
+                ),
           style: titleRegular,
           textAlign: TextAlign.center,
         ),
@@ -397,8 +432,9 @@ class _MainPageState extends State<MainPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    DateFormat("yyyy.MM.dd")
-                        .format(currentSchedule["time"].toLocal()),
+                    DateFormat(
+                      "yyyy.MM.dd",
+                    ).format(currentSchedule["time"].toLocal()),
                     style: bodyRegular,
                     textAlign: TextAlign.center,
                   ),
@@ -410,9 +446,11 @@ class _MainPageState extends State<MainPage> {
 
   Widget _buildTimetable(User user, Semester semester, DateTime now) {
     List<Lecture> myLecturesList = user.myTimetableLectures
-        .where((lecture) =>
-            lecture.year == semester.year &&
-            lecture.semester == semester.semester)
+        .where(
+          (lecture) =>
+              lecture.year == semester.year &&
+              lecture.semester == semester.semester,
+        )
         .toList();
     Timetable timetable = Timetable(id: 0, lectures: myLecturesList);
     return Container(

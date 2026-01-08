@@ -11,16 +11,17 @@ class NestedCourse {
   final String summary;
   final double reviewTotalWeight;
 
-  NestedCourse(
-      {required this.id,
-      required this.oldCode,
-      this.department,
-      required this.type,
-      required this.typeEn,
-      required this.title,
-      required this.titleEn,
-      required this.summary,
-      required this.reviewTotalWeight});
+  NestedCourse({
+    required this.id,
+    required this.oldCode,
+    this.department,
+    required this.type,
+    required this.typeEn,
+    required this.title,
+    required this.titleEn,
+    required this.summary,
+    required this.reviewTotalWeight,
+  });
 
   bool operator ==(Object other) =>
       identical(this, other) || (other is NestedCourse && other.id == id);
@@ -28,15 +29,15 @@ class NestedCourse {
   int get hashCode => id.hashCode;
 
   NestedCourse.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        oldCode = json['old_code'],
-        department = Department.fromJson(json['department']),
-        type = json['type'],
-        typeEn = json['type_en'],
-        title = json['title'],
-        titleEn = json['title_en'],
-        summary = json['summary'],
-        reviewTotalWeight = json['review_total_weight'];
+    : id = json['id'],
+      oldCode = json['old_code'],
+      department = Department.fromJson(json['department']),
+      type = json['type'],
+      typeEn = json['type_en'],
+      title = json['title'],
+      titleEn = json['title_en'],
+      summary = json['summary'],
+      reviewTotalWeight = json['review_total_weight'];
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();

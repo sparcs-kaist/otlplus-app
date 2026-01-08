@@ -42,11 +42,15 @@ class _DictionaryPageState extends State<DictionaryPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SvgPicture.asset('assets/icons/search.svg',
-                      height: 24.0,
-                      width: 24.0,
-                      colorFilter: ColorFilter.mode(
-                          OTLColor.pinksMain, BlendMode.srcIn)),
+                  SvgPicture.asset(
+                    'assets/icons/search.svg',
+                    height: 24.0,
+                    width: 24.0,
+                    colorFilter: ColorFilter.mode(
+                      OTLColor.pinksMain,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                   const SizedBox(width: 12.0),
                   Expanded(
                     child: context.watch<CourseSearchModel>().courseSearchquery,
@@ -88,9 +92,9 @@ class _DictionaryPageState extends State<DictionaryPage> {
                   itemBuilder: (context, index) => CourseBlock(
                     course: searchModel.courses![index],
                     onTap: () {
-                      context
-                          .read<CourseDetailModel>()
-                          .loadCourse(searchModel.courses![index].id);
+                      context.read<CourseDetailModel>().loadCourse(
+                        searchModel.courses![index].id,
+                      );
                       OTLNavigator.push(context, CourseDetailPage());
                     },
                   ),

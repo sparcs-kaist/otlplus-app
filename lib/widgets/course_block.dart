@@ -22,10 +22,7 @@ class CourseBlock extends StatelessWidget {
         color: OTLColor.grayE,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10.0,
-            vertical: 8.0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -75,12 +72,7 @@ class CourseBlock extends StatelessWidget {
                 children: <Widget>[
                   Text("dictionary.description".tr(), style: labelBold),
                   const SizedBox(width: 8.0),
-                  Expanded(
-                    child: Text(
-                      course.summary,
-                      style: labelRegular,
-                    ),
-                  ),
+                  Expanded(child: Text(course.summary, style: labelRegular)),
                 ],
               ),
             ],

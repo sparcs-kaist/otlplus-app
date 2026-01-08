@@ -4,10 +4,7 @@ class Timetable {
   final int id;
   late List<Lecture> lectures;
 
-  Timetable({
-    required this.id,
-    required this.lectures,
-  });
+  Timetable({required this.id, required this.lectures});
 
   bool operator ==(Object other) =>
       identical(this, other) || (other is Timetable && other.id == id);

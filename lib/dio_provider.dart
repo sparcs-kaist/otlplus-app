@@ -24,59 +24,66 @@ class DioProvider {
   }
 
   DioProvider._internal() {
-    _dio = Dio(BaseOptions(
-      baseUrl: Uri.https(BASE_AUTHORITY).toString() + "/",
-      connectTimeout: Duration(seconds: 10),
-      receiveTimeout: Duration(seconds: 10),
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: Uri.https(BASE_AUTHORITY).toString() + "/",
+        connectTimeout: Duration(seconds: 10),
+        receiveTimeout: Duration(seconds: 10),
+      ),
+    );
 
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final accessToken = await _storageService.getAccessToken();
-        final refreshToken = await _storageService.getRefreshToken();
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final accessToken = await _storageService.getAccessToken();
+          final refreshToken = await _storageService.getRefreshToken();
 
-        if (accessToken != null && refreshToken != null) {
-          options.headers['Authorization'] = 'Bearer $accessToken';
-          options.headers['X-Refresh-Token'] = refreshToken;
-        }
-        return handler.next(options);
-      },
-      // 기존 구현에서는 401 상태가 오면 바로 로그아웃을 호출하여
-      // 토큰이 만료된 경우에도 자동 로그인 상태가 해제되는 문제가 있었다.
-      onError: (DioException e, handler) async {
-        if (e.response?.statusCode == 401) {
-          if (!_isRefreshingToken) {
-            _isRefreshingToken = true;
-            final refreshed = await _refreshToken();
-            _isRefreshingToken = false;
-            if (refreshed) {
-              try {
-                final response = await _dio.fetch(e.requestOptions);
-                return handler.resolve(response);
-              } catch (err) {
-                // If retry fails, fall through to logout
+          if (accessToken != null && refreshToken != null) {
+            options.headers['Authorization'] = 'Bearer $accessToken';
+            options.headers['X-Refresh-Token'] = refreshToken;
+          }
+          return handler.next(options);
+        },
+        // 기존 구현에서는 401 상태가 오면 바로 로그아웃을 호출하여
+        // 토큰이 만료된 경우에도 자동 로그인 상태가 해제되는 문제가 있었다.
+        onError: (DioException e, handler) async {
+          if (e.response?.statusCode == 401) {
+            if (!_isRefreshingToken) {
+              _isRefreshingToken = true;
+              final refreshed = await _refreshToken();
+              _isRefreshingToken = false;
+              if (refreshed) {
+                try {
+                  final response = await _dio.fetch(e.requestOptions);
+                  return handler.resolve(response);
+                } catch (err) {
+                  // If retry fails, fall through to logout
+                }
               }
             }
-          }
 
-          if (_navigatorContext != null) {
-            try {
-              Provider.of<AuthModel>(_navigatorContext!, listen: false)
-                  .logout();
-            } catch (err) {
-              print("Error accessing AuthModel for logout: $err");
+            if (_navigatorContext != null) {
+              try {
+                Provider.of<AuthModel>(
+                  _navigatorContext!,
+                  listen: false,
+                ).logout();
+              } catch (err) {
+                print("Error accessing AuthModel for logout: $err");
+                await _storageService.deleteTokens();
+              }
+            } else {
+              print(
+                "Navigator context not set in DioProvider. Cannot trigger logout via AuthModel.",
+              );
               await _storageService.deleteTokens();
             }
-          } else {
-            print(
-                "Navigator context not set in DioProvider. Cannot trigger logout via AuthModel.");
-            await _storageService.deleteTokens();
+            return handler.next(e);
           }
           return handler.next(e);
-        }
-        return handler.next(e);
-      },
-    ));
+        },
+      ),
+    );
   }
 
   Future<bool> _refreshToken() async {
@@ -98,7 +105,9 @@ class DioProvider {
 
         if (newAccessToken != null && newRefreshToken != null) {
           await _storageService.saveTokens(
-              accessToken: newAccessToken, refreshToken: newRefreshToken);
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+          );
           return true;
         }
       }

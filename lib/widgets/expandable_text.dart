@@ -4,12 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 
 class ExpandableText extends StatefulWidget {
-  const ExpandableText(
-    this.text, {
-    Key? key,
-    this.maxLines = 5,
-    this.style,
-  }) : super(key: key);
+  const ExpandableText(this.text, {Key? key, this.maxLines = 5, this.style})
+    : super(key: key);
 
   final String text;
   final int maxLines;
@@ -26,22 +22,20 @@ class ExpandableTextState extends State<ExpandableText> {
   Widget build(BuildContext context) {
     TextSpan expandButton = TextSpan(
       children: <TextSpan>[
+        TextSpan(text: ".. ", style: widget.style),
         TextSpan(
-          text: ".. ",
-          style: widget.style,
+          text: "review.expand".tr(),
+          style: (widget.style ?? TextStyle()).copyWith(color: OTLColor.gray75),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              setState(() => _expanded = true);
+            },
         ),
-        TextSpan(
-            text: "review.expand".tr(),
-            style:
-                (widget.style ?? TextStyle()).copyWith(color: OTLColor.gray75),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                setState(() => _expanded = true);
-              })
       ],
     );
-    String shortenText =
-        widget.text.replaceAll('\r\n\r\n', '\r\n').replaceAll('\n\n', '\r\n');
+    String shortenText = widget.text
+        .replaceAll('\r\n\r\n', '\r\n')
+        .replaceAll('\n\n', '\r\n');
     Widget result = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         assert(constraints.hasBoundedWidth);
@@ -50,17 +44,15 @@ class ExpandableTextState extends State<ExpandableText> {
           textDirection: TextDirection.rtl,
           maxLines: widget.maxLines,
         );
-        textPainter.text = TextSpan(
-          text: shortenText,
-          style: widget.style,
-        );
+        textPainter.text = TextSpan(text: shortenText, style: widget.style);
         textPainter.layout(
-            minWidth: constraints.minWidth, maxWidth: constraints.maxWidth);
+          minWidth: constraints.minWidth,
+          maxWidth: constraints.maxWidth,
+        );
         final textSize = textPainter.size;
-        final pos = textPainter.getPositionForOffset(Offset(
-          textSize.width,
-          textSize.height,
-        ));
+        final pos = textPainter.getPositionForOffset(
+          Offset(textSize.width, textSize.height),
+        );
         int endIndex = textPainter.getOffsetBefore(pos.offset) ?? 1024;
         final textSpan;
         if (textPainter.didExceedMaxLines) {
@@ -72,10 +64,7 @@ class ExpandableTextState extends State<ExpandableText> {
             children: _expanded ? null : <TextSpan>[expandButton],
           );
         } else {
-          textSpan = TextSpan(
-            text: widget.text,
-            style: widget.style,
-          );
+          textSpan = TextSpan(text: widget.text, style: widget.style);
         }
         return RichText(
           softWrap: true,

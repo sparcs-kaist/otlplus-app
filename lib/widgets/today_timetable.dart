@@ -17,16 +17,19 @@ class TodayTimetable extends StatelessWidget {
   final EdgeInsetsGeometry dividerPadding;
   final int? daysCount;
 
-  TodayTimetable(
-      {required List<Lecture> lectures,
-      required this.builder,
-      required this.now,
-      this.fontSize = 10.0,
-      this.dividerPadding = const EdgeInsets.fromLTRB(5, 0, 6, 0),
-      this.daysCount}) {
-    lectures.forEach((lecture) => lecture.classtimes.forEach((classtime) {
-          if (classtime.day == now.weekday - 1) _lectures[classtime] = lecture;
-        }));
+  TodayTimetable({
+    required List<Lecture> lectures,
+    required this.builder,
+    required this.now,
+    this.fontSize = 10.0,
+    this.dividerPadding = const EdgeInsets.fromLTRB(5, 0, 6, 0),
+    this.daysCount,
+  }) {
+    lectures.forEach(
+      (lecture) => lecture.classtimes.forEach((classtime) {
+        if (classtime.day == now.weekday - 1) _lectures[classtime] = lecture;
+      }),
+    );
   }
 
   @override
@@ -36,12 +39,7 @@ class TodayTimetable extends StatelessWidget {
         Scrollable.ensureVisible(_timebarKey.currentContext!);
     });
 
-    return Column(
-      children: <Widget>[
-        _buildHeaders(),
-        _buildRow(),
-      ],
-    );
+    return Column(children: <Widget>[_buildHeaders(), _buildRow()]);
   }
 
   Widget _buildHeader(int i) {
@@ -51,10 +49,7 @@ class TodayTimetable extends StatelessWidget {
         child: Text(
           (((i / 100 - 1) % 12) + 1).toStringAsFixed(0),
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: fontSize,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
         ),
       );
     }
@@ -79,7 +74,9 @@ class TodayTimetable extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: List.generate(
-            ((2400 - 800) / 50 + 1).toInt(), (i) => _buildHeader(i * 50 + 800)),
+          ((2400 - 800) / 50 + 1).toInt(),
+          (i) => _buildHeader(i * 50 + 800),
+        ),
       ),
     );
   }
@@ -96,11 +93,11 @@ class TodayTimetable extends StatelessWidget {
       bottom: 0,
       width: right - left,
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: dividerPadding.vertical / 3,
+        padding: EdgeInsets.symmetric(vertical: dividerPadding.vertical / 3),
+        child: builder(
+          lecture,
+          (time is Classtime) ? lecture.classtimes.indexOf(time) : 0,
         ),
-        child: builder(lecture,
-            (time is Classtime) ? lecture.classtimes.indexOf(time) : 0),
       ),
     );
   }
@@ -116,7 +113,9 @@ class TodayTimetable extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 1.0),
               child: Container(
-                  color: OTLColor.gray0.withValues(alpha: .25), width: 1),
+                color: OTLColor.gray0.withValues(alpha: .25),
+                width: 1,
+              ),
             ),
           ),
         ),
@@ -127,11 +126,10 @@ class TodayTimetable extends StatelessWidget {
   Widget _buildCells() {
     return Row(
       children: List.generate(
-          ((2400 - 800) / 25 + 1).toInt(),
-          (i) => Padding(
-                padding: dividerPadding,
-                child: _buildCell(i * 25 + 800),
-              )),
+        ((2400 - 800) / 25 + 1).toInt(),
+        (i) =>
+            Padding(padding: dividerPadding, child: _buildCell(i * 25 + 800)),
+      ),
     );
   }
 
@@ -140,11 +138,13 @@ class TodayTimetable extends StatelessWidget {
       child: Stack(
         children: <Widget>[
           _buildCells(),
-          ..._lectures.entries
-              .map((e) => _buildLectureBlock(lecture: e.value, time: e.key)),
+          ..._lectures.entries.map(
+            (e) => _buildLectureBlock(lecture: e.value, time: e.key),
+          ),
           Positioned(
             top: 0,
-            left: (_dividerWidth * 4 + 2) * ((now.hour + now.minute / 60) - 8) +
+            left:
+                (_dividerWidth * 4 + 2) * ((now.hour + now.minute / 60) - 8) +
                 _dividerWidth * 0.5 -
                 1,
             bottom: 0,

@@ -25,15 +25,19 @@ class OTLNavigator {
   }
 
   static void _removeLastUntil(
-      bool Function(_TransitionHistory mode) predicate) {
+    bool Function(_TransitionHistory mode) predicate,
+  ) {
     while (!predicate(_history.last)) {
       _removeLastHistory();
     }
     _removeLastHistory();
   }
 
-  static Future<T?> push<T extends Object?>(BuildContext context, Widget page,
-      {OTLNavigatorTransition transition = OTLNavigatorTransition.rightLeft}) {
+  static Future<T?> push<T extends Object?>(
+    BuildContext context,
+    Widget page, {
+    OTLNavigatorTransition transition = OTLNavigatorTransition.rightLeft,
+  }) {
     Route<T> _route;
     switch (transition) {
       case OTLNavigatorTransition.rightLeft:
@@ -56,8 +60,10 @@ class OTLNavigator {
   }
 
   static Future<T?> pushRoot<T extends Object?>(
-      BuildContext context, Widget page,
-      {OTLNavigatorTransition transition = OTLNavigatorTransition.immediate}) {
+    BuildContext context,
+    Widget page, {
+    OTLNavigatorTransition transition = OTLNavigatorTransition.immediate,
+  }) {
     _rightleftTransitionHistory.clear();
     _downupTransitionHistory.clear();
     _history.clear();
@@ -73,12 +79,16 @@ class OTLNavigator {
         _route = buildImmediatePageRoute<T>(page);
         break;
     }
-    return Navigator.of(context)
-        .pushAndRemoveUntil(_route, (Route<dynamic> route) => false);
+    return Navigator.of(
+      context,
+    ).pushAndRemoveUntil(_route, (Route<dynamic> route) => false);
   }
 
-  static void pop<T extends Object?>(BuildContext context,
-      {OTLNavigatorTransition? until, T? result}) {
+  static void pop<T extends Object?>(
+    BuildContext context, {
+    OTLNavigatorTransition? until,
+    T? result,
+  }) {
     NavigatorState navigator = Navigator.of(context);
     assert(_history.isNotEmpty);
     if (until == null) {
@@ -86,16 +96,23 @@ class OTLNavigator {
       return navigator.pop(result);
     } else if (until == OTLNavigatorTransition.rightLeft) {
       assert(_rightleftTransitionHistory.isNotEmpty);
-      navigator.popUntil((Route<dynamic> route) =>
-          _rightleftTransitionHistory.last == route || route.isFirst);
+      navigator.popUntil(
+        (Route<dynamic> route) =>
+            _rightleftTransitionHistory.last == route || route.isFirst,
+      );
       _removeLastUntil((mode) => mode == _TransitionHistory.rightLeft);
       return navigator.pop(result);
     } else {
       assert(_downupTransitionHistory.isNotEmpty);
-      navigator.popUntil((Route<dynamic> route) =>
-          _downupTransitionHistory.last == route || route.isFirst);
-      _removeLastUntil((mode) => (mode == _TransitionHistory.downUp ||
-          mode == _TransitionHistory.immediate));
+      navigator.popUntil(
+        (Route<dynamic> route) =>
+            _downupTransitionHistory.last == route || route.isFirst,
+      );
+      _removeLastUntil(
+        (mode) =>
+            (mode == _TransitionHistory.downUp ||
+            mode == _TransitionHistory.immediate),
+      );
       return navigator.pop(result);
     }
   }
@@ -143,10 +160,7 @@ Route<T> buildRightLeftPageRoute<T extends Object?>(Widget page) {
       final tween = Tween(begin: begin, end: end).chain(curveTween);
       final offsetAnimation = animation.drive(tween);
 
-      return SlideTransition(
-        position: offsetAnimation,
-        child: child,
-      );
+      return SlideTransition(position: offsetAnimation, child: child);
     },
   );
 }

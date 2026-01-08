@@ -37,8 +37,10 @@ extension CourseExtension on Course {
     final professors = List<Professor>.from(this.professors)
       ..sort((a, b) => a.name.compareTo(b.name));
     return professors
-        .map((professor) =>
-            (professor.nameEn == '' ? professor.name : professor.nameEn))
+        .map(
+          (professor) =>
+              (professor.nameEn == '' ? professor.name : professor.nameEn),
+        )
         .join(", ");
   }
 }

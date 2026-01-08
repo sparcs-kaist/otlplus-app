@@ -48,8 +48,9 @@ class Dropdown<T> extends StatelessWidget {
       child: DropdownButton2<T>(
         customButton: customButton,
         dropdownStyleData: DropdownStyleData(
-          direction:
-              offsetFromLeft ? DropdownDirection.right : DropdownDirection.left,
+          direction: offsetFromLeft
+              ? DropdownDirection.right
+              : DropdownDirection.left,
           width: 200,
           maxHeight: 237,
           elevation: 0,
@@ -70,9 +71,7 @@ class Dropdown<T> extends StatelessWidget {
                 )
               : null,
         ),
-        menuItemStyleData: MenuItemStyleData(
-          padding: EdgeInsets.zero,
-        ),
+        menuItemStyleData: MenuItemStyleData(padding: EdgeInsets.zero),
         items: items.map((itemData) {
           final children = [
             Expanded(
@@ -83,11 +82,7 @@ class Dropdown<T> extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsets.only(right: isIconLeft ? 12 : 0),
-              child: Icon(
-                itemData.icon,
-                size: 16,
-                color: itemData.iconColor,
-              ),
+              child: Icon(itemData.icon, size: 16, color: itemData.iconColor),
             ),
           ];
           return DropdownItem<T>(
@@ -102,8 +97,9 @@ class Dropdown<T> extends StatelessWidget {
                     height: 42,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
-                      children:
-                          isIconLeft ? children.reversed.toList() : children,
+                      children: isIconLeft
+                          ? children.reversed.toList()
+                          : children,
                     ),
                   ),
                 ),

@@ -30,10 +30,13 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
   @override
   Widget build(BuildContext context) {
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
-    final alreadyAdded = context.select<TimetableModel, bool>((model) =>
-        model.currentTimetable.lectures.any((lec) =>
+    final alreadyAdded = context.select<TimetableModel, bool>(
+      (model) => model.currentTimetable.lectures.any(
+        (lec) =>
             lec.oldCode == widget.lecture.oldCode &&
-            widget.lecture.classTitle == lec.classTitle));
+            widget.lecture.classTitle == lec.classTitle,
+      ),
+    );
     bool selected =
         context.watch<TimetableModel>().tempLecture == widget.lecture;
     return Material(
@@ -50,9 +53,7 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
           },
           onLongPress: widget.onLongPress,
           child: Container(
-            decoration: BoxDecoration(
-              color: selected ? OTLColor.grayD : null,
-            ),
+            decoration: BoxDecoration(color: selected ? OTLColor.grayD : null),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -69,9 +70,7 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
                                 text: widget.lecture.classTitle,
                                 style: bodyBold,
                               ),
-                              WidgetSpan(
-                                child: const SizedBox(width: 8),
-                              ),
+                              WidgetSpan(child: const SizedBox(width: 8)),
                               WidgetSpan(
                                 child: Text(
                                   isEn
@@ -79,10 +78,10 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
                                       : widget.lecture.professorsStrShort,
                                   style: bodyRegular,
                                 ),
-                              )
+                              ),
                             ],
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -103,9 +102,7 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
                             onTap: widget.onLongPress,
                             color: OTLColor.gray0,
                           ),
-                          SizedBox(
-                            width: 6.0,
-                          ),
+                          SizedBox(width: 6.0),
                           IconTextButton(
                             onTap: () {
                               if (alreadyAdded) {
@@ -121,12 +118,12 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
                             color: alreadyAdded
                                 ? OTLColor.pinksMain
                                 : OTLColor.gray0,
-                          )
+                          ),
                         ],
                       ),
                     ),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -140,42 +137,43 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
     final lectureTitle = isKo ? lec.title : lec.titleEn;
 
     bool result = await context.read<TimetableModel>().addLecture(
-          lecture: lec,
-          noOverlap: () async {
-            bool result = false;
+      lecture: lec,
+      noOverlap: () async {
+        bool result = false;
 
-            await OTLNavigator.pushDialog(
-              context: context,
-              builder: (_) => OTLDialog(
-                type: OTLDialogType.addLecture,
-                namedArgs: {'lecture': lectureTitle},
-                onTapPos: () => result = true,
-              ),
-            );
-
-            return result;
-          },
-          onOverlap: (lectures) async {
-            bool result = false;
-
-            await OTLNavigator.pushDialog(
-              context: context,
-              builder: (_) => OTLDialog(
-                type: OTLDialogType.addOverlappingLecture,
-                namedArgs: {
-                  'lectures': lectures
-                      .map((lecture) =>
-                          "'${isKo ? lecture.title : lecture.titleEn}'")
-                      .join(', '),
-                  'lecture': lectureTitle
-                },
-                onTapPos: () => result = true,
-              ),
-            );
-
-            return result;
-          },
+        await OTLNavigator.pushDialog(
+          context: context,
+          builder: (_) => OTLDialog(
+            type: OTLDialogType.addLecture,
+            namedArgs: {'lecture': lectureTitle},
+            onTapPos: () => result = true,
+          ),
         );
+
+        return result;
+      },
+      onOverlap: (lectures) async {
+        bool result = false;
+
+        await OTLNavigator.pushDialog(
+          context: context,
+          builder: (_) => OTLDialog(
+            type: OTLDialogType.addOverlappingLecture,
+            namedArgs: {
+              'lectures': lectures
+                  .map(
+                    (lecture) => "'${isKo ? lecture.title : lecture.titleEn}'",
+                  )
+                  .join(', '),
+              'lecture': lectureTitle,
+            },
+            onTapPos: () => result = true,
+          ),
+        );
+
+        return result;
+      },
+    );
     if (result) {
       context.read<TimetableModel>().setTempLecture(null);
     }
@@ -187,7 +185,7 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
       builder: (_) => OTLDialog(
         type: OTLDialogType.deleteLecture,
         namedArgs: {
-          'lecture': context.locale == Locale('ko') ? lec.title : lec.titleEn
+          'lecture': context.locale == Locale('ko') ? lec.title : lec.titleEn,
         },
         onTapPos: () =>
             context.read<TimetableModel>().removeLecture(lecture: lec),

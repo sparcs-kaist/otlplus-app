@@ -28,12 +28,13 @@ class LikedReviewModel extends ChangeNotifier {
 
     try {
       final response = await DioProvider().dio.get(
-          API_LIKED_REVIEW_URL.replaceFirst("{user_id}", _user.id.toString()),
-          queryParameters: {
-            "order": "-written_datetime",
-            "offset": _page * 10,
-            "limit": 10,
-          });
+        API_LIKED_REVIEW_URL.replaceFirst("{user_id}", _user.id.toString()),
+        queryParameters: {
+          "order": "-written_datetime",
+          "offset": _page * 10,
+          "limit": 10,
+        },
+      );
       final rawReviews = response.data as List;
       _likedReviews.addAll(rawReviews.map((review) => Review.fromJson(review)));
       _page++;

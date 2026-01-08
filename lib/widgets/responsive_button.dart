@@ -20,10 +20,10 @@ class IconTextButton extends StatelessWidget {
     this.tapEffect = ButtonTapEffect.lighten,
     this.tapEffectColorRatio = 0.48,
     this.direction = ButtonDirection.row,
-  })  : assert(icon is IconData || icon is String || icon == null),
-        assert(icon != null || iconSize == 24),
-        assert(text != null || textStyle == const TextStyle()),
-        super(key: key);
+  }) : assert(icon is IconData || icon is String || icon == null),
+       assert(icon != null || iconSize == 24),
+       assert(text != null || textStyle == const TextStyle()),
+       super(key: key);
   final Color? color;
   final dynamic icon; // IconData or String or null
   final double iconSize;
@@ -42,7 +42,7 @@ class IconTextButton extends StatelessWidget {
       if (icon != null)
         if (icon is IconData)
           {
-            'Icon': {'arg': icon, 'size': iconSize, 'color': color}
+            'Icon': {'arg': icon, 'size': iconSize, 'color': color},
           }
         else if (icon is String)
           {
@@ -50,54 +50,53 @@ class IconTextButton extends StatelessWidget {
               'arg': icon,
               'height': iconSize,
               'width': iconSize,
-              'color': color
-            }
+              'color': color,
+            },
           },
       (direction == ButtonDirection.row ||
               direction == ButtonDirection.rowReversed)
           ? {
-              'SizedBox': {
-                'width': spaceBetween,
-              }
+              'SizedBox': {'width': spaceBetween},
             }
           : {
-              'SizedBox': {
-                'height': spaceBetween,
-              }
+              'SizedBox': {'height': spaceBetween},
             },
       if (text != null)
         {
           'Text': {
             'arg': text!,
-            'style': textStyle.copyWith(color: textStyle.color ?? color)
-          }
-        }
+            'style': textStyle.copyWith(color: textStyle.color ?? color),
+          },
+        },
     ];
-    Map<String, Map> child = (direction == ButtonDirection.row ||
+    Map<String, Map> child =
+        (direction == ButtonDirection.row ||
             direction == ButtonDirection.rowReversed)
         ? {
             'Row': {
-              'children': (direction == ButtonDirection.rowReversed ||
+              'children':
+                  (direction == ButtonDirection.rowReversed ||
                       direction == ButtonDirection.columnReversed)
                   ? children.reversed.toList()
-                  : children
-            }
+                  : children,
+            },
           }
         : {
             'Column': {
-              'children': (direction == ButtonDirection.rowReversed ||
+              'children':
+                  (direction == ButtonDirection.rowReversed ||
                       direction == ButtonDirection.columnReversed)
                   ? children.reversed.toList()
-                  : children
-            }
+                  : children,
+            },
           };
     return RawResponsiveButton(
       data: padding != null
           ? {
-              'Padding': {'padding': padding!, 'child': child}
+              'Padding': {'padding': padding!, 'child': child},
             }
           : {
-              'Center': {'child': child}
+              'Center': {'child': child},
             },
       onTap: onTap,
       tapEffect: tapEffect,
@@ -107,15 +106,15 @@ class IconTextButton extends StatelessWidget {
 }
 
 class BackgroundButton extends StatelessWidget {
-  const BackgroundButton(
-      {Key? key,
-      this.color = Colors.transparent,
-      this.onTap,
-      this.onLongPress,
-      this.tapEffect = ButtonTapEffect.darken,
-      this.tapEffectColorRatio = 0.12,
-      required this.child})
-      : super(key: key);
+  const BackgroundButton({
+    Key? key,
+    this.color = Colors.transparent,
+    this.onTap,
+    this.onLongPress,
+    this.tapEffect = ButtonTapEffect.darken,
+    this.tapEffectColorRatio = 0.12,
+    required this.child,
+  }) : super(key: key);
   final Color? color;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -127,10 +126,7 @@ class BackgroundButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return RawResponsiveButton(
       data: {
-        'ColoredBox': {
-          'color': color,
-          'child': child,
-        }
+        'ColoredBox': {'color': color, 'child': child},
       },
       onTap: onTap,
       onLongPress: onLongPress,
@@ -141,13 +137,13 @@ class BackgroundButton extends StatelessWidget {
 }
 
 class RawResponsiveWidget extends StatelessWidget {
-  const RawResponsiveWidget(
-      {required this.data,
-      required this.tapEffect,
-      required this.tapEffectColorRatio,
-      required this.pressedEffect,
-      Key? key})
-      : super(key: key);
+  const RawResponsiveWidget({
+    required this.data,
+    required this.tapEffect,
+    required this.tapEffectColorRatio,
+    required this.pressedEffect,
+    Key? key,
+  }) : super(key: key);
   final Map<String, Map> data;
   final ButtonTapEffect tapEffect;
   final double tapEffectColorRatio;
@@ -164,11 +160,14 @@ class RawResponsiveWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: (args['children'] as List<Map<String, Map>>? ?? [])
-              .map((e) => RawResponsiveWidget(
+              .map(
+                (e) => RawResponsiveWidget(
                   data: e,
                   tapEffect: tapEffect,
                   tapEffectColorRatio: tapEffectColorRatio,
-                  pressedEffect: pressedEffect))
+                  pressedEffect: pressedEffect,
+                ),
+              )
               .toList(),
         );
       case 'Column':
@@ -176,98 +175,121 @@ class RawResponsiveWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: (args['children'] as List<Map<String, Map>>? ?? [])
-              .map((e) => RawResponsiveWidget(
+              .map(
+                (e) => RawResponsiveWidget(
                   data: e,
                   tapEffect: tapEffect,
                   tapEffectColorRatio: tapEffectColorRatio,
-                  pressedEffect: pressedEffect))
+                  pressedEffect: pressedEffect,
+                ),
+              )
               .toList(),
         );
       case 'Icon':
         final Color unpressedColor = args['color'] ?? OTLColor.gray0;
         final Color pressedColor = Color.lerp(
-            unpressedColor,
+          unpressedColor,
+          tapEffect == ButtonTapEffect.darken
+              ? OTLColor.gray0
+              : tapEffect == ButtonTapEffect.lighten
+              ? OTLColor.grayF
+              : unpressedColor,
+          tapEffectColorRatio,
+        )!;
+        return ValueListenableBuilder<bool>(
+          valueListenable: pressedEffect,
+          builder: (BuildContext context, bool effect, Widget? child) {
+            return Icon(
+              args['arg'] ?? null,
+              size: args['size'] ?? 24.0,
+              color: effect ? pressedColor : unpressedColor,
+            );
+          },
+        );
+      case 'SvgPicture.asset':
+        final ColorFilter unpressedColorFilter = ColorFilter.mode(
+          args['color'] ?? OTLColor.gray0,
+          BlendMode.srcIn,
+        );
+        final ColorFilter pressedColorFilter = ColorFilter.mode(
+          Color.lerp(
+            args['color'] ?? OTLColor.gray0,
             tapEffect == ButtonTapEffect.darken
                 ? OTLColor.gray0
                 : tapEffect == ButtonTapEffect.lighten
-                    ? OTLColor.grayF
-                    : unpressedColor,
-            tapEffectColorRatio)!;
+                ? OTLColor.grayF
+                : args['color'] ?? OTLColor.gray0,
+            tapEffectColorRatio,
+          )!,
+          BlendMode.srcIn,
+        );
         return ValueListenableBuilder<bool>(
-            valueListenable: pressedEffect,
-            builder: (BuildContext context, bool effect, Widget? child) {
-              return Icon(args['arg'] ?? null,
-                  size: args['size'] ?? 24.0,
-                  color: effect ? pressedColor : unpressedColor);
-            });
-      case 'SvgPicture.asset':
-        final ColorFilter unpressedColorFilter =
-            ColorFilter.mode(args['color'] ?? OTLColor.gray0, BlendMode.srcIn);
-        final ColorFilter pressedColorFilter = ColorFilter.mode(
-            Color.lerp(
-                args['color'] ?? OTLColor.gray0,
-                tapEffect == ButtonTapEffect.darken
-                    ? OTLColor.gray0
-                    : tapEffect == ButtonTapEffect.lighten
-                        ? OTLColor.grayF
-                        : args['color'] ?? OTLColor.gray0,
-                tapEffectColorRatio)!,
-            BlendMode.srcIn);
-        return ValueListenableBuilder<bool>(
-            valueListenable: pressedEffect,
-            builder: (BuildContext context, bool effect, Widget? child) {
-              return SvgPicture.asset(args['arg'] ?? null,
-                  width: args['width'] ?? 24.0,
-                  height: args['height'] ?? 24.0,
-                  colorFilter:
-                      effect ? pressedColorFilter : unpressedColorFilter);
-            });
+          valueListenable: pressedEffect,
+          builder: (BuildContext context, bool effect, Widget? child) {
+            return SvgPicture.asset(
+              args['arg'] ?? null,
+              width: args['width'] ?? 24.0,
+              height: args['height'] ?? 24.0,
+              colorFilter: effect ? pressedColorFilter : unpressedColorFilter,
+            );
+          },
+        );
       case 'SizedBox':
         return SizedBox(
-            width: args['width'],
-            height: args['height'],
-            child: (args['child'] == null)
-                ? null
-                : RawResponsiveWidget(
-                    data: args['child']!,
-                    tapEffect: tapEffect,
-                    tapEffectColorRatio: tapEffectColorRatio,
-                    pressedEffect: pressedEffect));
+          width: args['width'],
+          height: args['height'],
+          child: (args['child'] == null)
+              ? null
+              : RawResponsiveWidget(
+                  data: args['child']!,
+                  tapEffect: tapEffect,
+                  tapEffectColorRatio: tapEffectColorRatio,
+                  pressedEffect: pressedEffect,
+                ),
+        );
       case 'Spacer':
         return Spacer(flex: args['flex'] ?? 1);
       case 'Text':
         final DefaultTextStyle defaultTextStyle = DefaultTextStyle.of(context);
-        TextStyle unpressedTextStyle =
-            defaultTextStyle.style.merge(args['style']);
+        TextStyle unpressedTextStyle = defaultTextStyle.style.merge(
+          args['style'],
+        );
         if (MediaQuery.boldTextOf(context)) {
-          unpressedTextStyle = unpressedTextStyle
-              .merge(const TextStyle(fontWeight: FontWeight.bold));
+          unpressedTextStyle = unpressedTextStyle.merge(
+            const TextStyle(fontWeight: FontWeight.bold),
+          );
         }
         final TextStyle? pressedTextStyle = unpressedTextStyle.copyWith(
-            color: Color.lerp(
-                unpressedTextStyle.color ?? OTLColor.gray0,
-                tapEffect == ButtonTapEffect.darken
-                    ? OTLColor.gray0
-                    : tapEffect == ButtonTapEffect.lighten
-                        ? OTLColor.grayF
-                        : unpressedTextStyle.color ?? OTLColor.gray0,
-                tapEffectColorRatio));
-        return ValueListenableBuilder<bool>(
-            valueListenable: pressedEffect,
-            builder: (BuildContext context, bool effect, Widget? child) {
-              return Text(args['arg'] ?? '',
-                  style: effect ? pressedTextStyle : unpressedTextStyle);
-            });
-      case 'ColoredBox':
-        final Color unpressedColor = args['color'] ?? Colors.transparent;
-        final Color pressedColor = Color.lerp(
-            unpressedColor,
+          color: Color.lerp(
+            unpressedTextStyle.color ?? OTLColor.gray0,
             tapEffect == ButtonTapEffect.darken
                 ? OTLColor.gray0
                 : tapEffect == ButtonTapEffect.lighten
-                    ? OTLColor.grayF
-                    : unpressedColor,
-            tapEffectColorRatio)!;
+                ? OTLColor.grayF
+                : unpressedTextStyle.color ?? OTLColor.gray0,
+            tapEffectColorRatio,
+          ),
+        );
+        return ValueListenableBuilder<bool>(
+          valueListenable: pressedEffect,
+          builder: (BuildContext context, bool effect, Widget? child) {
+            return Text(
+              args['arg'] ?? '',
+              style: effect ? pressedTextStyle : unpressedTextStyle,
+            );
+          },
+        );
+      case 'ColoredBox':
+        final Color unpressedColor = args['color'] ?? Colors.transparent;
+        final Color pressedColor = Color.lerp(
+          unpressedColor,
+          tapEffect == ButtonTapEffect.darken
+              ? OTLColor.gray0
+              : tapEffect == ButtonTapEffect.lighten
+              ? OTLColor.grayF
+              : unpressedColor,
+          tapEffectColorRatio,
+        )!;
         return ValueListenableBuilder<bool>(
           valueListenable: pressedEffect,
           builder: (BuildContext context, bool effect, Widget? child) {
@@ -280,23 +302,27 @@ class RawResponsiveWidget extends StatelessWidget {
         );
       case 'Padding':
         return Padding(
-            padding: args['padding'] ?? EdgeInsets.zero,
-            child: (args['child'] == null)
-                ? null
-                : RawResponsiveWidget(
-                    data: args['child'],
-                    tapEffect: tapEffect,
-                    tapEffectColorRatio: tapEffectColorRatio,
-                    pressedEffect: pressedEffect));
+          padding: args['padding'] ?? EdgeInsets.zero,
+          child: (args['child'] == null)
+              ? null
+              : RawResponsiveWidget(
+                  data: args['child'],
+                  tapEffect: tapEffect,
+                  tapEffectColorRatio: tapEffectColorRatio,
+                  pressedEffect: pressedEffect,
+                ),
+        );
       case 'Center':
         return Center(
-            child: (args['child'] == null)
-                ? null
-                : RawResponsiveWidget(
-                    data: args['child'] ?? {},
-                    tapEffect: tapEffect,
-                    tapEffectColorRatio: tapEffectColorRatio,
-                    pressedEffect: pressedEffect));
+          child: (args['child'] == null)
+              ? null
+              : RawResponsiveWidget(
+                  data: args['child'] ?? {},
+                  tapEffect: tapEffect,
+                  tapEffectColorRatio: tapEffectColorRatio,
+                  pressedEffect: pressedEffect,
+                ),
+        );
       default:
         return const Placeholder();
     }
@@ -342,32 +368,34 @@ class _RawResponsiveButtonState extends State<RawResponsiveButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) {
-          _isPressed = true;
-          setPressed(true);
-          _delaying = true;
-          Future.delayed(const Duration(milliseconds: 128), () {
-            _delaying = false;
-            if (_isPressed == false) setPressed(false);
-            Future.delayed(const Duration(milliseconds: 512), () {
-              if (_isPressed) widget.onLongPress?.call();
-            });
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) {
+        _isPressed = true;
+        setPressed(true);
+        _delaying = true;
+        Future.delayed(const Duration(milliseconds: 128), () {
+          _delaying = false;
+          if (_isPressed == false) setPressed(false);
+          Future.delayed(const Duration(milliseconds: 512), () {
+            if (_isPressed) widget.onLongPress?.call();
           });
-        },
-        onTapUp: (_) {
-          if (_isPressed) widget.onTap?.call();
-          _isPressed = false;
-          if (_delaying == false) setPressed(false);
-        },
-        onTapCancel: () {
-          _isPressed = false;
-          if (_delaying == false) setPressed(false);
-        },
-        child: RawResponsiveWidget(
-            data: widget.data,
-            tapEffect: widget.tapEffect,
-            tapEffectColorRatio: widget.tapEffectColorRatio,
-            pressedEffect: _pressedEffect));
+        });
+      },
+      onTapUp: (_) {
+        if (_isPressed) widget.onTap?.call();
+        _isPressed = false;
+        if (_delaying == false) setPressed(false);
+      },
+      onTapCancel: () {
+        _isPressed = false;
+        if (_delaying == false) setPressed(false);
+      },
+      child: RawResponsiveWidget(
+        data: widget.data,
+        tapEffect: widget.tapEffect,
+        tapEffectColorRatio: widget.tapEffectColorRatio,
+        pressedEffect: _pressedEffect,
+      ),
+    );
   }
 }
