@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 env:
-  FLUTTER_VERSION: "3.29.x"
+  FLUTTER_VERSION: "3.32.x"
   JAVA_VERSION: "17"
   XCODE_VERSION: "Xcode_16.2"
 
@@ -226,6 +226,10 @@ jobs:
 
       - name: Select Xcode version
         run: sudo xcode-select -s '/Applications/${{ env.XCODE_VERSION }}.app/Contents/Developer'
+
+      - name: Install iOS 18.2 Simulator Runtime
+        run: |
+          xcodebuild -downloadPlatform iOS || true
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
