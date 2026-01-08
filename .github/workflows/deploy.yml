@@ -191,6 +191,15 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Setup Android NDK
+        run: |
+          echo "🔧 Setting up Android NDK..."
+          # Install NDK version compatible with Flutter
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install "ndk;27.0.12077973" || true
+          # Set NDK environment variable
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+          echo "✅ Android NDK setup complete"
+
       - name: Set Gradle JVM options for CI
         run: |
           echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" >> android/gradle.properties
@@ -219,6 +228,8 @@ jobs:
       IOS_CERTIFICATES_P12: ${{ secrets.IOS_CERTIFICATES_P12 }}
       IOS_CERTIFICATES_PASSWORD: ${{ secrets.IOS_CERTIFICATES_PASSWORD }}
       IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+      IOS_PROVISIONING_PROFILE_WIDGET: ${{ secrets.IOS_PROVISIONING_PROFILE_WIDGET }}
+      IOS_PROVISIONING_PROFILE_INTENTS: ${{ secrets.IOS_PROVISIONING_PROFILE_INTENTS }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     steps:
       - name: Checkout code
@@ -291,6 +302,20 @@ jobs:
           else
             echo "❌ IOS_PROVISIONING_PROFILE: Not set or empty"
           fi
+          
+          if [ -n "$IOS_PROVISIONING_PROFILE_WIDGET" ]; then
+            profile_length=$(echo "$IOS_PROVISIONING_PROFILE_WIDGET" | wc -c)
+            echo "✅ IOS_PROVISIONING_PROFILE_WIDGET: Available ($profile_length characters)"
+          else
+            echo "⚠️  IOS_PROVISIONING_PROFILE_WIDGET: Not set (Widget extension may fail)"
+          fi
+          
+          if [ -n "$IOS_PROVISIONING_PROFILE_INTENTS" ]; then
+            profile_length=$(echo "$IOS_PROVISIONING_PROFILE_INTENTS" | wc -c)
+            echo "✅ IOS_PROVISIONING_PROFILE_INTENTS: Available ($profile_length characters)"
+          else
+            echo "⚠️  IOS_PROVISIONING_PROFILE_INTENTS: Not set (Intents extension may fail)"
+          fi
 
       - name: Create Fastlane environment file
         run: |
@@ -342,16 +367,36 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "temp_password" build.keychain
           
           # 프로비저닝 프로파일 검증 및 설치
-          echo "🔍 Validating provisioning profile..."
+          echo "🔍 Validating provisioning profiles..."
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          
+          # Main app profile
           echo "$IOS_PROVISIONING_PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
           
           # 프로비저닝 프로파일 크기 검증
           profile_size=$(stat -f%z ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision)
-          echo "📱 Provisioning profile size: $profile_size bytes"
+          echo "📱 Main provisioning profile size: $profile_size bytes"
           if [ "$profile_size" -lt 1000 ]; then
             echo "❌ ERROR: Provisioning profile too small ($profile_size bytes), likely corrupted"
             exit 1
+          fi
+          
+          # Widget extension profile (optional)
+          if [ -n "$IOS_PROVISIONING_PROFILE_WIDGET" ]; then
+            echo "$IOS_PROVISIONING_PROFILE_WIDGET" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile_widget.mobileprovision
+            widget_size=$(stat -f%z ~/Library/MobileDevice/Provisioning\ Profiles/profile_widget.mobileprovision)
+            echo "📱 Widget provisioning profile size: $widget_size bytes"
+          else
+            echo "⚠️  No Widget provisioning profile provided"
+          fi
+          
+          # Intents extension profile (optional)
+          if [ -n "$IOS_PROVISIONING_PROFILE_INTENTS" ]; then
+            echo "$IOS_PROVISIONING_PROFILE_INTENTS" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile_intents.mobileprovision
+            intents_size=$(stat -f%z ~/Library/MobileDevice/Provisioning\ Profiles/profile_intents.mobileprovision)
+            echo "📱 Intents provisioning profile size: $intents_size bytes"
+          else
+            echo "⚠️  No Intents provisioning profile provided"
           fi
           
           # 프로비저닝 프로파일 내용 검증
