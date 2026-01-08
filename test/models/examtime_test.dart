@@ -9,7 +9,8 @@ void main() {
     int day = 1;
     int begin = 2;
     int end = 3;
-    String json = """
+    String json =
+        """
       {
         "str": "$str",
         "str_en": "$strEn",
@@ -18,8 +19,13 @@ void main() {
         "end": $end
       }
       """;
-    Examtime examtime =
-        Examtime(str: str, strEn: strEn, day: day, begin: begin, end: end);
+    Examtime examtime = Examtime(
+      str: str,
+      strEn: strEn,
+      day: day,
+      begin: begin,
+      end: end,
+    );
 
     test('constructor', () {
       expect(examtime.str, str);

@@ -7,8 +7,8 @@ import 'package:provider/provider.dart';
 
 class ReviewModeControl extends StatefulWidget {
   const ReviewModeControl({Key? key, int selectedMode = 0})
-      : _selectedMode = selectedMode,
-        super(key: key);
+    : _selectedMode = selectedMode,
+      super(key: key);
   final int _selectedMode;
 
   @override
@@ -76,10 +76,7 @@ class _ReviewModeControlState extends State<ReviewModeControl> {
                   width: widget._selectedMode == 0 ? 48 : 0,
                   padding: EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                   child: widget._selectedMode == 0
-                      ? Icon(
-                          Icons.whatshot_outlined,
-                          color: OTLColor.pinksMain,
-                        )
+                      ? Icon(Icons.whatshot_outlined, color: OTLColor.pinksMain)
                       : null,
                 ),
               ),

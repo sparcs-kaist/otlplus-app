@@ -44,15 +44,18 @@ class MapView extends StatefulWidget {
       for (Classtime classtime in lecture.classtimes) {
         String buildingCode = classtime.buildingCode;
         if (buildingCode == '') buildingCode = '기타';
-        if ((_lectures[buildingCode]?.indexWhere((element) =>
-                    element.values.first.classroom == classtime.classroom) ??
+        if ((_lectures[buildingCode]?.indexWhere(
+                  (element) =>
+                      element.values.first.classroom == classtime.classroom,
+                ) ??
                 -1) ==
             -1)
-          _lectures[buildingCode] = _lectures[buildingCode]?.followedBy([
-                {lecture: classtime}
+          _lectures[buildingCode] =
+              _lectures[buildingCode]?.followedBy([
+                {lecture: classtime},
               ]).toList() ??
               [
-                {lecture: classtime}
+                {lecture: classtime},
               ];
       }
     }
@@ -105,13 +108,11 @@ class _MapViewState extends State<MapView> {
                 clipBehavior: Clip.none,
                 alignment: Alignment.bottomLeft,
                 children: <Widget>[
-                  Image.asset(
-                    'assets/images/kaist_map.png',
-                  ),
+                  Image.asset('assets/images/kaist_map.png'),
                   ...List.generate(
                     pinKeys.length,
                     (i) => _buildMapPin(context, pinKeys[i]),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -132,7 +133,7 @@ class _MapViewState extends State<MapView> {
         color: OTLColor.gray0.withValues(alpha: .25),
         blurRadius: 4,
         offset: Offset(0, 4),
-      )
+      ),
     ];
     return Positioned(
       left:
@@ -156,10 +157,7 @@ class _MapViewState extends State<MapView> {
                 if (buildingCode != '기타')
                   Padding(
                     padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      buildingCode,
-                      style: labelBold,
-                    ),
+                    child: Text(buildingCode, style: labelBold),
                   ),
                 ...List.generate(
                   widget.lectures[buildingCode]!.length,
@@ -169,9 +167,14 @@ class _MapViewState extends State<MapView> {
                       width: 11,
                       height: 11,
                       decoration: BoxDecoration(
-                        color: _darken(OTLColor.blockColors[widget
-                                .lectures[buildingCode]![i].keys.first.course %
-                            16]),
+                        color: _darken(
+                          OTLColor.blockColors[widget
+                                  .lectures[buildingCode]![i]
+                                  .keys
+                                  .first
+                                  .course %
+                              16],
+                        ),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -184,9 +187,7 @@ class _MapViewState extends State<MapView> {
             left: 6,
             bottom: -4,
             child: Container(
-              decoration: BoxDecoration(
-                boxShadow: boxShadow,
-              ),
+              decoration: BoxDecoration(boxShadow: boxShadow),
               child: SvgPicture.asset('assets/icons/map_pin.svg'),
             ),
           ),
@@ -227,10 +228,7 @@ class _MapViewState extends State<MapView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _codeToName(buildingCode),
-                    style: bodyBold,
-                  ),
+                  Text(_codeToName(buildingCode), style: bodyBold),
                   Divider(
                     height: 15,
                     thickness: 1,
@@ -291,14 +289,16 @@ class _MapViewState extends State<MapView> {
               builder: (context) {
                 final location = (buildingCode == '기타')
                     ? _isKo
-                        ? classtime.classroom
-                        : classtime.classroomEn
+                          ? classtime.classroom
+                          : classtime.classroomEn
                     : classtime.roomName;
-                final isMultiLine = (getTextSize(context,
-                                text: location,
-                                style: labelRegular,
-                                maxWidth: 143)
-                            .height ~/
+                final isMultiLine =
+                    (getTextSize(
+                          context,
+                          text: location,
+                          style: labelRegular,
+                          maxWidth: 143,
+                        ).height ~/
                         singleHeight(context, labelRegular)) >
                     1;
 
@@ -310,10 +310,7 @@ class _MapViewState extends State<MapView> {
                     color: OTLColor.blockColors[lecture.course % 16],
                     borderRadius: BorderRadius.circular(isMultiLine ? 13 : 100),
                   ),
-                  child: Text(
-                    location,
-                    style: labelRegular,
-                  ),
+                  child: Text(location, style: labelRegular),
                 );
               },
             ),
@@ -347,7 +344,10 @@ class CustomHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return widget;
   }
 

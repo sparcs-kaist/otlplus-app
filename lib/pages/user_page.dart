@@ -35,7 +35,9 @@ class UserPage extends StatelessWidget {
                   child: Column(
                     children: [
                       _buildContent(
-                          "user.name", "${user.firstName} ${user.lastName}"),
+                        "user.name",
+                        "${user.firstName} ${user.lastName}",
+                      ),
                       _buildContent("user.email", user.email),
                       _buildContent("user.student_id", user.studentId),
                       _buildContent(
@@ -52,45 +54,39 @@ class UserPage extends StatelessWidget {
                   ),
                 ),
                 _buildNavigateArrowButton(
-                    context,
-                    'assets/icons/my_review.svg',
-                    'user.my_review'.tr(),
-                    () => OTLNavigator.push(context, MyReviewPage())),
+                  context,
+                  'assets/icons/my_review.svg',
+                  'user.my_review'.tr(),
+                  () => OTLNavigator.push(context, MyReviewPage()),
+                ),
                 _buildNavigateArrowButton(
-                    context,
-                    'assets/icons/liked_review.svg',
-                    'user.liked_review'.tr(),
-                    () => OTLNavigator.push(context, LikedReviewPage())),
+                  context,
+                  'assets/icons/liked_review.svg',
+                  'user.liked_review'.tr(),
+                  () => OTLNavigator.push(context, LikedReviewPage()),
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: _buildDivider(),
                 ),
-                _buildAccount(
-                  'assets/icons/logout.svg',
-                  () {
-                    context.read<AuthModel>().logout();
-                    OTLNavigator.pop(context);
-                  },
-                  'user.logout'.tr(),
-                ),
+                _buildAccount('assets/icons/logout.svg', () {
+                  context.read<AuthModel>().logout();
+                  OTLNavigator.pop(context);
+                }, 'user.logout'.tr()),
                 if (Platform.isIOS)
-                  _buildAccount(
-                    Icons.highlight_off,
-                    () {
-                      OTLNavigator.pushDialog(
-                        context: context,
-                        builder: (_) => OTLDialog(
-                          type: OTLDialogType.deleteAccount,
-                          onTapPos: () {
-                            context.read<AuthModel>().logout();
-                            context.read<InfoModel>().deleteAccount();
-                            OTLNavigator.pop(context);
-                          },
-                        ),
-                      );
-                    },
-                    'user.delete_account'.tr(),
-                  ),
+                  _buildAccount(Icons.highlight_off, () {
+                    OTLNavigator.pushDialog(
+                      context: context,
+                      builder: (_) => OTLDialog(
+                        type: OTLDialogType.deleteAccount,
+                        onTapPos: () {
+                          context.read<AuthModel>().logout();
+                          context.read<InfoModel>().deleteAccount();
+                          OTLNavigator.pop(context);
+                        },
+                      ),
+                    );
+                  }, 'user.delete_account'.tr()),
               ],
             ),
           ),
@@ -117,7 +113,11 @@ class UserPage extends StatelessWidget {
   }
 
   Widget _buildNavigateArrowButton(
-      BuildContext context, String icon, String text, VoidCallback onTap) {
+    BuildContext context,
+    String icon,
+    String text,
+    VoidCallback onTap,
+  ) {
     return RawResponsiveButton(
       data: {
         'Padding': {
@@ -133,8 +133,8 @@ class UserPage extends StatelessWidget {
                         'arg': icon,
                         'height': 24.0,
                         'width': 24.0,
-                        'color': OTLColor.pinksMain
-                      }
+                        'color': OTLColor.pinksMain,
+                      },
                     },
                     {
                       'Padding': {
@@ -142,11 +142,12 @@ class UserPage extends StatelessWidget {
                         'child': {
                           'Text': {
                             'arg': text,
-                            'style':
-                                bodyBold.copyWith(color: OTLColor.pinksMain),
-                          }
+                            'style': bodyBold.copyWith(
+                              color: OTLColor.pinksMain,
+                            ),
+                          },
                         },
-                      }
+                      },
                     },
                     {'Spacer': {}},
                     {
@@ -156,16 +157,16 @@ class UserPage extends StatelessWidget {
                           'Icon': {
                             'arg': Icons.navigate_next,
                             'color': OTLColor.pinksMain,
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        }
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
       },
       onTap: onTap,
     );

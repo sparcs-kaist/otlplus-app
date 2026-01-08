@@ -13,13 +13,14 @@ class TimetableTabs extends StatefulWidget {
   final Function(int) onDeleteTap;
   final Function(ShareType) onExportTap;
 
-  TimetableTabs(
-      {this.index = 0,
-      required this.length,
-      required this.onTap,
-      required this.onCopyTap,
-      required this.onDeleteTap,
-      required this.onExportTap});
+  TimetableTabs({
+    this.index = 0,
+    required this.length,
+    required this.onTap,
+    required this.onCopyTap,
+    required this.onDeleteTap,
+    required this.onExportTap,
+  });
 
   @override
   _TimetableTabsState createState() => _TimetableTabsState();
@@ -73,7 +74,8 @@ class _TimetableTabsState extends State<TimetableTabs> {
           ? 'timetable.my_tab'.tr()
           : 'timetable.tab'.tr(args: [i.toString()]),
       style: bodyBold.copyWith(
-          color: i == _index ? OTLColor.grayF : OTLColor.gray0),
+        color: i == _index ? OTLColor.grayF : OTLColor.gray0,
+      ),
       textAlign: TextAlign.center,
     );
 
@@ -92,11 +94,7 @@ class _TimetableTabsState extends State<TimetableTabs> {
               children: [
                 text,
                 const SizedBox(width: 6),
-                Icon(
-                  Icons.more_vert,
-                  color: OTLColor.grayF,
-                  size: 16,
-                ),
+                Icon(Icons.more_vert, color: OTLColor.grayF, size: 16),
               ],
             ),
           ),
@@ -122,8 +120,8 @@ class _TimetableTabsState extends State<TimetableTabs> {
                 text: 'timetable.tab_menu.delete'.tr(),
                 icon: Icons.delete_outlined,
                 textColor: OTLColor.red,
-              )
-            ]
+              ),
+            ],
             /*ItemData(
                 value: 4,
                 text: 'timetable.tab_menu.syllabus'.tr(),

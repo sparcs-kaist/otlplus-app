@@ -16,9 +16,11 @@ class CourseDetailModel extends ChangeNotifier {
   Lecture? get selectedLecture {
     if (_selectedFilter == "ALL") return null;
     return _lectures.firstWhere(
-        (lecture) => lecture!.professors.any(
-            (professor) => professor.professorId.toString() == _selectedFilter),
-        orElse: null);
+      (lecture) => lecture!.professors.any(
+        (professor) => professor.professorId.toString() == _selectedFilter,
+      ),
+      orElse: null,
+    );
   }
 
   late List<Lecture?> _lectures;
@@ -35,8 +37,11 @@ class CourseDetailModel extends ChangeNotifier {
     if (_reviews == null) return [];
     if (_selectedFilter == "ALL") return _reviews;
     return _reviews!
-        .where((review) => review.lecture.professors.any(
-            (professor) => professor.professorId.toString() == _selectedFilter))
+        .where(
+          (review) => review.lecture.professors.any(
+            (professor) => professor.professorId.toString() == _selectedFilter,
+          ),
+        )
         .toList();
   }
 
@@ -44,16 +49,18 @@ class CourseDetailModel extends ChangeNotifier {
     _hasData = false;
     notifyListeners();
 
-    final response =
-        await DioProvider().dio.get(API_COURSE_URL + "/" + courseId.toString());
+    final response = await DioProvider().dio.get(
+      API_COURSE_URL + "/" + courseId.toString(),
+    );
 
     _course = Course.fromJson(response.data);
     _lectures = await getCourseLectures();
-    _professors = _lectures
-        .map((lecture) => lecture!.professors)
-        .expand((e) => e)
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    _professors =
+        _lectures
+            .map((lecture) => lecture!.professors)
+            .expand((e) => e)
+            .toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
     _reviews = await getCourseReviews();
     _selectedFilter = "ALL";
 
@@ -74,15 +81,16 @@ class CourseDetailModel extends ChangeNotifier {
 
   Future<List<Lecture>> getCourseLectures() async {
     final response = await DioProvider().dio.get(
-        API_COURSE_LECTURE_URL.replaceFirst("{id}", _course.id.toString()));
+      API_COURSE_LECTURE_URL.replaceFirst("{id}", _course.id.toString()),
+    );
     final rawLectures = response.data as List;
     return rawLectures.map((lecture) => Lecture.fromJson(lecture)).toList();
   }
 
   Future<List<Review>> getCourseReviews() async {
-    final response = await DioProvider()
-        .dio
-        .get(API_COURSE_REVIEW_URL.replaceFirst("{id}", _course.id.toString()));
+    final response = await DioProvider().dio.get(
+      API_COURSE_REVIEW_URL.replaceFirst("{id}", _course.id.toString()),
+    );
     final rawReviews = response.data as List;
     return rawReviews.map((review) => Review.fromJson(review)).toList();
   }

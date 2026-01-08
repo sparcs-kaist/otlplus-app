@@ -15,18 +15,19 @@ class User {
   late List<Lecture> reviewWritableLectures;
   late List<Review> reviews;
 
-  User(
-      {required this.id,
-      required this.email,
-      required this.studentId,
-      required this.firstName,
-      required this.lastName,
-      required this.majors,
-      required this.departments,
-      required this.myTimetableLectures,
-      this.favoriteDepartments,
-      required this.reviewWritableLectures,
-      required this.reviews});
+  User({
+    required this.id,
+    required this.email,
+    required this.studentId,
+    required this.firstName,
+    required this.lastName,
+    required this.majors,
+    required this.departments,
+    required this.myTimetableLectures,
+    this.favoriteDepartments,
+    required this.reviewWritableLectures,
+    required this.reviews,
+  });
 
   bool operator ==(Object other) =>
       identical(this, other) || (other is User && other.id == id);
@@ -34,11 +35,11 @@ class User {
   int get hashCode => id.hashCode;
 
   User.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        email = json['email'],
-        studentId = json['student_id'],
-        firstName = json['firstName'],
-        lastName = json['lastName'] {
+    : id = json['id'],
+      email = json['email'],
+      studentId = json['student_id'],
+      firstName = json['firstName'],
+      lastName = json['lastName'] {
     if (json['majors'] != null) {
       majors = [];
       json['majors'].forEach((v) {
@@ -89,13 +90,16 @@ class User {
     data['majors'] = this.majors.map((v) => v.toJson()).toList();
     data['departments'] = this.departments.map((v) => v.toJson()).toList();
     if (this.favoriteDepartments is List<Department>) {
-      data['favorite_departments'] =
-          this.favoriteDepartments!.map((v) => v.toJson()).toList();
+      data['favorite_departments'] = this.favoriteDepartments!
+          .map((v) => v.toJson())
+          .toList();
     }
-    data['review_writable_lectures'] =
-        this.reviewWritableLectures.map((v) => v.toJson()).toList();
-    data['my_timetable_lectures'] =
-        this.myTimetableLectures.map((v) => v.toJson()).toList();
+    data['review_writable_lectures'] = this.reviewWritableLectures
+        .map((v) => v.toJson())
+        .toList();
+    data['my_timetable_lectures'] = this.myTimetableLectures
+        .map((v) => v.toJson())
+        .toList();
     data['reviews'] = this.reviews.map((v) => v.toJson()).toList();
     return data;
   }

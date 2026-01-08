@@ -11,11 +11,8 @@ class SearchFilterPanel extends StatefulWidget {
   final Map<String, FilterGroupInfo> filter;
   final Function(String varient, String code, bool selected) setFilter;
 
-  SearchFilterPanel({
-    Key? key,
-    required this.filter,
-    required this.setFilter,
-  }) : super(key: key);
+  SearchFilterPanel({Key? key, required this.filter, required this.setFilter})
+    : super(key: key);
 
   @override
   State<SearchFilterPanel> createState() => _SearchFilterPanelState();
@@ -38,27 +35,32 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
         child: Scrollbar(
           controller: _scrollController,
           child: ListView.separated(
-              controller: _scrollController,
-              itemCount: widget.filter.entries.length,
-              shrinkWrap: true,
-              padding: EdgeInsets.all(16.0),
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: EdgeInsets.only(bottom: 24.0),
-                  child: Selector(
-                    title: widget.filter.values.elementAt(index).label.tr(),
-                    selectList: widget.filter.values.elementAt(index).options,
-                    type: widget.filter.values.elementAt(index).type,
-                    isMultiSelect:
-                        widget.filter.values.elementAt(index).isMultiSelect,
-                    setFilter: (String code, bool selected) {
-                      widget.setFilter(
-                          widget.filter.keys.elementAt(index), code, selected);
-                    },
-                  ),
-                );
-              },
-              separatorBuilder: (context, index) => SizedBox(height: 8)),
+            controller: _scrollController,
+            itemCount: widget.filter.entries.length,
+            shrinkWrap: true,
+            padding: EdgeInsets.all(16.0),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: EdgeInsets.only(bottom: 24.0),
+                child: Selector(
+                  title: widget.filter.values.elementAt(index).label.tr(),
+                  selectList: widget.filter.values.elementAt(index).options,
+                  type: widget.filter.values.elementAt(index).type,
+                  isMultiSelect: widget.filter.values
+                      .elementAt(index)
+                      .isMultiSelect,
+                  setFilter: (String code, bool selected) {
+                    widget.setFilter(
+                      widget.filter.keys.elementAt(index),
+                      code,
+                      selected,
+                    );
+                  },
+                ),
+              );
+            },
+            separatorBuilder: (context, index) => SizedBox(height: 8),
+          ),
         ),
       ),
     );
@@ -99,16 +101,14 @@ class _SelectorState extends State<Selector> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      widget.title,
-                      style: titleBold,
-                    ),
+                    Text(widget.title, style: titleBold),
                     SizedBox(width: 8),
                     Visibility(
                       visible: widget.isMultiSelect,
                       child: Text.rich(
                         TextSpan(
-                          children: widget.selectList
+                          children:
+                              widget.selectList
                                       .expand((i) => i)
                                       .where((i) => i.selected)
                                       .length ==
@@ -127,11 +127,12 @@ class _SelectorState extends State<Selector> {
                           style: bodyRegular,
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
                 Visibility(
-                  visible: widget.isMultiSelect &&
+                  visible:
+                      widget.isMultiSelect &&
                       !widget.selectList.every(
                         (v) => v.every((w) => w.selected == false),
                       ),
@@ -157,24 +158,26 @@ class _SelectorState extends State<Selector> {
             context: context,
             removeTop: true,
             removeBottom: true,
-            child: Builder(builder: (context) {
-              switch (widget.type) {
-                case "radio":
-                  return RadioSelection(
-                    selectList: widget.selectList,
-                    isMultiSelect: widget.isMultiSelect,
-                    setFilter: widget.setFilter,
-                  );
-                case "slider":
-                  return SilderSelection(
-                    selectList: widget.selectList,
-                    isMultiSelect: widget.isMultiSelect,
-                    setFilter: widget.setFilter,
-                  );
-                default:
-                  return Container();
-              }
-            }),
+            child: Builder(
+              builder: (context) {
+                switch (widget.type) {
+                  case "radio":
+                    return RadioSelection(
+                      selectList: widget.selectList,
+                      isMultiSelect: widget.isMultiSelect,
+                      setFilter: widget.setFilter,
+                    );
+                  case "slider":
+                    return SilderSelection(
+                      selectList: widget.selectList,
+                      isMultiSelect: widget.isMultiSelect,
+                      setFilter: widget.setFilter,
+                    );
+                  default:
+                    return Container();
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -201,33 +204,34 @@ class _RadioSelectionState extends State<RadioSelection> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: widget.selectList.map(
-        (v) {
-          return Row(
-            children: List.generate(
-              4,
-              (i) => Expanded(
-                child: i < v.length
-                    ? Padding(
-                        padding: EdgeInsets.all(4.0),
-                        child: RadioSelectButton(
-                          option: v[i],
-                          setOption: (b) {
-                            if (!widget.isMultiSelect) {
-                              b = true;
-                              widget.selectList.forEach((e) => e.forEach(
-                                  (c) => widget.setFilter(c.code, false)));
-                            }
-                            widget.setFilter(v[i].code, b);
-                          },
-                        ),
-                      )
-                    : SizedBox(),
-              ),
+      children: widget.selectList.map((v) {
+        return Row(
+          children: List.generate(
+            4,
+            (i) => Expanded(
+              child: i < v.length
+                  ? Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: RadioSelectButton(
+                        option: v[i],
+                        setOption: (b) {
+                          if (!widget.isMultiSelect) {
+                            b = true;
+                            widget.selectList.forEach(
+                              (e) => e.forEach(
+                                (c) => widget.setFilter(c.code, false),
+                              ),
+                            );
+                          }
+                          widget.setFilter(v[i].code, b);
+                        },
+                      ),
+                    )
+                  : SizedBox(),
             ),
-          );
-        },
-      ).toList(),
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -236,9 +240,11 @@ class RadioSelectButton extends StatefulWidget {
   final CodeLabelPair option;
   final Function(bool) setOption;
 
-  const RadioSelectButton(
-      {Key? key, required this.option, required this.setOption})
-      : super(key: key);
+  const RadioSelectButton({
+    Key? key,
+    required this.option,
+    required this.setOption,
+  }) : super(key: key);
 
   @override
   State<RadioSelectButton> createState() => _RadioSelectButtonState();
@@ -269,7 +275,7 @@ class _RadioSelectButtonState extends State<RadioSelectButton> {
                 ),
                 widget.option.selected
                     ? Icon(Icons.check, size: 16.0, color: OTLColor.gray0)
-                    : Icon(Icons.add, size: 16.0, color: OTLColor.grayA)
+                    : Icon(Icons.add, size: 16.0, color: OTLColor.grayA),
               ],
             ),
           ),
@@ -280,12 +286,12 @@ class _RadioSelectButtonState extends State<RadioSelectButton> {
 }
 
 class SilderSelection extends StatefulWidget {
-  const SilderSelection(
-      {required this.selectList,
-      this.isMultiSelect = true,
-      required this.setFilter,
-      Key? key})
-      : super(key: key);
+  const SilderSelection({
+    required this.selectList,
+    this.isMultiSelect = true,
+    required this.setFilter,
+    Key? key,
+  }) : super(key: key);
   final List<List<CodeLabelPair>> selectList;
   final bool isMultiSelect;
   final Function(String code, bool selected) setFilter;
@@ -297,9 +303,7 @@ class SilderSelection extends StatefulWidget {
 class _SilderSelectionState extends State<SilderSelection> {
   double _value = 0;
 
-  TextStyle labelTextStyle = TextStyle(
-    fontSize: 12,
-  );
+  TextStyle labelTextStyle = TextStyle(fontSize: 12);
   @override
   void initState() {
     super.initState();
@@ -316,65 +320,76 @@ class _SilderSelectionState extends State<SilderSelection> {
     return Padding(
       padding: EdgeInsets.only(left: 2, right: 10),
       child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-        double leftPadding = getTextSize(context,
-                    text: widget.selectList.reversed.first.first.label,
-                    style: labelTextStyle)
-                .width /
-            2;
-        double rightPadding = getTextSize(context,
-                    text: widget.selectList.reversed.last.first.label,
-                    style: labelTextStyle)
-                .width /
-            2;
-        double divisionWidth =
-            (constraints.maxWidth - leftPadding - rightPadding) / divisions;
-        return Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.only(
-                  left: leftPadding - 8, right: rightPadding - 8),
-              child: SliderTheme(
-                data: SliderThemeData(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          double leftPadding =
+              getTextSize(
+                context,
+                text: widget.selectList.reversed.first.first.label,
+                style: labelTextStyle,
+              ).width /
+              2;
+          double rightPadding =
+              getTextSize(
+                context,
+                text: widget.selectList.reversed.last.first.label,
+                style: labelTextStyle,
+              ).width /
+              2;
+          double divisionWidth =
+              (constraints.maxWidth - leftPadding - rightPadding) / divisions;
+          return Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(
+                  left: leftPadding - 8,
+                  right: rightPadding - 8,
+                ),
+                child: SliderTheme(
+                  data: SliderThemeData(
                     thumbShape: CustomSliderThumbShape(
-                        outerThumbRadius: 10,
-                        innerThumbRadius: 7,
-                        outerThumbColor: OTLColor.pinksSub,
-                        innerThumbColor: OTLColor.grayF),
+                      outerThumbRadius: 10,
+                      innerThumbRadius: 7,
+                      outerThumbColor: OTLColor.pinksSub,
+                      innerThumbColor: OTLColor.grayF,
+                    ),
                     trackHeight: 5.0,
                     trackShape: RoundRectangularSliderTrackShape(),
                     tickMarkShape: SliderTickMarkShape.noTickMark,
-                    overlayShape: SliderComponentShape.noThumb),
-                child: Slider(
-                  value: _value,
-                  min: 0.0,
-                  max: divisions.toDouble(),
-                  divisions: divisions,
-                  activeColor: OTLColor.pinksSub,
-                  inactiveColor: OTLColor.grayE,
-                  onChanged: (double value) {
-                    setState(() {
-                      _value = value;
-                    });
-                  },
-                  onChangeEnd: ((double value) {
-                    if (!widget.isMultiSelect) {
-                      widget.selectList.forEach((e) =>
-                          e.forEach((c) => widget.setFilter(c.code, false)));
-                    }
-                    widget.setFilter(
+                    overlayShape: SliderComponentShape.noThumb,
+                  ),
+                  child: Slider(
+                    value: _value,
+                    min: 0.0,
+                    max: divisions.toDouble(),
+                    divisions: divisions,
+                    activeColor: OTLColor.pinksSub,
+                    inactiveColor: OTLColor.grayE,
+                    onChanged: (double value) {
+                      setState(() {
+                        _value = value;
+                      });
+                    },
+                    onChangeEnd: ((double value) {
+                      if (!widget.isMultiSelect) {
+                        widget.selectList.forEach(
+                          (e) =>
+                              e.forEach((c) => widget.setFilter(c.code, false)),
+                        );
+                      }
+                      widget.setFilter(
                         widget.selectList.reversed
                             .elementAt(value.toInt())
                             .first
                             .code,
-                        true);
-                  }),
+                        true,
+                      );
+                    }),
+                  ),
                 ),
               ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(
                   divisions * 2 + 1,
                   (index) => index % 2 == 0
                       ? Column(
@@ -391,31 +406,33 @@ class _SilderSelectionState extends State<SilderSelection> {
                           ],
                         )
                       : Spacer(
-                          flex: (divisionWidth -
-                                  (getTextSize(context,
-                                                  text: widget
-                                                      .selectList.reversed
-                                                      .elementAt(index ~/ 2)
-                                                      .first
-                                                      .label,
-                                                  style: labelTextStyle)
-                                              .width +
-                                          getTextSize(context,
-                                                  text: widget
-                                                      .selectList.reversed
-                                                      .elementAt(
-                                                          (index ~/ 2) + 1)
-                                                      .first
-                                                      .label,
-                                                  style: labelTextStyle)
-                                              .width) /
-                                      2)
-                              .toInt(),
-                        )),
-            ),
-          ],
-        );
-      }),
+                          flex:
+                              (divisionWidth -
+                                      (getTextSize(
+                                                context,
+                                                text: widget.selectList.reversed
+                                                    .elementAt(index ~/ 2)
+                                                    .first
+                                                    .label,
+                                                style: labelTextStyle,
+                                              ).width +
+                                              getTextSize(
+                                                context,
+                                                text: widget.selectList.reversed
+                                                    .elementAt((index ~/ 2) + 1)
+                                                    .first
+                                                    .label,
+                                                style: labelTextStyle,
+                                              ).width) /
+                                          2)
+                                  .toInt(),
+                        ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -442,11 +459,13 @@ class RoundRectangularSliderTrackShape extends SliderTrackShape
     }
 
     final ColorTween activeTrackColorTween = ColorTween(
-        begin: sliderTheme.disabledActiveTrackColor,
-        end: sliderTheme.activeTrackColor);
+      begin: sliderTheme.disabledActiveTrackColor,
+      end: sliderTheme.activeTrackColor,
+    );
     final ColorTween inactiveTrackColorTween = ColorTween(
-        begin: sliderTheme.disabledInactiveTrackColor,
-        end: sliderTheme.inactiveTrackColor);
+      begin: sliderTheme.disabledInactiveTrackColor,
+      end: sliderTheme.inactiveTrackColor,
+    );
     final Paint activePaint = Paint()
       ..color = activeTrackColorTween.evaluate(enableAnimation)!;
     final Paint inactivePaint = Paint()
@@ -473,13 +492,23 @@ class RoundRectangularSliderTrackShape extends SliderTrackShape
     );
     final Radius trackRadius = Radius.circular(trackRect.height / 2);
 
-    final RRect leftTrackSegment = RRect.fromLTRBR(trackRect.left,
-        trackRect.top, thumbCenter.dx, trackRect.bottom, trackRadius);
+    final RRect leftTrackSegment = RRect.fromLTRBR(
+      trackRect.left,
+      trackRect.top,
+      thumbCenter.dx,
+      trackRect.bottom,
+      trackRadius,
+    );
     if (!leftTrackSegment.isEmpty) {
       context.canvas.drawRRect(leftTrackSegment, leftTrackPaint);
     }
-    final RRect rightTrackSegment = RRect.fromLTRBR(thumbCenter.dx,
-        trackRect.top, trackRect.right, trackRect.bottom, trackRadius);
+    final RRect rightTrackSegment = RRect.fromLTRBR(
+      thumbCenter.dx,
+      trackRect.top,
+      trackRect.right,
+      trackRect.bottom,
+      trackRadius,
+    );
     if (!rightTrackSegment.isEmpty) {
       context.canvas.drawRRect(rightTrackSegment, rightTrackPaint);
     }
@@ -529,16 +558,19 @@ class CustomSliderThumbShape extends SliderComponentShape {
       end: pressedElevation,
     );
 
-    final double evaluatedElevation =
-        elevationTween.evaluate(activationAnimation);
+    final double evaluatedElevation = elevationTween.evaluate(
+      activationAnimation,
+    );
     final Path path = Path()
       ..addArc(
-          Rect.fromCenter(
-              center: center,
-              width: 2 * outerThumbRadius,
-              height: 2 * outerThumbRadius),
-          0,
-          math.pi * 2);
+        Rect.fromCenter(
+          center: center,
+          width: 2 * outerThumbRadius,
+          height: 2 * outerThumbRadius,
+        ),
+        0,
+        math.pi * 2,
+      );
 
     bool paintShadows = true;
 
@@ -547,15 +579,7 @@ class CustomSliderThumbShape extends SliderComponentShape {
     }
 
     canvas
-      ..drawCircle(
-        center,
-        outerThumbRadius,
-        Paint()..color = outerThumbColor,
-      )
-      ..drawCircle(
-        center,
-        innerThumbRadius,
-        Paint()..color = innerThumbColor,
-      );
+      ..drawCircle(center, outerThumbRadius, Paint()..color = outerThumbColor)
+      ..drawCircle(center, innerThumbRadius, Paint()..color = innerThumbColor);
   }
 }

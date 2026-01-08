@@ -6,20 +6,23 @@ class CustomHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double height;
   final EdgeInsetsGeometry? padding;
 
-  CustomHeaderDelegate(
-      {required this.builder, required this.height, this.padding});
+  CustomHeaderDelegate({
+    required this.builder,
+    required this.height,
+    this.padding,
+  });
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
       color: OTLColor.grayF,
       padding: padding,
       transform: Matrix4.translationValues(0, -1, 0),
-      child: Material(
-        color: Colors.transparent,
-        child: builder(shrinkOffset),
-      ),
+      child: Material(color: Colors.transparent, child: builder(shrinkOffset)),
     );
   }
 

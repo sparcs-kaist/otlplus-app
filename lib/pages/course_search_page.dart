@@ -12,7 +12,7 @@ import 'package:provider/provider.dart';
 class CourseSearchPage extends StatefulWidget {
   final bool openKeyboard;
   const CourseSearchPage({Key? key, this.openKeyboard = true})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<CourseSearchPage> createState() => _CourseSearchPageState();
@@ -25,12 +25,13 @@ class _CourseSearchPageState extends State<CourseSearchPage> {
   @override
   void initState() {
     super.initState();
-    _searchTextController.text =
-        context.read<CourseSearchModel>().courseSearchText;
+    _searchTextController.text = context
+        .read<CourseSearchModel>()
+        .courseSearchText;
     _searchTextController.addListener(() {
-      context
-          .read<CourseSearchModel>()
-          .setCourseSearchText(_searchTextController.text);
+      context.read<CourseSearchModel>().setCourseSearchText(
+        _searchTextController.text,
+      );
     });
     _focusNode = FocusNode();
   }
@@ -98,9 +99,7 @@ class _CourseSearchPageState extends State<CourseSearchPage> {
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: 12,
-                  ),
+                  SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
                       style: ButtonStyle(

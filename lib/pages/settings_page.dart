@@ -31,10 +31,7 @@ class SettingsPage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "settings.language".tr(),
-                      style: bodyBold,
-                    ),
+                    Text("settings.language".tr(), style: bodyBold),
                     Dropdown<bool>(
                       customButton: Container(
                         height: 34,
@@ -45,18 +42,17 @@ class SettingsPage extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.language,
-                              color: OTLColor.pinksMain,
-                            ),
+                            Icon(Icons.language, color: OTLColor.pinksMain),
                             const SizedBox(width: 8),
                             Text(
                               isEn
                                   ? "settings.english".tr()
                                   : "settings.korean".tr(),
                               style: bodyBold.copyWith(
-                                  height: 1.2, color: OTLColor.pinksMain),
-                            )
+                                height: 1.2,
+                                color: OTLColor.pinksMain,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -115,9 +111,9 @@ class SettingsPage extends StatelessWidget {
                         .watch<SettingsModel>()
                         .getShowsChannelTalkButton(),
                     onChanged: (value) {
-                      context
-                          .read<SettingsModel>()
-                          .setShowsChannelTalkButton(value);
+                      context.read<SettingsModel>().setShowsChannelTalkButton(
+                        value,
+                      );
 
                       if (!value) {
                         ChannelTalk.hideChannelButton();
@@ -159,8 +155,10 @@ class SettingsPage extends StatelessWidget {
                       onTapPos: () => showLicensePage(
                         context: context,
                         applicationName: "",
-                        applicationIcon:
-                            Image.asset("assets/images/logo.png", height: 48.0),
+                        applicationIcon: Image.asset(
+                          "assets/images/logo.png",
+                          height: 48.0,
+                        ),
                       ),
                     ),
                   ),
@@ -173,12 +171,13 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildListTile(
-      {required String title,
-      String? subtitle,
-      Widget? trailing,
-      void Function()? onTap,
-      bool hasTopPadding = true}) {
+  Widget _buildListTile({
+    required String title,
+    String? subtitle,
+    Widget? trailing,
+    void Function()? onTap,
+    bool hasTopPadding = true,
+  }) {
     return Padding(
       padding: EdgeInsets.only(top: hasTopPadding ? 16 : 0),
       child: GestureDetector(
@@ -196,11 +195,11 @@ class SettingsPage extends StatelessWidget {
                     if (subtitle != null) ...[
                       const SizedBox(height: 4),
                       Text(subtitle, style: bodyRegular),
-                    ]
+                    ],
                   ],
                 ),
               ),
-              if (trailing != null) trailing
+              if (trailing != null) trailing,
             ],
           ),
         ),

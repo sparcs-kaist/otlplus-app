@@ -32,12 +32,14 @@ void main() {
 
   testWidgets("pump CourseDetailPage", (WidgetTester tester) async {
     tester.pumpWidget(
-        CourseDetailPage().scaffoldAndNotifier(CourseDetailModel()));
+      CourseDetailPage().scaffoldAndNotifier(CourseDetailModel()),
+    );
   });
 
   testWidgets("pump CourseSearchPage", (WidgetTester tester) async {
     tester.pumpWidget(
-        CourseSearchPage().scaffoldAndNotifier(CourseSearchModel()));
+      CourseSearchPage().scaffoldAndNotifier(CourseSearchModel()),
+    );
   });
 
   testWidgets("pump DictionaryPage", (WidgetTester tester) async {
@@ -46,12 +48,14 @@ void main() {
 
   testWidgets("pump LectureDetailPage", (WidgetTester tester) async {
     tester.pumpWidget(
-        LectureDetailPage().scaffoldAndNotifier(LectureDetailModel()));
+      LectureDetailPage().scaffoldAndNotifier(LectureDetailModel()),
+    );
   });
 
   testWidgets("pump LectureSearchPage", (WidgetTester tester) async {
     tester.pumpWidget(
-        LectureSearchPage().scaffoldAndNotifier(LectureSearchModel()));
+      LectureSearchPage().scaffoldAndNotifier(LectureSearchModel()),
+    );
   });
 
   testWidgets("pump LikedReviewPage", (WidgetTester tester) async {
@@ -63,14 +67,17 @@ void main() {
   });
 
   testWidgets("pump MainPage", (WidgetTester tester) async {
-    tester.pumpWidget(MainPage(
-      changeIndex: (int index) {},
-    ).materialAndNotifier(InfoModel(forTest: true)));
+    tester.pumpWidget(
+      MainPage(
+        changeIndex: (int index) {},
+      ).materialAndNotifier(InfoModel(forTest: true)),
+    );
   });
 
   testWidgets("pump MyReviewPage", (WidgetTester tester) async {
     tester.pumpWidget(
-        MyReviewPage().materialAndNotifier(InfoModel(forTest: true)));
+      MyReviewPage().materialAndNotifier(InfoModel(forTest: true)),
+    );
   });
 
   testWidgets("pump PeoplePage", (WidgetTester tester) async {
@@ -87,7 +94,8 @@ void main() {
 
   testWidgets("pump SettingsPage", (WidgetTester tester) async {
     tester.pumpWidget(
-        SettingsPage().materialAndNotifier(SettingsModel(forTest: true)));
+      SettingsPage().materialAndNotifier(SettingsModel(forTest: true)),
+    );
   });
 
   testWidgets("pump TimetablePage", (WidgetTester tester) async {

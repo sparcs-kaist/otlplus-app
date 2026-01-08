@@ -8,17 +8,17 @@ class Classtime extends Time {
   final String classroomShortEn;
   final String roomName;
 
-  Classtime(
-      {required this.buildingCode,
-      required this.classroom,
-      required this.classroomEn,
-      required this.classroomShort,
-      required this.classroomShortEn,
-      required this.roomName,
-      day,
-      begin,
-      end})
-      : super(day: day, begin: begin, end: end);
+  Classtime({
+    required this.buildingCode,
+    required this.classroom,
+    required this.classroomEn,
+    required this.classroomShort,
+    required this.classroomShortEn,
+    required this.roomName,
+    day,
+    begin,
+    end,
+  }) : super(day: day, begin: begin, end: end);
 
   @override
   List<Object> get props =>
@@ -26,15 +26,16 @@ class Classtime extends Time {
 
   factory Classtime.fromJson(Map<String, dynamic> json) {
     return Classtime(
-        buildingCode: json['building_code'],
-        classroom: json['classroom'],
-        classroomEn: json['classroom_en'],
-        classroomShort: json['classroom_short'],
-        classroomShortEn: json['classroom_short_en'],
-        roomName: json['room_name'],
-        day: json['day'],
-        begin: json['begin'],
-        end: json['end']);
+      buildingCode: json['building_code'],
+      classroom: json['classroom'],
+      classroomEn: json['classroom_en'],
+      classroomShort: json['classroom_short'],
+      classroomShortEn: json['classroom_short_en'],
+      roomName: json['room_name'],
+      day: json['day'],
+      begin: json['begin'],
+      end: json['end'],
+    );
   }
 
   Map<String, dynamic> toJson() {

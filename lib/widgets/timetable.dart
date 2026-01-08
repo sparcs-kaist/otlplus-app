@@ -6,15 +6,7 @@ import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/time.dart';
 import 'package:otlplus/widgets/timetable_block.dart';
 
-const DAYSOFWEEK = [
-  'mon',
-  'tue',
-  'wed',
-  'thu',
-  'fri',
-  'sat',
-  'sun',
-];
+const DAYSOFWEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 class Timetable extends StatelessWidget {
   double get _dividerHeight => dividerPadding.vertical + 1;
@@ -26,27 +18,36 @@ class Timetable extends StatelessWidget {
   final EdgeInsetsGeometry dividerPadding;
   final int daysCount;
 
-  Timetable(
-      {required List<Lecture> lectures,
-      required this.builder,
-      bool isExamTime = false,
-      this.fontSize = 10.0,
-      this.dividerPadding = const EdgeInsets.fromLTRB(0, 6, 0, 7),
-      this.daysCount = 5}) {
+  Timetable({
+    required List<Lecture> lectures,
+    required this.builder,
+    bool isExamTime = false,
+    this.fontSize = 10.0,
+    this.dividerPadding = const EdgeInsets.fromLTRB(0, 6, 0, 7),
+    this.daysCount = 5,
+  }) {
     if (isExamTime) {
-      lectures.forEach((lecture) => lecture.examtimes
-          .forEach((examtime) => _lectures[examtime.day][examtime] = lecture));
+      lectures.forEach(
+        (lecture) => lecture.examtimes.forEach(
+          (examtime) => _lectures[examtime.day][examtime] = lecture,
+        ),
+      );
     } else {
-      lectures.forEach((lecture) => lecture.classtimes.forEach(
-          (classtime) => _lectures[classtime.day][classtime] = lecture));
+      lectures.forEach(
+        (lecture) => lecture.classtimes.forEach(
+          (classtime) => _lectures[classtime.day][classtime] = lecture,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: List.generate(daysCount + 1,
-          (i) => (i == 0) ? _buildHeaders() : _buildColumn(i - 1)),
+      children: List.generate(
+        daysCount + 1,
+        (i) => (i == 0) ? _buildHeaders() : _buildColumn(i - 1),
+      ),
     );
   }
 
@@ -57,10 +58,7 @@ class Timetable extends StatelessWidget {
         child: Text(
           (((i / 100 - 1) % 12) + 1).toStringAsFixed(0),
           textAlign: TextAlign.end,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: fontSize,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
         ),
       );
     }
@@ -126,7 +124,9 @@ class Timetable extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 1.0),
               child: Container(
-                  color: OTLColor.gray0.withValues(alpha: .25), height: 1),
+                color: OTLColor.gray0.withValues(alpha: .25),
+                height: 1,
+              ),
             ),
           ),
         ),
@@ -137,11 +137,10 @@ class Timetable extends StatelessWidget {
   Widget _buildCells() {
     return Column(
       children: List.generate(
-          ((2400 - 900) / 25 + 1).toInt(),
-          (i) => Padding(
-                padding: dividerPadding,
-                child: _buildCell(i * 25 + 900),
-              )),
+        ((2400 - 900) / 25 + 1).toInt(),
+        (i) =>
+            Padding(padding: dividerPadding, child: _buildCell(i * 25 + 900)),
+      ),
     );
   }
 
@@ -163,7 +162,8 @@ class Timetable extends StatelessWidget {
               children: <Widget>[
                 _buildCells(),
                 ..._lectures[i].entries.map(
-                    (e) => _buildLectureBlock(lecture: e.value, time: e.key)),
+                  (e) => _buildLectureBlock(lecture: e.value, time: e.key),
+                ),
               ],
             ),
           ],

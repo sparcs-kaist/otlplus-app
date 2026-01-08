@@ -16,22 +16,19 @@ class ReviewWriteBlock extends StatefulWidget {
   final bool isSimple;
   final void Function(Review)? onUploaded;
 
-  ReviewWriteBlock(
-      {required this.lecture,
-      this.existingReview,
-      this.isSimple = false,
-      this.onUploaded});
+  ReviewWriteBlock({
+    required this.lecture,
+    this.existingReview,
+    this.isSimple = false,
+    this.onUploaded,
+  });
 
   @override
   _ReviewWriteBlockState createState() => _ReviewWriteBlockState();
 }
 
 class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
-  final _scores = {
-    "성적": 0,
-    "널널": 0,
-    "강의": 0,
-  };
+  final _scores = {"성적": 0, "널널": 0, "강의": 0};
   final _contentTextController = TextEditingController();
   bool _isUploading = false;
 
@@ -64,10 +61,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
         color: OTLColor.grayE,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10.0,
-          vertical: 8.0,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -86,15 +80,16 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
                       ),
                       const TextSpan(text: " "),
                       TextSpan(
-                          text: widget.lecture.professors
-                              .map(
-                                (professor) => isEn
-                                    ? (professor.nameEn == ''
+                        text: widget.lecture.professors
+                            .map(
+                              (professor) => isEn
+                                  ? (professor.nameEn == ''
                                         ? professor.name
                                         : professor.nameEn)
-                                    : professor.name,
-                              )
-                              .join(" ")),
+                                  : professor.name,
+                            )
+                            .join(" "),
+                      ),
                       const TextSpan(text: " "),
                       TextSpan(text: widget.lecture.year.toString()),
                       const TextSpan(text: " "),
@@ -112,10 +107,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.only(
-                top: 4.0,
-                bottom: 8.0,
-              ),
+              padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
               child: DottedBorder(
                 color: OTLColor.grayA,
                 child: SizedBox(
@@ -187,22 +179,26 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
     Response response;
 
     if (widget.existingReview == null) {
-      response = await DioProvider().dio.post(API_REVIEW_URL, data: {
-        "lecture": widget.lecture.id,
-        "content": _contentTextController.text,
-        "grade": _scores["성적"],
-        "load": _scores["널널"],
-        "speech": _scores["강의"],
-      });
+      response = await DioProvider().dio.post(
+        API_REVIEW_URL,
+        data: {
+          "lecture": widget.lecture.id,
+          "content": _contentTextController.text,
+          "grade": _scores["성적"],
+          "load": _scores["널널"],
+          "speech": _scores["강의"],
+        },
+      );
     } else {
       response = await DioProvider().dio.patch(
-          API_REVIEW_URL + "/" + widget.existingReview!.id.toString(),
-          data: {
-            "content": _contentTextController.text,
-            "grade": _scores["성적"],
-            "load": _scores["널널"],
-            "speech": _scores["강의"],
-          });
+        API_REVIEW_URL + "/" + widget.existingReview!.id.toString(),
+        data: {
+          "content": _contentTextController.text,
+          "grade": _scores["성적"],
+          "load": _scores["널널"],
+          "speech": _scores["강의"],
+        },
+      );
     }
 
     final review = Review.fromJson(response.data);
@@ -262,8 +258,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
               child: Text(
                 ["?", "F", "D", "C", "B", "A"][score],
                 style: labelBold.copyWith(
-                  color:
-                      _scores[type] == score ? OTLColor.grayF : OTLColor.grayF,
+                  color: _scores[type] == score
+                      ? OTLColor.grayF
+                      : OTLColor.grayF,
                 ),
               ),
             ),

@@ -24,7 +24,7 @@ import 'package:otlplus/widgets/review_write_block.dart';
 
 class LectureDetailPage extends StatelessWidget {
   LectureDetailPage({Key? key, this.fromCourseDetailPage = false})
-      : super(key: key);
+    : super(key: key);
 
   static String route = 'lecture_detail_page';
   final bool fromCourseDetailPage;
@@ -48,32 +48,34 @@ class LectureDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LectureDetailModel lectureDetailModel =
-        context.watch<LectureDetailModel>();
+    final LectureDetailModel lectureDetailModel = context
+        .watch<LectureDetailModel>();
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
 
     return OTLScaffold(
       child: OTLLayout(
         middle: Text(
-            lectureDetailModel.hasData
-                ? (isEn
+          lectureDetailModel.hasData
+              ? (isEn
                     ? lectureDetailModel.lecture.titleEn
                     : lectureDetailModel.lecture.title)
-                : '',
-            style: titleBold),
+              : '',
+          style: titleBold,
+        ),
         body: Card(
           shape: const RoundedRectangleBorder(),
           child:
               context.select<LectureDetailModel, bool>((model) => model.hasData)
-                  ? _buildBody(context)
-                  : Center(
-                      child: const CircularProgressIndicator(),
-                    ),
+              ? _buildBody(context)
+              : Center(child: const CircularProgressIndicator()),
         ),
-        trailing: (context.select<LectureDetailModel, bool>(
-                    (model) => model.hasData) &&
+        trailing:
+            (context.select<LectureDetailModel, bool>(
+                  (model) => model.hasData,
+                ) &&
                 context.select<LectureDetailModel, bool>(
-                    (model) => model.isUpdateEnabled) &&
+                  (model) => model.isUpdateEnabled,
+                ) &&
                 context.read<TimetableModel>().selectedIndex != 0)
             ? _buildUpdateButton(context)
             : null,
@@ -82,8 +84,9 @@ class LectureDetailPage extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context) {
-    final lecture =
-        context.select<LectureDetailModel, Lecture>((model) => model.lecture);
+    final lecture = context.select<LectureDetailModel, Lecture>(
+      (model) => model.lecture,
+    );
 
     return Padding(
       padding: const EdgeInsets.all(12.0),
@@ -98,10 +101,12 @@ class LectureDetailPage extends StatelessWidget {
   }
 
   Widget _buildUpdateButton(BuildContext context) {
-    final lecture =
-        context.select<LectureDetailModel, Lecture>((model) => model.lecture);
+    final lecture = context.select<LectureDetailModel, Lecture>(
+      (model) => model.lecture,
+    );
     final isAdded = context.select<TimetableModel, bool>(
-        (model) => model.currentTimetable.lectures.contains(lecture));
+      (model) => model.currentTimetable.lectures.contains(lecture),
+    );
 
     return IconTextButton(
       padding: const EdgeInsets.all(16),
@@ -110,9 +115,7 @@ class LectureDetailPage extends StatelessWidget {
         final isKo = context.locale == Locale('ko');
         final lectureTitle = isKo ? lecture.title : lecture.titleEn;
         final timetable =
-            '${timetableModel.selectedSemester.title} ${'timetable.tab'.tr(
-          args: [timetableModel.selectedIndex.toString()],
-        )}';
+            '${timetableModel.selectedSemester.title} ${'timetable.tab'.tr(args: [timetableModel.selectedIndex.toString()])}';
 
         if (isAdded) {
           OTLNavigator.pushDialog(
@@ -149,11 +152,13 @@ class LectureDetailPage extends StatelessWidget {
                   type: OTLDialogType.addOverlappingLectureWithTab,
                   namedArgs: {
                     'lectures': lectures
-                        .map((lecture) =>
-                            "'${isKo ? lecture.title : lecture.titleEn}'")
+                        .map(
+                          (lecture) =>
+                              "'${isKo ? lecture.title : lecture.titleEn}'",
+                        )
                         .join(', '),
                     'lecture': lectureTitle,
-                    'timetable': timetable
+                    'timetable': timetable,
                   },
                   onTapPos: () => result = true,
                 ),
@@ -195,7 +200,8 @@ class LectureDetailPage extends StatelessWidget {
             customTabsOptions: CustomTabsOptions(
               colorScheme: CustomTabsColorScheme.light,
               defaultColorSchemeParams: CustomTabsColorSchemeParams(
-                  toolbarColor: OTLColor.pinksLight),
+                toolbarColor: OTLColor.pinksLight,
+              ),
               shareState: CustomTabsShareState.on,
               instantAppsEnabled: true,
               showTitle: true,
@@ -239,26 +245,31 @@ class LectureDetailPage extends StatelessWidget {
         height: 24.0,
         padding: const EdgeInsets.only(bottom: 4.0),
         builder: (shrinkOffset) => IconTextButton(
-            direction: ButtonDirection.rowReversed,
-            padding: EdgeInsets.zero,
-            onTap: () async {
-              if (shrinkOffset > 0) {
-                _scrollController.animateTo(0,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut);
-              } else {
-                await Scrollable.ensureVisible(headerKey.currentContext!,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut);
-                _scrollController.jumpTo(_scrollController.offset + 2);
-              }
-            },
-            key: headerKey,
-            text: "dictionary.reviews".tr(),
-            textStyle: bodyBold,
-            icon: (shrinkOffset > 0)
-                ? Icons.keyboard_arrow_up
-                : Icons.keyboard_arrow_down),
+          direction: ButtonDirection.rowReversed,
+          padding: EdgeInsets.zero,
+          onTap: () async {
+            if (shrinkOffset > 0) {
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            } else {
+              await Scrollable.ensureVisible(
+                headerKey.currentContext!,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+              _scrollController.jumpTo(_scrollController.offset + 2);
+            }
+          },
+          key: headerKey,
+          text: "dictionary.reviews".tr(),
+          textStyle: bodyBold,
+          icon: (shrinkOffset > 0)
+              ? Icons.keyboard_arrow_up
+              : Icons.keyboard_arrow_down,
+        ),
       ),
     );
   }
@@ -267,8 +278,9 @@ class LectureDetailPage extends StatelessWidget {
     final user = context.watch<InfoModel>().user;
     Review? existingReview;
     try {
-      existingReview =
-          user.reviews.firstWhere((review) => review.lecture.id == lecture.id);
+      existingReview = user.reviews.firstWhere(
+        (review) => review.lecture.id == lecture.id,
+      );
     } on StateError {}
 
     return SliverList(
@@ -294,13 +306,11 @@ class LectureDetailPage extends StatelessWidget {
                     style: labelRegular.copyWith(color: OTLColor.grayA),
                   ),
                 ),
-              )
+              ),
             ];
           } else {
             return model.reviews
-                .map((review) => ReviewBlock(
-                      review: review,
-                    ))
+                .map((review) => ReviewBlock(review: review))
                 .toList();
           }
         }),
@@ -320,10 +330,11 @@ class LectureDetailPage extends StatelessWidget {
                 lecture.isEnglish ? "Eng" : "한",
               ),
               _buildStatus(
-                  (lecture.credit > 0) ? "dictionary.credit".tr() : "AU",
-                  (lecture.credit > 0)
-                      ? lecture.credit.toString()
-                      : lecture.creditAu.toString()),
+                (lecture.credit > 0) ? "dictionary.credit".tr() : "AU",
+                (lecture.credit > 0)
+                    ? lecture.credit.toString()
+                    : lecture.creditAu.toString(),
+              ),
               _buildStatus(
                 "dictionary.competition".tr(),
                 (lecture.limit == 0)
@@ -377,24 +388,24 @@ class LectureDetailPage extends StatelessWidget {
           isEn ? lecture.professorsStrShortEn : lecture.professorsStrShort,
         ),
         _buildAttribute(
-            "dictionary.classroom".tr(),
-            lecture.classtimes
-                .map((classtime) =>
-                    isEn ? classtime.classroomEn : classtime.classroom)
-                .toSet()
-                .join(", ")),
-        _buildAttribute(
-          "dictionary.limit".tr(),
-          lecture.limit.toString(),
+          "dictionary.classroom".tr(),
+          lecture.classtimes
+              .map(
+                (classtime) =>
+                    isEn ? classtime.classroomEn : classtime.classroom,
+              )
+              .toSet()
+              .join(", "),
         ),
+        _buildAttribute("dictionary.limit".tr(), lecture.limit.toString()),
         _buildAttribute(
           "dictionary.exam".tr(),
           (lecture.examtimes.length == 0)
               ? "common.no_info".tr()
               : lecture.examtimes
-                  .map((examtime) => isEn ? examtime.strEn : examtime.str)
-                  .toSet()
-                  .join(", "),
+                    .map((examtime) => isEn ? examtime.strEn : examtime.str)
+                    .toSet()
+                    .join(", "),
         ),
       ],
     );

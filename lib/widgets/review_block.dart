@@ -51,8 +51,10 @@ class _ReviewBlockState extends State<ReviewBlock> {
               color: OTLColor.grayE,
               onTap: widget.onTap,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10.0,
+                  vertical: 8.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
@@ -68,15 +70,16 @@ class _ReviewBlockState extends State<ReviewBlock> {
                           ),
                           const TextSpan(text: " "),
                           TextSpan(
-                              text: widget.review.lecture.professors
-                                  .map(
-                                    (professor) => isEn
-                                        ? (professor.nameEn == ''
+                            text: widget.review.lecture.professors
+                                .map(
+                                  (professor) => isEn
+                                      ? (professor.nameEn == ''
                                             ? professor.name
                                             : professor.nameEn)
-                                        : professor.name,
-                                  )
-                                  .join(" ")),
+                                      : professor.name,
+                                )
+                                .join(" "),
+                          ),
                           const TextSpan(text: " "),
                           TextSpan(text: widget.review.lecture.year.toString()),
                           const TextSpan(text: " "),
@@ -109,25 +112,30 @@ class _ReviewBlockState extends State<ReviewBlock> {
                               TextSpan(text: "review.likes".tr()),
                               const TextSpan(text: " "),
                               TextSpan(
-                                  text: _like.toString(), style: labelBold),
+                                text: _like.toString(),
+                                style: labelBold,
+                              ),
                               const TextSpan(text: "  "),
                               TextSpan(text: "review.grade".tr()),
                               const TextSpan(text: " "),
                               TextSpan(
-                                  text: widget.review.gradeLetter,
-                                  style: labelBold),
+                                text: widget.review.gradeLetter,
+                                style: labelBold,
+                              ),
                               const TextSpan(text: "  "),
                               TextSpan(text: "review.load".tr()),
                               const TextSpan(text: " "),
                               TextSpan(
-                                  text: widget.review.loadLetter,
-                                  style: labelBold),
+                                text: widget.review.loadLetter,
+                                style: labelBold,
+                              ),
                               const TextSpan(text: "  "),
                               TextSpan(text: "review.speech".tr()),
                               const TextSpan(text: " "),
                               TextSpan(
-                                  text: widget.review.speechLetter,
-                                  style: labelBold),
+                                text: widget.review.speechLetter,
+                                style: labelBold,
+                              ),
                             ],
                           ),
                         ),
@@ -143,8 +151,9 @@ class _ReviewBlockState extends State<ReviewBlock> {
                 IconTextButton(
                   color: OTLColor.pinksMain,
                   iconSize: 16.0,
-                  icon:
-                      _liked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
+                  icon: _liked
+                      ? Icons.thumb_up_alt
+                      : Icons.thumb_up_alt_outlined,
                   spaceBetween: 4.0,
                   text: "review.like".tr(),
                   textStyle: labelRegular,
@@ -157,9 +166,9 @@ class _ReviewBlockState extends State<ReviewBlock> {
                   textStyle: labelRegular,
                   onTap: _report,
                   padding: EdgeInsets.fromLTRB(3, 8, 10, 8),
-                )
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -173,8 +182,9 @@ class _ReviewBlockState extends State<ReviewBlock> {
     });
 
     await DioProvider().dio.post(
-        API_REVIEW_LIKE_URL.replaceFirst("{id}", widget.review.id.toString()),
-        data: {});
+      API_REVIEW_LIKE_URL.replaceFirst("{id}", widget.review.id.toString()),
+      data: {},
+    );
   }
 
   Future<void> _uploadCancel() async {
@@ -184,8 +194,9 @@ class _ReviewBlockState extends State<ReviewBlock> {
     });
 
     await DioProvider().dio.delete(
-        API_REVIEW_LIKE_URL.replaceFirst("{id}", widget.review.id.toString()),
-        data: {});
+      API_REVIEW_LIKE_URL.replaceFirst("{id}", widget.review.id.toString()),
+      data: {},
+    );
   }
 
   void _report() {
@@ -196,21 +207,13 @@ class _ReviewBlockState extends State<ReviewBlock> {
         '${Mailto(
           to: [CONTACT],
           subject: 'review.mailto.subject'.tr(),
-          body: 'review.mailto.body_reason'.tr() +
-              'review.mailto.body_info'.tr(
+          body: 'review.mailto.body_reason'.tr() + 'review.mailto.body_info'.tr(
                 namedArgs: {
                   'title': isKo ? lecture.title : lecture.titleEn,
                   'oldCode': lecture.oldCode,
-                  'semesterTitle': Semester(
-                          year: lecture.year,
-                          semester: lecture.semester,
-                          beginning: DateTime(0),
-                          end: DateTime(0))
-                      .title,
-                  'professors': lecture.professors
-                      .map((e) => isKo ? e.name : e.nameEn)
-                      .join(', '),
-                  'content': widget.review.content
+                  'semesterTitle': Semester(year: lecture.year, semester: lecture.semester, beginning: DateTime(0), end: DateTime(0)).title,
+                  'professors': lecture.professors.map((e) => isKo ? e.name : e.nameEn).join(', '),
+                  'content': widget.review.content,
                 },
               ),
         )}',

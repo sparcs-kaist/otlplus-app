@@ -21,16 +21,23 @@ class MyReviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<InfoModel>().user;
-    final targetSemesters = user.reviewWritableLectures
-        .map((lecture) => Semester(
-            year: lecture.year,
-            semester: lecture.semester,
-            beginning: DateTime.now(),
-            end: DateTime.now()))
-        .toSet()
-        .toList()
-      ..sort((a, b) =>
-          ((a.year != b.year) ? (b.year - a.year) : (b.semester - a.semester)));
+    final targetSemesters =
+        user.reviewWritableLectures
+            .map(
+              (lecture) => Semester(
+                year: lecture.year,
+                semester: lecture.semester,
+                beginning: DateTime.now(),
+                end: DateTime.now(),
+              ),
+            )
+            .toSet()
+            .toList()
+          ..sort(
+            (a, b) => ((a.year != b.year)
+                ? (b.year - a.year)
+                : (b.semester - a.semester)),
+          );
 
     return OTLScaffold(
       child: OTLLayout(
@@ -44,33 +51,32 @@ class MyReviewPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   ...targetSemesters
-                      .map((semester) => Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Text(
-                                  '${semester.year} ${[
-                                    "",
-                                    "semester.spring".tr(),
-                                    "semester.summer".tr(),
-                                    "semester.fall".tr(),
-                                    "semester.winter".tr()
-                                  ][semester.semester]}',
-                                  style: labelBold,
-                                ),
+                      .map(
+                        (semester) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Text(
+                                '${semester.year} ${["", "semester.spring".tr(), "semester.summer".tr(), "semester.fall".tr(), "semester.winter".tr()][semester.semester]}',
+                                style: labelBold,
                               ),
-                              ..._buildLectureBlocks(
-                                  context,
-                                  user,
-                                  user.reviewWritableLectures
-                                      .where((lecture) =>
-                                          lecture.year == semester.year &&
-                                          lecture.semester == semester.semester)
-                                      .toList()),
-                              const SizedBox(height: 8.0),
-                            ],
-                          ))
+                            ),
+                            ..._buildLectureBlocks(
+                              context,
+                              user,
+                              user.reviewWritableLectures
+                                  .where(
+                                    (lecture) =>
+                                        lecture.year == semester.year &&
+                                        lecture.semester == semester.semester,
+                                  )
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 8.0),
+                          ],
+                        ),
+                      )
                       .toList(),
                 ],
               ),
@@ -82,33 +88,38 @@ class MyReviewPage extends StatelessWidget {
   }
 
   List<Widget> _buildLectureBlocks(
-      BuildContext context, User user, List<Lecture> lectures) {
+    BuildContext context,
+    User user,
+    List<Lecture> lectures,
+  ) {
     final blocks = <Widget>[];
     for (int i = 0; i < lectures.length ~/ 2; i++) {
-      blocks.add(IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Expanded(
-              child: _buildLectureBlock(context, user, lectures[i * 2]),
-            ),
-            Expanded(
-              child: _buildLectureBlock(context, user, lectures[i * 2 + 1]),
-            ),
-          ],
+      blocks.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Expanded(
+                child: _buildLectureBlock(context, user, lectures[i * 2]),
+              ),
+              Expanded(
+                child: _buildLectureBlock(context, user, lectures[i * 2 + 1]),
+              ),
+            ],
+          ),
         ),
-      ));
+      );
     }
 
     if (blocks.length * 2 < lectures.length) {
-      blocks.add(Row(
-        children: <Widget>[
-          Expanded(
-            child: _buildLectureBlock(context, user, lectures.last),
-          ),
-          Expanded(child: const SizedBox()),
-        ],
-      ));
+      blocks.add(
+        Row(
+          children: <Widget>[
+            Expanded(child: _buildLectureBlock(context, user, lectures.last)),
+            Expanded(child: const SizedBox()),
+          ],
+        ),
+      );
     }
 
     return blocks;

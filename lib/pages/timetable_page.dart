@@ -35,16 +35,16 @@ class _TimetablePageState extends State<TimetablePage> {
   Widget build(BuildContext context) {
     if (context.select<TimetableModel, bool>((model) => model.isLoaded))
       return _buildBody(context);
-    return Center(
-      child: const CircularProgressIndicator(),
-    );
+    return Center(child: const CircularProgressIndicator());
   }
 
   Widget _buildBody(BuildContext context) {
     final lectures = context.select<TimetableModel, List<Lecture>>(
-        (model) => model.currentTimetable.lectures);
-    final mode =
-        context.select<TimetableModel, int>((model) => model.selectedMode);
+      (model) => model.currentTimetable.lectures,
+    );
+    final mode = context.select<TimetableModel, int>(
+      (model) => model.selectedMode,
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_selectedKey.currentContext != null)
@@ -84,7 +84,8 @@ class _TimetablePageState extends State<TimetablePage> {
                               decoration: BoxDecoration(
                                 color: OTLColor.grayF,
                                 borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(16)),
+                                  topLeft: Radius.circular(16),
+                                ),
                               ),
                               child: _buildTimetableTabs(context),
                             ),
@@ -95,14 +96,17 @@ class _TimetablePageState extends State<TimetablePage> {
                             behavior: HitTestBehavior.translucent,
                             onTap: () {
                               OTLNavigator.push(
-                                  context,
-                                  LectureSearchPage(
-                                    openKeyboard: false,
-                                  ));
+                                context,
+                                LectureSearchPage(openKeyboard: false),
+                              );
                             },
                             child: Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(12, 18, 16, 18),
+                              padding: const EdgeInsets.fromLTRB(
+                                12,
+                                18,
+                                16,
+                                18,
+                              ),
                               child: Icon(
                                 Icons.search,
                                 size: 24,
@@ -121,12 +125,15 @@ class _TimetablePageState extends State<TimetablePage> {
                         case 0:
                         case 1:
                           return _buildTimetableMode(
-                              context, lectures, mode == 1);
+                            context,
+                            lectures,
+                            mode == 1,
+                          );
                         default:
                           return MapView(lectures: lectures);
                       }
                     }(),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -149,7 +156,10 @@ class _TimetablePageState extends State<TimetablePage> {
   }
 
   Widget _buildTimetableMode(
-      BuildContext context, List<Lecture> lectures, bool isExamTime) {
+    BuildContext context,
+    List<Lecture> lectures,
+    bool isExamTime,
+  ) {
     return Column(
       children: [
         Expanded(
@@ -175,8 +185,9 @@ class _TimetablePageState extends State<TimetablePage> {
     bool isExamTime,
   ) {
     bool isFirst = true;
-    final tempLecture =
-        context.select<TimetableModel, Lecture?>((model) => model.tempLecture);
+    final tempLecture = context.select<TimetableModel, Lecture?>(
+      (model) => model.tempLecture,
+    );
 
     return Timetable(
       lectures: (tempLecture == null) ? lectures : [...lectures, tempLecture],
@@ -203,23 +214,23 @@ class _TimetablePageState extends State<TimetablePage> {
           },
           onLongPress:
               isSelected || context.read<TimetableModel>().selectedIndex == 0
-                  ? null
-                  : () {
-                      OTLNavigator.pushDialog(
-                        context: context,
-                        builder: (_) => OTLDialog(
-                          type: OTLDialogType.deleteLecture,
-                          namedArgs: {
-                            'lecture': context.locale == Locale('ko')
-                                ? lecture.title
-                                : lecture.titleEn
-                          },
-                          onTapPos: () => context
-                              .read<TimetableModel>()
-                              .removeLecture(lecture: lecture),
-                        ),
-                      );
-                    },
+              ? null
+              : () {
+                  OTLNavigator.pushDialog(
+                    context: context,
+                    builder: (_) => OTLDialog(
+                      type: OTLDialogType.deleteLecture,
+                      namedArgs: {
+                        'lecture': context.locale == Locale('ko')
+                            ? lecture.title
+                            : lecture.titleEn,
+                      },
+                      onTapPos: () => context
+                          .read<TimetableModel>()
+                          .removeLecture(lecture: lecture),
+                    ),
+                  );
+                },
         );
       },
     );
@@ -242,7 +253,8 @@ class _TimetablePageState extends State<TimetablePage> {
       onCopyTap: () {
         final timetableModel = context.read<TimetableModel>();
         timetableModel.createTimetable(
-            lectures: timetableModel.currentTimetable.lectures);
+          lectures: timetableModel.currentTimetable.lectures,
+        );
         /*if (_isSearchOpened) return;
         setState(() {
           _isSearchOpened = true;
@@ -255,12 +267,14 @@ class _TimetablePageState extends State<TimetablePage> {
             OTLNavigator.pushDialog(
               context: context,
               builder: (_) => OTLDialog(
-                  type: OTLDialogType.accountDeleted,
-                  namedArgs: {
-                    'timetable': 'timetable.tab'
-                        .tr(args: [timetableModel.selectedIndex.toString()])
-                  },
-                  onTapPos: () {}),
+                type: OTLDialogType.accountDeleted,
+                namedArgs: {
+                  'timetable': 'timetable.tab'.tr(
+                    args: [timetableModel.selectedIndex.toString()],
+                  ),
+                },
+                onTapPos: () {},
+              ),
             );
           });
         } else if (timetableModel.timetables.length <= 2) {
@@ -270,8 +284,9 @@ class _TimetablePageState extends State<TimetablePage> {
               builder: (_) => OTLDialog(
                 type: OTLDialogType.disabledDeleteLastTab,
                 namedArgs: {
-                  'timetable': 'timetable.tab'
-                      .tr(args: [timetableModel.selectedIndex.toString()])
+                  'timetable': 'timetable.tab'.tr(
+                    args: [timetableModel.selectedIndex.toString()],
+                  ),
                 },
               ),
             );
@@ -283,8 +298,9 @@ class _TimetablePageState extends State<TimetablePage> {
               builder: (_) => OTLDialog(
                 type: OTLDialogType.deleteTab,
                 namedArgs: {
-                  'timetable': 'timetable.tab'
-                      .tr(args: [timetableModel.selectedIndex.toString()])
+                  'timetable': 'timetable.tab'.tr(
+                    args: [timetableModel.selectedIndex.toString()],
+                  ),
                 },
                 onTapPos: () =>
                     context.read<TimetableModel>().deleteTimetable(),
@@ -294,9 +310,10 @@ class _TimetablePageState extends State<TimetablePage> {
         }
       },
       onExportTap: (type) {
-        context
-            .read<TimetableModel>()
-            .shareTimetable(type, context.locale.languageCode);
+        context.read<TimetableModel>().shareTimetable(
+          type,
+          context.locale.languageCode,
+        );
       },
     );
   }

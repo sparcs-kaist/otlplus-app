@@ -47,25 +47,24 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     // Localization이 초기화되지 않는 오류가 있는 것으로 파악 > 일단 야매로 딜레이 줌
     return FutureBuilder(
-        future: Future.delayed(Duration(milliseconds: 10)),
-        builder: (context, asyncSnapshot) {
-          if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-            return Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          return OTLScaffold(
-            // extendBodyBehindAppBar: _currentIndex == 0,
-            bottomNavigationBar: _buildBottomNavigationBar(context),
-            child: GestureDetector(
-              onTap: () {
-                FocusScope.of(context).unfocus();
-              },
-              child: LayoutBuilder(builder: _buildStack),
-            ),
-            resizeToAvoidBottomInset: false,
-          );
-        });
+      future: Future.delayed(Duration(milliseconds: 10)),
+      builder: (context, asyncSnapshot) {
+        if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        return OTLScaffold(
+          // extendBodyBehindAppBar: _currentIndex == 0,
+          bottomNavigationBar: _buildBottomNavigationBar(context),
+          child: GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+            },
+            child: LayoutBuilder(builder: _buildStack),
+          ),
+          resizeToAvoidBottomInset: false,
+        );
+      },
+    );
   }
 
   Widget _buildStack(BuildContext context, BoxConstraints constraints) {
@@ -73,10 +72,7 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
     final layerAnimation = RelativeRectTween(
       begin: RelativeRect.fromLTRB(0, layerTop, 0, -layerTop),
       end: RelativeRect.fromLTRB(0, 0, 0, 0),
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     return Stack(
       children: <Widget>[
@@ -86,11 +82,13 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
             child: IndexedStack(
               index: _currentIndex,
               children: <Widget>[
-                MainPage(changeIndex: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                }),
+                MainPage(
+                  changeIndex: (index) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  },
+                ),
                 TimetablePage(),
                 DictionaryPage(),
                 ReviewPage(),

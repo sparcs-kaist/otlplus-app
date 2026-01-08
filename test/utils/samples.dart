@@ -18,7 +18,8 @@ class SampleClasstime {
   static final day = 1;
   static final begin = 2;
   static final end = 3;
-  static final json = """
+  static final json =
+      """
       {
         "building_code": "$buildingCode",
         "classroom": "$classroom",
@@ -33,15 +34,16 @@ class SampleClasstime {
       """;
 
   static final shared = Classtime(
-      buildingCode: buildingCode,
-      classroom: classroom,
-      classroomEn: classroomEn,
-      classroomShort: classroomShort,
-      classroomShortEn: classroomShortEn,
-      roomName: roomName,
-      day: day,
-      begin: begin,
-      end: end);
+    buildingCode: buildingCode,
+    classroom: classroom,
+    classroomEn: classroomEn,
+    classroomShort: classroomShort,
+    classroomShortEn: classroomShortEn,
+    roomName: roomName,
+    day: day,
+    begin: begin,
+    end: end,
+  );
 }
 
 class SampleProfessor {
@@ -50,7 +52,8 @@ class SampleProfessor {
   static final professorId = 1;
   static final reviewTotalWeight = 2.0;
 
-  static final json = """{
+  static final json =
+      """{
     "name": "$name",
     "name_en": "$nameEn",
     "professor_id": $professorId,
@@ -58,10 +61,11 @@ class SampleProfessor {
   }""";
 
   static final shared = Professor(
-      name: name,
-      nameEn: nameEn,
-      professorId: professorId,
-      reviewTotalWeight: reviewTotalWeight);
+    name: name,
+    nameEn: nameEn,
+    professorId: professorId,
+    reviewTotalWeight: reviewTotalWeight,
+  );
 }
 
 class SampleDepartment {
@@ -70,15 +74,20 @@ class SampleDepartment {
   static final nameEn = "";
   static final code = "";
 
-  static final json = """{
+  static final json =
+      """{
     "id": $id,
     "name": "$name",
     "name_en": "$nameEn",
     "code": "$code"
   }""";
 
-  static final shared =
-      Department(id: id, name: name, nameEn: nameEn, code: code);
+  static final shared = Department(
+    id: id,
+    name: name,
+    nameEn: nameEn,
+    code: code,
+  );
 }
 
 class SampleCourse {
@@ -97,7 +106,8 @@ class SampleCourse {
   static final speech = 3.0;
   static final userspecificIsRead = true;
 
-  static final json = """{
+  static final json =
+      """{
       "id": $id,
       "old_code": "$oldCode",
       "department": ${SampleDepartment.json},
@@ -115,30 +125,32 @@ class SampleCourse {
     }""";
 
   static final shared = Course(
-      id: id,
-      oldCode: oldCode,
-      department: department,
-      type: type,
-      typeEn: typeEn,
-      title: title,
-      titleEn: titleEn,
-      summary: summary,
-      reviewTotalWeight: reviewTotalWeight,
-      professors: professors,
-      grade: grade,
-      load: load,
-      speech: speech,
-      userspecificIsRead: userspecificIsRead);
+    id: id,
+    oldCode: oldCode,
+    department: department,
+    type: type,
+    typeEn: typeEn,
+    title: title,
+    titleEn: titleEn,
+    summary: summary,
+    reviewTotalWeight: reviewTotalWeight,
+    professors: professors,
+    grade: grade,
+    load: load,
+    speech: speech,
+    userspecificIsRead: userspecificIsRead,
+  );
 
   static final nested = NestedCourse(
-      id: id,
-      oldCode: oldCode,
-      type: type,
-      typeEn: typeEn,
-      title: title,
-      titleEn: titleEn,
-      summary: summary,
-      reviewTotalWeight: reviewTotalWeight);
+    id: id,
+    oldCode: oldCode,
+    type: type,
+    typeEn: typeEn,
+    title: title,
+    titleEn: titleEn,
+    summary: summary,
+    reviewTotalWeight: reviewTotalWeight,
+  );
 }
 
 class SampleExamtime {
@@ -148,8 +160,13 @@ class SampleExamtime {
   static final begin = 2;
   static final end = 3;
 
-  static final shared =
-      Examtime(str: str, strEn: strEn, day: day, begin: begin, end: end);
+  static final shared = Examtime(
+    str: str,
+    strEn: strEn,
+    day: day,
+    begin: begin,
+    end: end,
+  );
 }
 
 class SampleLecture {
@@ -187,66 +204,68 @@ class SampleLecture {
   static final examtimes = [SampleExamtime.shared];
 
   static final shared = Lecture(
-      id: id,
-      title: title,
-      titleEn: titleEn,
-      course: course,
-      oldCode: oldCode,
-      classNo: classNo,
-      year: year,
-      semester: semester,
-      code: code,
-      department: department,
-      departmentCode: departmentCode,
-      departmentName: departmentName,
-      departmentNameEn: departmentNameEn,
-      type: type,
-      typeEn: typeEn,
-      typeIdx: typeIdx,
-      limit: limit,
-      numPeople: numPeople,
-      isEnglish: isEnglish,
-      credit: credit,
-      creditAu: creditAu,
-      commonTitle: commonTitle,
-      commonTitleEn: commonTitleEn,
-      classTitle: classTitle,
-      classTitleEn: classTitleEn,
-      reviewTotalWeight: reviewTotalWeight,
-      professors: professors,
-      grade: grade,
-      load: load,
-      speech: speech,
-      classtimes: classtimes,
-      examtimes: examtimes);
+    id: id,
+    title: title,
+    titleEn: titleEn,
+    course: course,
+    oldCode: oldCode,
+    classNo: classNo,
+    year: year,
+    semester: semester,
+    code: code,
+    department: department,
+    departmentCode: departmentCode,
+    departmentName: departmentName,
+    departmentNameEn: departmentNameEn,
+    type: type,
+    typeEn: typeEn,
+    typeIdx: typeIdx,
+    limit: limit,
+    numPeople: numPeople,
+    isEnglish: isEnglish,
+    credit: credit,
+    creditAu: creditAu,
+    commonTitle: commonTitle,
+    commonTitleEn: commonTitleEn,
+    classTitle: classTitle,
+    classTitleEn: classTitleEn,
+    reviewTotalWeight: reviewTotalWeight,
+    professors: professors,
+    grade: grade,
+    load: load,
+    speech: speech,
+    classtimes: classtimes,
+    examtimes: examtimes,
+  );
 
   static final nested = NestedLecture(
-      id: id,
-      title: title,
-      titleEn: titleEn,
-      course: course,
-      oldCode: oldCode,
-      classNo: classNo,
-      year: year,
-      semester: semester,
-      code: code,
-      department: department,
-      departmentCode: departmentCode,
-      departmentName: departmentName,
-      departmentNameEn: departmentNameEn,
-      type: type,
-      typeEn: typeEn,
-      limit: limit,
-      numPeople: numPeople,
-      isEnglish: isEnglish,
-      credit: credit,
-      creditAu: creditAu,
-      commonTitle: commonTitle,
-      commonTitleEn: commonTitleEn,
-      classTitle: classTitle,
-      classTitleEn: classTitleEn,
-      reviewTotalWeight: reviewTotalWeight,
-      professors: professors);
+    id: id,
+    title: title,
+    titleEn: titleEn,
+    course: course,
+    oldCode: oldCode,
+    classNo: classNo,
+    year: year,
+    semester: semester,
+    code: code,
+    department: department,
+    departmentCode: departmentCode,
+    departmentName: departmentName,
+    departmentNameEn: departmentNameEn,
+    type: type,
+    typeEn: typeEn,
+    limit: limit,
+    numPeople: numPeople,
+    isEnglish: isEnglish,
+    credit: credit,
+    creditAu: creditAu,
+    commonTitle: commonTitle,
+    commonTitleEn: commonTitleEn,
+    classTitle: classTitle,
+    classTitleEn: classTitleEn,
+    reviewTotalWeight: reviewTotalWeight,
+    professors: professors,
+  );
 }
 
 class SampleReview {
@@ -262,14 +281,15 @@ class SampleReview {
   static final userspecificIsLiked = true;
 
   static final shared = Review(
-      id: id,
-      course: course,
-      lecture: lecture,
-      content: content,
-      like: like,
-      isDeleted: isDeleted,
-      grade: grade,
-      load: load,
-      speech: speech,
-      userspecificIsLiked: userspecificIsLiked);
+    id: id,
+    course: course,
+    lecture: lecture,
+    content: content,
+    like: like,
+    isDeleted: isDeleted,
+    grade: grade,
+    load: load,
+    speech: speech,
+    userspecificIsLiked: userspecificIsLiked,
+  );
 }

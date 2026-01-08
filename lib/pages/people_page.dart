@@ -47,9 +47,7 @@ class PeoplePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.0),
       ),
       width: double.infinity,
-      child: Center(
-        child: Text(title, style: titleRegular),
-      ),
+      child: Center(child: Text(title, style: titleRegular)),
     );
   }
 
@@ -62,27 +60,13 @@ class PeoplePage extends StatelessWidget {
     ];
 
     const Map<String, dynamic> people_info = {
-      'yumyum': {
-        'name': '조유민',
-      },
-      'platypus': {
-        'name': '오승빈',
-      },
-      'star': {
-        'name': '문동우',
-      },
-      'lobe': {
-        'name': '정성엽',
-      },
-      'seungho': {
-        'name': '장승호',
-      },
-      'soongyu': {
-        'name': '권순규',
-      },
-      'edge': {
-        'name': '정재현',
-      },
+      'yumyum': {'name': '조유민'},
+      'platypus': {'name': '오승빈'},
+      'star': {'name': '문동우'},
+      'lobe': {'name': '정성엽'},
+      'seungho': {'name': '장승호'},
+      'soongyu': {'name': '권순규'},
+      'edge': {'name': '정재현'},
     };
 
     const List<List<String>> people = [
@@ -97,28 +81,18 @@ class PeoplePage extends StatelessWidget {
       (i) => Column(
         children: [
           const SizedBox(height: 12.0),
-          Text(
-            positions[i],
-            style: labelBold,
-          ),
+          Text(positions[i], style: labelBold),
           ...List.generate(
             people[i].length,
             (j) => Column(
               children: [
-                const SizedBox(
-                  height: 4.0,
-                ),
+                const SizedBox(height: 4.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    SvgPicture.asset(
-                      'assets/icons/SPARCS.svg',
-                      height: 24.0,
-                    ),
-                    const SizedBox(
-                      width: 4,
-                    ),
+                    SvgPicture.asset('assets/icons/SPARCS.svg', height: 24.0),
+                    const SizedBox(width: 4),
                     Text(
                       people[i][j],
                       style: TextStyle(
@@ -130,9 +104,7 @@ class PeoplePage extends StatelessWidget {
                         leadingDistribution: TextLeadingDistribution.even,
                       ),
                     ),
-                    const SizedBox(
-                      width: 3,
-                    ),
+                    const SizedBox(width: 3),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 2.0),
                       child: Text(
@@ -148,10 +120,10 @@ class PeoplePage extends StatelessWidget {
                       ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

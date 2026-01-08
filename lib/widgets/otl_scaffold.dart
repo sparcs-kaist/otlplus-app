@@ -44,10 +44,12 @@ class OTLScaffold extends StatelessWidget {
     if (backgroundColor != null && backgroundColor!.computeLuminance() < 0.5)
       SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     else
-      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark.copyWith(
-        systemNavigationBarColor: OTLColor.grayF,
-        statusBarColor: Colors.transparent,
-      ));
+      SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle.dark.copyWith(
+          systemNavigationBarColor: OTLColor.grayF,
+          statusBarColor: Colors.transparent,
+        ),
+      );
   }
   final Widget child;
   final bool extendBody;
@@ -156,54 +158,60 @@ class _OTLLayoutState extends State<OTLLayout> {
           left: 0,
           right: 0,
           child: SizedBox(
-              height: kToolbarHeight,
-              child: NavigationToolbar(
-                leading: (widget.leading != null ||
-                        canPopRightLeft ||
-                        hasDrawer)
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (canPopRightLeft)
-                            IconTextButton(
-                                icon: Icons.navigate_before,
-                                onTap: () => OTLNavigator.pop(context,
-                                    until: OTLNavigatorTransition.rightLeft),
-                                padding: EdgeInsets.all(16)),
-                          if (hasDrawer)
-                            IconTextButton(
-                                icon: Icons.menu,
-                                onTap: () => Scaffold.of(context).openDrawer(),
-                                padding: EdgeInsets.all(16)),
-                          if (widget.leading != null) widget.leading!,
-                        ],
-                      )
-                    : null,
-                middle: widget.middle,
-                trailing:
-                    (widget.trailing != null || canPopDownUp || hasEndDrawer)
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (widget.trailing != null) widget.trailing!,
-                              if (hasEndDrawer)
-                                IconTextButton(
-                                    icon: Icons.menu,
-                                    onTap: () =>
-                                        Scaffold.of(context).openEndDrawer(),
-                                    padding: EdgeInsets.all(16)),
-                              if (canPopDownUp)
-                                IconTextButton(
-                                    icon: Icons.close,
-                                    onTap: () => OTLNavigator.pop(context,
-                                        until: OTLNavigatorTransition.downUp),
-                                    padding: EdgeInsets.all(16)),
-                            ],
-                          )
-                        : null,
-                middleSpacing: 0,
-              )),
-        )
+            height: kToolbarHeight,
+            child: NavigationToolbar(
+              leading: (widget.leading != null || canPopRightLeft || hasDrawer)
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (canPopRightLeft)
+                          IconTextButton(
+                            icon: Icons.navigate_before,
+                            onTap: () => OTLNavigator.pop(
+                              context,
+                              until: OTLNavigatorTransition.rightLeft,
+                            ),
+                            padding: EdgeInsets.all(16),
+                          ),
+                        if (hasDrawer)
+                          IconTextButton(
+                            icon: Icons.menu,
+                            onTap: () => Scaffold.of(context).openDrawer(),
+                            padding: EdgeInsets.all(16),
+                          ),
+                        if (widget.leading != null) widget.leading!,
+                      ],
+                    )
+                  : null,
+              middle: widget.middle,
+              trailing:
+                  (widget.trailing != null || canPopDownUp || hasEndDrawer)
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.trailing != null) widget.trailing!,
+                        if (hasEndDrawer)
+                          IconTextButton(
+                            icon: Icons.menu,
+                            onTap: () => Scaffold.of(context).openEndDrawer(),
+                            padding: EdgeInsets.all(16),
+                          ),
+                        if (canPopDownUp)
+                          IconTextButton(
+                            icon: Icons.close,
+                            onTap: () => OTLNavigator.pop(
+                              context,
+                              until: OTLNavigatorTransition.downUp,
+                            ),
+                            padding: EdgeInsets.all(16),
+                          ),
+                      ],
+                    )
+                  : null,
+              middleSpacing: 0,
+            ),
+          ),
+        ),
       ],
     );
   }

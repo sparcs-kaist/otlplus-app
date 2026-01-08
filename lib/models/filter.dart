@@ -3,11 +3,12 @@ class FilterGroupInfo {
   final String type;
   final bool isMultiSelect;
   final List<List<CodeLabelPair>> options;
-  FilterGroupInfo(
-      {required this.label,
-      this.type = "radio",
-      this.isMultiSelect = true,
-      this.options = const [[]]});
+  FilterGroupInfo({
+    required this.label,
+    this.type = "radio",
+    this.isMultiSelect = true,
+    this.options = const [[]],
+  });
 }
 
 class CodeLabelPair {

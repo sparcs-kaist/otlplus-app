@@ -38,8 +38,10 @@ extension LectureExtension on Lecture {
   String get professorsStrShortEn {
     final professors = List<Professor>.from(this.professors)
       ..sort((a, b) => a.name.compareTo(b.name));
-    final professorNames = professors.map((professor) =>
-        (professor.nameEn == '' ? professor.name : professor.nameEn));
+    final professorNames = professors.map(
+      (professor) =>
+          (professor.nameEn == '' ? professor.name : professor.nameEn),
+    );
     if (professorNames.length <= 2) return professorNames.join(', ');
     return "${professorNames.first} 외 ${professorNames.length - 1}명";
   }

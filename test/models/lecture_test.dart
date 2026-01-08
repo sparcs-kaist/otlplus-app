@@ -10,8 +10,12 @@ void main() {
     late Map<String, String> params;
 
     setUpAll(() async {
-      final response = await http.get(Uri.https(BASE_AUTHORITY,
-          API_SEMESTER_URL, {'order[0]': 'year', 'order[1]': 'semester'}));
+      final response = await http.get(
+        Uri.https(BASE_AUTHORITY, API_SEMESTER_URL, {
+          'order[0]': 'year',
+          'order[1]': 'semester',
+        }),
+      );
       final List<dynamic> body = json.decode(response.body);
       final String year = body[body.length - 1]['year'].toString();
       final String semester = body[body.length - 1]['semester'].toString();
@@ -22,14 +26,16 @@ void main() {
         'department': 'ALL',
         'level': 'ALL',
         'order': 'old_code',
-        'limit': '1'
+        'limit': '1',
       };
     });
 
     test('BR type index should be 0', () async {
       final url = Uri.https(
-              BASE_AUTHORITY, API_LECTURE_URL, params..addAll({'type': 'BR'}))
-          .toString();
+        BASE_AUTHORITY,
+        API_LECTURE_URL,
+        params..addAll({'type': 'BR'}),
+      ).toString();
       final response = await http.get(Uri.parse(url));
       final lectures = json.decode(response.body);
       assert(lectures.isNotEmpty);
@@ -41,8 +47,10 @@ void main() {
 
     test('BE type index should be 1', () async {
       final url = Uri.https(
-              BASE_AUTHORITY, API_LECTURE_URL, params..addAll({'type': 'BE'}))
-          .toString();
+        BASE_AUTHORITY,
+        API_LECTURE_URL,
+        params..addAll({'type': 'BE'}),
+      ).toString();
       final response = await http.get(Uri.parse(url));
       final lectures = json.decode(response.body);
       assert(lectures.isNotEmpty);
@@ -54,8 +62,10 @@ void main() {
 
     test('MR type index should be 2', () async {
       final url = Uri.https(
-              BASE_AUTHORITY, API_LECTURE_URL, params..addAll({'type': 'MR'}))
-          .toString();
+        BASE_AUTHORITY,
+        API_LECTURE_URL,
+        params..addAll({'type': 'MR'}),
+      ).toString();
       final response = await http.get(Uri.parse(url));
       final lectures = json.decode(response.body);
       assert(lectures.isNotEmpty);
@@ -67,8 +77,10 @@ void main() {
 
     test('ME type index should be 3', () async {
       final url = Uri.https(
-              BASE_AUTHORITY, API_LECTURE_URL, params..addAll({'type': 'ME'}))
-          .toString();
+        BASE_AUTHORITY,
+        API_LECTURE_URL,
+        params..addAll({'type': 'ME'}),
+      ).toString();
       final response = await http.get(Uri.parse(url));
       final lectures = json.decode(response.body);
       assert(lectures.isNotEmpty);
@@ -80,8 +92,10 @@ void main() {
 
     test('HSE type index should be 4', () async {
       final url = Uri.https(
-              BASE_AUTHORITY, API_LECTURE_URL, params..addAll({'type': 'HSE'}))
-          .toString();
+        BASE_AUTHORITY,
+        API_LECTURE_URL,
+        params..addAll({'type': 'HSE'}),
+      ).toString();
       final response = await http.get(Uri.parse(url));
       final lectures = json.decode(response.body);
       print(url);

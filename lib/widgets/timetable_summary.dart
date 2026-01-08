@@ -6,14 +6,7 @@ import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/providers/timetable_model.dart';
 import 'package:provider/provider.dart';
 
-const TYPES_SHORT = [
-  "br",
-  "be",
-  "mr",
-  "me",
-  "hse",
-  "etc",
-];
+const TYPES_SHORT = ["br", "be", "mr", "me", "hse", "etc"];
 const LETTERS = [
   "?",
   "F",
@@ -39,45 +32,60 @@ class TimetableSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lectures = context.select<TimetableModel, List<Lecture>>(
-        (model) => model.currentTimetable.lectures);
-    final tempLecture =
-        context.select<TimetableModel, Lecture?>((model) => model.tempLecture);
+      (model) => model.currentTimetable.lectures,
+    );
+    final tempLecture = context.select<TimetableModel, Lecture?>(
+      (model) => model.tempLecture,
+    );
     List<int> typeCredit = List.generate(
-        6,
-        (int i) => lectures.where((lecture) => lecture.typeIdx == i).fold<int>(
-            0, (acc, lecture) => acc + lecture.credit + lecture.creditAu));
-    int allCreditCredit =
-        lectures.fold<int>(0, (acc, lecture) => acc + lecture.credit);
-    int allAuCredit =
-        lectures.fold<int>(0, (acc, lecture) => acc + lecture.creditAu);
+      6,
+      (int i) => lectures
+          .where((lecture) => lecture.typeIdx == i)
+          .fold<int>(
+            0,
+            (acc, lecture) => acc + lecture.credit + lecture.creditAu,
+          ),
+    );
+    int allCreditCredit = lectures.fold<int>(
+      0,
+      (acc, lecture) => acc + lecture.credit,
+    );
+    int allAuCredit = lectures.fold<int>(
+      0,
+      (acc, lecture) => acc + lecture.creditAu,
+    );
     int targetNum = lectures.fold(
-        0,
-        (acc, lecture) =>
-            acc +
-            ((lecture.reviewTotalWeight > 0)
-                ? (lecture.credit + lecture.creditAu)
-                : 0));
+      0,
+      (acc, lecture) =>
+          acc +
+          ((lecture.reviewTotalWeight > 0)
+              ? (lecture.credit + lecture.creditAu)
+              : 0),
+    );
     double grade = lectures.fold(
-        0,
-        (acc, lecture) =>
-            acc +
-            ((lecture.reviewTotalWeight > 0)
-                ? (lecture.grade * (lecture.credit + lecture.creditAu))
-                : 0));
+      0,
+      (acc, lecture) =>
+          acc +
+          ((lecture.reviewTotalWeight > 0)
+              ? (lecture.grade * (lecture.credit + lecture.creditAu))
+              : 0),
+    );
     double load = lectures.fold(
-        0,
-        (acc, lecture) =>
-            acc +
-            ((lecture.reviewTotalWeight > 0)
-                ? (lecture.load * (lecture.credit + lecture.creditAu))
-                : 0));
+      0,
+      (acc, lecture) =>
+          acc +
+          ((lecture.reviewTotalWeight > 0)
+              ? (lecture.load * (lecture.credit + lecture.creditAu))
+              : 0),
+    );
     double speech = lectures.fold(
-        0,
-        (acc, lecture) =>
-            acc +
-            ((lecture.reviewTotalWeight > 0)
-                ? (lecture.speech * (lecture.credit + lecture.creditAu))
-                : 0));
+      0,
+      (acc, lecture) =>
+          acc +
+          ((lecture.reviewTotalWeight > 0)
+              ? (lecture.speech * (lecture.credit + lecture.creditAu))
+              : 0),
+    );
     if (tempLecture != null) {
       typeCredit[tempLecture.typeIdx] +=
           (tempLecture.credit + tempLecture.creditAu);
@@ -102,7 +110,8 @@ class TimetableSummary extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
       decoration: BoxDecoration(
         border: Border.symmetric(
-            horizontal: BorderSide(color: OTLColor.pinksLight)),
+          horizontal: BorderSide(color: OTLColor.pinksLight),
+        ),
       ),
       child: Row(
         children: [
@@ -119,29 +128,37 @@ class TimetableSummary extends StatelessWidget {
                 mainAxisExtent: 45,
               ),
               itemBuilder: (_, index) => _buildAttribute(
-                  'timetable.summary.${TYPES_SHORT[index]}'.tr(),
-                  typeCredit[index],
-                  tempLecture?.typeIdx == index),
+                'timetable.summary.${TYPES_SHORT[index]}'.tr(),
+                typeCredit[index],
+                tempLecture?.typeIdx == index,
+              ),
             ),
           ),
           _buildScore(
-              'timetable.summary.credit'.tr(),
-              allCreditCredit.toString(),
-              tempLecture != null && tempLecture.credit > 0),
-          _buildScore("AU", allAuCredit.toString(),
-              tempLecture != null && tempLecture.creditAu > 0),
+            'timetable.summary.credit'.tr(),
+            allCreditCredit.toString(),
+            tempLecture != null && tempLecture.credit > 0,
+          ),
           _buildScore(
-              'timetable.summary.grade'.tr(),
-              targetNum > 0 ? LETTERS[(grade / targetNum).round()] : "?",
-              tempLecture != null && tempLecture.grade > 0),
+            "AU",
+            allAuCredit.toString(),
+            tempLecture != null && tempLecture.creditAu > 0,
+          ),
           _buildScore(
-              'timetable.summary.load'.tr(),
-              targetNum > 0 ? LETTERS[(load / targetNum).round()] : "?",
-              tempLecture != null && tempLecture.load > 0),
+            'timetable.summary.grade'.tr(),
+            targetNum > 0 ? LETTERS[(grade / targetNum).round()] : "?",
+            tempLecture != null && tempLecture.grade > 0,
+          ),
           _buildScore(
-              'timetable.summary.speech'.tr(),
-              targetNum > 0 ? LETTERS[(speech / targetNum).round()] : "?",
-              tempLecture != null && tempLecture.speech > 0),
+            'timetable.summary.load'.tr(),
+            targetNum > 0 ? LETTERS[(load / targetNum).round()] : "?",
+            tempLecture != null && tempLecture.load > 0,
+          ),
+          _buildScore(
+            'timetable.summary.speech'.tr(),
+            targetNum > 0 ? LETTERS[(speech / targetNum).round()] : "?",
+            tempLecture != null && tempLecture.speech > 0,
+          ),
         ],
       ),
     );
@@ -156,7 +173,8 @@ class TimetableSummary extends StatelessWidget {
             child: Text(
               content,
               style: titleBold.copyWith(
-                  color: highlight ? OTLColor.pinksMain : OTLColor.gray0),
+                color: highlight ? OTLColor.pinksMain : OTLColor.gray0,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -165,7 +183,8 @@ class TimetableSummary extends StatelessWidget {
             child: Text(
               title,
               style: labelRegular.copyWith(
-                  color: highlight ? OTLColor.pinksMain : OTLColor.gray0),
+                color: highlight ? OTLColor.pinksMain : OTLColor.gray0,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -182,7 +201,8 @@ class TimetableSummary extends StatelessWidget {
           child: Text(
             title,
             style: labelBold.copyWith(
-                color: highlight ? OTLColor.pinksMain : OTLColor.gray0),
+              color: highlight ? OTLColor.pinksMain : OTLColor.gray0,
+            ),
           ),
         ),
         SizedBox(
@@ -190,7 +210,8 @@ class TimetableSummary extends StatelessWidget {
           child: Text(
             value.toString(),
             style: labelRegular.copyWith(
-                color: highlight ? OTLColor.pinksMain : OTLColor.gray0),
+              color: highlight ? OTLColor.pinksMain : OTLColor.gray0,
+            ),
           ),
         ),
       ],

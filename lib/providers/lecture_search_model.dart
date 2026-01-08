@@ -22,72 +22,75 @@ class LectureSearchModel extends ChangeNotifier {
 
   Map<String, FilterGroupInfo> _lectureFilter = {
     "departments": FilterGroupInfo(
-        label: "department.department".tr(),
-        isMultiSelect: true,
-        options: [
-          [
-            CodeLabelPair(code: "HSS", label: "department.hss".tr()),
-            CodeLabelPair(code: "CE", label: "department.ce".tr()),
-            CodeLabelPair(code: "MSB", label: "department.msb".tr()),
-            CodeLabelPair(code: "ME", label: "department.me".tr()),
-          ],
-          [
-            CodeLabelPair(code: "PH", label: "department.ph".tr()),
-            CodeLabelPair(code: "BiS", label: "department.bis".tr()),
-            CodeLabelPair(code: "IE", label: "department.ie".tr()),
-            CodeLabelPair(code: "ID", label: "department.id".tr()),
-          ],
-          [
-            CodeLabelPair(code: "BS", label: "department.bs".tr()),
-            CodeLabelPair(code: "CBE", label: "department.cbe".tr()),
-            CodeLabelPair(code: "MAS", label: "department.mas".tr()),
-            CodeLabelPair(code: "MS", label: "department.ms".tr()),
-          ],
-          [
-            CodeLabelPair(code: "NQE", label: "department.nqe".tr()),
-            CodeLabelPair(code: "TS", label: "department.ts".tr()),
-            CodeLabelPair(code: "CS", label: "department.cs".tr()),
-            CodeLabelPair(code: "EE", label: "department.ee".tr()),
-          ],
-          [
-            CodeLabelPair(code: "AE", label: "department.ae".tr()),
-            CodeLabelPair(code: "CH", label: "department.ch".tr()),
-            CodeLabelPair(code: "ETC", label: "department.etc".tr()),
-          ]
-        ]),
-    "types":
-        FilterGroupInfo(label: "type.type".tr(), isMultiSelect: true, options: [
-      [
-        CodeLabelPair(code: "BR", label: "type.br".tr()),
-        CodeLabelPair(code: "BE", label: "type.be".tr()),
-        CodeLabelPair(code: "MR", label: "type.mr".tr()),
-        CodeLabelPair(code: "ME", label: "type.me".tr()),
+      label: "department.department".tr(),
+      isMultiSelect: true,
+      options: [
+        [
+          CodeLabelPair(code: "HSS", label: "department.hss".tr()),
+          CodeLabelPair(code: "CE", label: "department.ce".tr()),
+          CodeLabelPair(code: "MSB", label: "department.msb".tr()),
+          CodeLabelPair(code: "ME", label: "department.me".tr()),
+        ],
+        [
+          CodeLabelPair(code: "PH", label: "department.ph".tr()),
+          CodeLabelPair(code: "BiS", label: "department.bis".tr()),
+          CodeLabelPair(code: "IE", label: "department.ie".tr()),
+          CodeLabelPair(code: "ID", label: "department.id".tr()),
+        ],
+        [
+          CodeLabelPair(code: "BS", label: "department.bs".tr()),
+          CodeLabelPair(code: "CBE", label: "department.cbe".tr()),
+          CodeLabelPair(code: "MAS", label: "department.mas".tr()),
+          CodeLabelPair(code: "MS", label: "department.ms".tr()),
+        ],
+        [
+          CodeLabelPair(code: "NQE", label: "department.nqe".tr()),
+          CodeLabelPair(code: "TS", label: "department.ts".tr()),
+          CodeLabelPair(code: "CS", label: "department.cs".tr()),
+          CodeLabelPair(code: "EE", label: "department.ee".tr()),
+        ],
+        [
+          CodeLabelPair(code: "AE", label: "department.ae".tr()),
+          CodeLabelPair(code: "CH", label: "department.ch".tr()),
+          CodeLabelPair(code: "ETC", label: "department.etc".tr()),
+        ],
       ],
-      [
-        CodeLabelPair(code: "MGC", label: "type.mgc".tr()),
-        CodeLabelPair(code: "HSE", label: "type.hse".tr()),
-        CodeLabelPair(code: "GR", label: "type.gr".tr()),
-        CodeLabelPair(code: "EG", label: "type.eg".tr()),
+    ),
+    "types": FilterGroupInfo(
+      label: "type.type".tr(),
+      isMultiSelect: true,
+      options: [
+        [
+          CodeLabelPair(code: "BR", label: "type.br".tr()),
+          CodeLabelPair(code: "BE", label: "type.be".tr()),
+          CodeLabelPair(code: "MR", label: "type.mr".tr()),
+          CodeLabelPair(code: "ME", label: "type.me".tr()),
+        ],
+        [
+          CodeLabelPair(code: "MGC", label: "type.mgc".tr()),
+          CodeLabelPair(code: "HSE", label: "type.hse".tr()),
+          CodeLabelPair(code: "GR", label: "type.gr".tr()),
+          CodeLabelPair(code: "EG", label: "type.eg".tr()),
+        ],
+        [
+          CodeLabelPair(code: "OE", label: "type.oe".tr()),
+          CodeLabelPair(code: "ETC", label: "type.etc".tr()),
+        ],
       ],
-      [
-        CodeLabelPair(code: "OE", label: "type.oe".tr()),
-        CodeLabelPair(code: "ETC", label: "type.etc".tr()),
-      ]
-    ]),
+    ),
     "levels": FilterGroupInfo(
-        label: "level.level".tr(),
-        isMultiSelect: true,
-        options: [
-          [
-            CodeLabelPair(code: "100", label: "level.100s".tr()),
-            CodeLabelPair(code: "200", label: "level.200s".tr()),
-            CodeLabelPair(code: "300", label: "level.300s".tr()),
-            CodeLabelPair(code: "400", label: "level.400s".tr()),
-          ],
-          [
-            CodeLabelPair(code: "ETC", label: "level.etc".tr()),
-          ]
-        ]),
+      label: "level.level".tr(),
+      isMultiSelect: true,
+      options: [
+        [
+          CodeLabelPair(code: "100", label: "level.100s".tr()),
+          CodeLabelPair(code: "200", label: "level.200s".tr()),
+          CodeLabelPair(code: "300", label: "level.300s".tr()),
+          CodeLabelPair(code: "400", label: "level.400s".tr()),
+        ],
+        [CodeLabelPair(code: "ETC", label: "level.etc".tr())],
+      ],
+    ),
   };
   get lectureFilter => _lectureFilter;
 
@@ -108,11 +111,11 @@ class LectureSearchModel extends ChangeNotifier {
 
   void setLectureFilterSelected(String varient, String code, bool selected) {
     assert(['departments', 'types', 'levels'].contains(varient));
-    _lectureFilter[varient]!
-        .options
-        .expand((i) => i)
-        .firstWhere((i) => i.code == code)
-        .selected = selected;
+    _lectureFilter[varient]!.options
+            .expand((i) => i)
+            .firstWhere((i) => i.code == code)
+            .selected =
+        selected;
     notifyListeners();
   }
 
@@ -122,15 +125,18 @@ class LectureSearchModel extends ChangeNotifier {
   Text _lectureSearchquery = Text.rich(TextSpan());
   Text get lectureSearchquery => _lectureSearchquery;
   void updateLectureSearchqeury() {
-    List<String> _selectedFilters = (_lectureFilter.map((k, v) => MapEntry(
+    List<String> _selectedFilters = (_lectureFilter.map(
+      (k, v) => MapEntry(
         k,
         (v.isMultiSelect == false && v.options.first.first.selected == true) ||
                 v.options.expand((i) => i).every((i) => i.selected == true)
             ? Iterable<String>.empty()
             : v.options
-                .expand((i) => i)
-                .where((i) => i.selected == true)
-                .map((i) => i.label)))).values.expand((i) => i).toList();
+                  .expand((i) => i)
+                  .where((i) => i.selected == true)
+                  .map((i) => i.label),
+      ),
+    )).values.expand((i) => i).toList();
     _lectureSearchquery = Text.rich(
       TextSpan(
         style: bodyRegular.copyWith(color: OTLColor.grayA),
@@ -144,7 +150,7 @@ class LectureSearchModel extends ChangeNotifier {
                 TextSpan(text: ", "),
               TextSpan(text: _selectedFilters.join(", ")),
             ],
-          )
+          ),
         ],
       ),
       maxLines: 1,
@@ -158,11 +164,12 @@ class LectureSearchModel extends ChangeNotifier {
   }
 
   Text createQuery(
-      String? keyword,
-      List<CodeLabelPair>? department,
-      List<CodeLabelPair>? type,
-      List<CodeLabelPair>? level,
-      CodeLabelPair? term) {
+    String? keyword,
+    List<CodeLabelPair>? department,
+    List<CodeLabelPair>? type,
+    List<CodeLabelPair>? level,
+    CodeLabelPair? term,
+  ) {
     List<String> filterOptions = [
       ...(department ?? [])
           .where((i) => i.selected == true)
@@ -183,14 +190,20 @@ class LectureSearchModel extends ChangeNotifier {
         style: TextStyle(fontSize: 14, height: 1.2, letterSpacing: 0.15),
         children: [
           TextSpan(
-              text: keyword,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold, color: OTLColor.gray0)),
+            text: keyword,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: OTLColor.gray0,
+            ),
+          ),
           if (filterOptions.length > 0)
-            TextSpan(style: TextStyle(color: OTLColor.grayA), children: [
-              if ((keyword ?? '').length > 0) TextSpan(text: ", "),
-              TextSpan(text: (filterOptions).join(", ")),
-            ])
+            TextSpan(
+              style: TextStyle(color: OTLColor.grayA),
+              children: [
+                if ((keyword ?? '').length > 0) TextSpan(text: ", "),
+                TextSpan(text: (filterOptions).join(", ")),
+              ],
+            ),
         ],
       ),
       maxLines: 1,
@@ -209,67 +222,75 @@ class LectureSearchModel extends ChangeNotifier {
           v.options.first.first.selected = true;
       }
     });
-    List<CodeLabelPair> dep = _lectureFilter['departments']!
-            .options
+    List<CodeLabelPair> dep =
+        _lectureFilter['departments']!.options
             .expand((i) => i)
             .every((i) => i.selected == false)
         ? []
-        : _lectureFilter['departments']!
-            .options
-            .expand((i) => i)
-            .where((i) => i.selected == true)
-            .toList();
-    List<CodeLabelPair> typ = _lectureFilter['types']!
-            .options
-            .expand((i) => i)
-            .every((i) => i.selected == false)
-        ? []
-        : _lectureFilter['types']!
-            .options
-            .expand((i) => i)
-            .where((i) => i.selected == true)
-            .toList();
-    List<CodeLabelPair> lev = _lectureFilter['levels']!
-            .options
+        : _lectureFilter['departments']!.options
+              .expand((i) => i)
+              .where((i) => i.selected == true)
+              .toList();
+    List<CodeLabelPair> typ =
+        _lectureFilter['types']!.options
             .expand((i) => i)
             .every((i) => i.selected == false)
         ? []
-        : _lectureFilter['levels']!
-            .options
+        : _lectureFilter['types']!.options
+              .expand((i) => i)
+              .where((i) => i.selected == true)
+              .toList();
+    List<CodeLabelPair> lev =
+        _lectureFilter['levels']!.options
             .expand((i) => i)
-            .where((i) => i.selected == true)
-            .toList();
+            .every((i) => i.selected == false)
+        ? []
+        : _lectureFilter['levels']!.options
+              .expand((i) => i)
+              .where((i) => i.selected == true)
+              .toList();
     if (dep.length == 0 &&
         typ.length == 0 &&
         lev.length == 0 &&
-        _lectureSearchText.length == 0) return false;
+        _lectureSearchText.length == 0)
+      return false;
     Future(() async {
       updateLectureSearchqeury();
       _isSearching = true;
       notifyListeners();
       try {
-        final response = await DioProvider()
-            .dio
-            .getUri(Uri(path: API_LECTURE_URL, queryParameters: {
+        final response = await DioProvider().dio.getUri(
+          Uri(
+            path: API_LECTURE_URL,
+            queryParameters: {
               "year": semester.year.toString(),
               "semester": semester.semester.toString(),
               "keyword": _lectureSearchText,
-              "department":
-                  dep.length == 0 ? ['ALL'] : dep.map((i) => i.code).toList(),
-              "type":
-                  typ.length == 0 ? ['ALL'] : typ.map((i) => i.code).toList(),
-              "level":
-                  lev.length == 0 ? ['ALL'] : lev.map((i) => i.code).toList(),
-            }));
+              "department": dep.length == 0
+                  ? ['ALL']
+                  : dep.map((i) => i.code).toList(),
+              "type": typ.length == 0
+                  ? ['ALL']
+                  : typ.map((i) => i.code).toList(),
+              "level": lev.length == 0
+                  ? ['ALL']
+                  : lev.map((i) => i.code).toList(),
+            },
+          ),
+        );
 
         final rawLectures = response.data as List;
-        final lectures =
-            rawLectures.map((lecture) => Lecture.fromJson(lecture));
+        final lectures = rawLectures.map(
+          (lecture) => Lecture.fromJson(lecture),
+        );
         final courseIds = lectures.map((lecture) => lecture.course).toSet();
 
         _lectures = courseIds
-            .map((course) =>
-                lectures.where((lecture) => lecture.course == course).toList())
+            .map(
+              (course) => lectures
+                  .where((lecture) => lecture.course == course)
+                  .toList(),
+            )
             .where((course) => course.length > 0)
             .toList();
       } catch (exception) {

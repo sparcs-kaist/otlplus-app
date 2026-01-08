@@ -188,10 +188,7 @@ class OTLDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SvgPicture.asset(
-                'assets/icons/${type.icon}.svg',
-                height: 80,
-              ),
+              SvgPicture.asset('assets/icons/${type.icon}.svg', height: 80),
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 alignment: Alignment.centerLeft,
@@ -225,7 +222,7 @@ class OTLDialog extends StatelessWidget {
                     },
                     'btnText': type.negText.tr(),
                     'textColor': OTLColor.gray0,
-                  }
+                  },
                 };
 
                 switch (type.btnStyle) {
@@ -271,42 +268,41 @@ class OTLDialog extends StatelessWidget {
       case OTLDialogType.deleteAccount:
       case OTLDialogType.accountDeleted:
       case OTLDialogType.resetSettings:
-        return Text(
-          content,
-          style: bodyRegular,
-        );
+        return Text(content, style: bodyRegular);
       case OTLDialogType.addOverlappingLecture:
       case OTLDialogType.addOverlappingLectureWithTab:
-        return Text.rich(TextSpan(
-          children: () {
-            final reg = RegExp(r"'.*?'");
-            final lectures = reg
-                .allMatches(content)
-                .map((e) => TextSpan(text: e[0], style: bodyBold))
-                .toList();
-            final nonLectures = content
-                .split(reg)
-                .map((e) => TextSpan(text: e, style: bodyRegular))
-                .toList();
-            final children = <TextSpan>[];
+        return Text.rich(
+          TextSpan(
+            children: () {
+              final reg = RegExp(r"'.*?'");
+              final lectures = reg
+                  .allMatches(content)
+                  .map((e) => TextSpan(text: e[0], style: bodyBold))
+                  .toList();
+              final nonLectures = content
+                  .split(reg)
+                  .map((e) => TextSpan(text: e, style: bodyRegular))
+                  .toList();
+              final children = <TextSpan>[];
 
-            children.add(nonLectures.first);
+              children.add(nonLectures.first);
 
-            for (int i = 0; i < lectures.length; i++) {
-              children.add(lectures[i]);
-              children.add(nonLectures[i + 1]);
-            }
+              for (int i = 0; i < lectures.length; i++) {
+                children.add(lectures[i]);
+                children.add(nonLectures[i + 1]);
+              }
 
-            return children;
-          }(),
-        ));
+              return children;
+            }(),
+          ),
+        );
       case OTLDialogType.about:
         return RawResponsiveButton(
           data: {
             'Text': {
               'arg': content,
               'style': bodyRegular.copyWith(color: OTLColor.pinksMain),
-            }
+            },
           },
           onTap: onTapContent,
         );

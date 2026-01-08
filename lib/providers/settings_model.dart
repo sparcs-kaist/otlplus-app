@@ -14,8 +14,9 @@ class SettingsModel extends ChangeNotifier {
   void setSendCrashlytics(bool newValue) {
     _sendCrashlytics = newValue;
     notifyListeners();
-    SharedPreferences.getInstance()
-        .then((instance) => instance.setBool(_kSendCrashlytics, newValue));
+    SharedPreferences.getInstance().then(
+      (instance) => instance.setBool(_kSendCrashlytics, newValue),
+    );
   }
 
   bool getSendCrashlyticsAnonymously() => _sendCrashlyticsAnonymously;
@@ -23,7 +24,8 @@ class SettingsModel extends ChangeNotifier {
     _sendCrashlyticsAnonymously = newValue;
     notifyListeners();
     SharedPreferences.getInstance().then(
-        (instance) => instance.setBool(_kSendCrashlyticsAnonymously, newValue));
+      (instance) => instance.setBool(_kSendCrashlyticsAnonymously, newValue),
+    );
   }
 
   bool getShowsChannelTalkButton() => _showsChannelTalkButton;
@@ -31,7 +33,8 @@ class SettingsModel extends ChangeNotifier {
     _showsChannelTalkButton = newValue;
     notifyListeners();
     SharedPreferences.getInstance().then(
-        (instance) => instance.setBool(_kShowsChannelTalkButton, newValue));
+      (instance) => instance.setBool(_kShowsChannelTalkButton, newValue),
+    );
   }
 
   SettingsModel({bool forTest = false}) {

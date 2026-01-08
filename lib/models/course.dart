@@ -17,21 +17,22 @@ class Course {
   final double speech;
   final bool userspecificIsRead;
 
-  Course(
-      {required this.id,
-      required this.oldCode,
-      this.department,
-      required this.type,
-      required this.typeEn,
-      required this.title,
-      required this.titleEn,
-      required this.summary,
-      required this.reviewTotalWeight,
-      required this.professors,
-      required this.grade,
-      required this.load,
-      required this.speech,
-      required this.userspecificIsRead});
+  Course({
+    required this.id,
+    required this.oldCode,
+    this.department,
+    required this.type,
+    required this.typeEn,
+    required this.title,
+    required this.titleEn,
+    required this.summary,
+    required this.reviewTotalWeight,
+    required this.professors,
+    required this.grade,
+    required this.load,
+    required this.speech,
+    required this.userspecificIsRead,
+  });
 
   bool operator ==(Object other) =>
       identical(this, other) || (other is Course && other.id == id);
@@ -39,19 +40,19 @@ class Course {
   int get hashCode => id.hashCode;
 
   Course.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        oldCode = json['old_code'],
-        department = Department.fromJson(json['department']),
-        type = json['type'],
-        typeEn = json['type_en'],
-        title = json['title'],
-        titleEn = json['title_en'],
-        summary = json['summary'],
-        reviewTotalWeight = json['review_total_weight'],
-        grade = json['grade']?.toDouble(),
-        load = json['load']?.toDouble(),
-        speech = json['speech']?.toDouble(),
-        userspecificIsRead = json['userspecific_is_read'] {
+    : id = json['id'],
+      oldCode = json['old_code'],
+      department = Department.fromJson(json['department']),
+      type = json['type'],
+      typeEn = json['type_en'],
+      title = json['title'],
+      titleEn = json['title_en'],
+      summary = json['summary'],
+      reviewTotalWeight = json['review_total_weight'],
+      grade = json['grade']?.toDouble(),
+      load = json['load']?.toDouble(),
+      speech = json['speech']?.toDouble(),
+      userspecificIsRead = json['userspecific_is_read'] {
     if (json['professors'] != null) {
       professors = [];
       json['professors'].forEach((v) {

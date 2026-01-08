@@ -35,42 +35,48 @@ import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'firebase_options.dart';
 
 void main() {
-  runZonedGuarded<Future<void>>(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    await EasyLocalization.ensureInitialized();
+  runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await EasyLocalization.ensureInitialized();
 
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
-    await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: true,
-      sound: true,
-    );
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: true,
+        sound: true,
+      );
 
-    final token = await FirebaseMessaging.instance.getToken();
+      final token = await FirebaseMessaging.instance.getToken();
 
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
 
-    await ChannelTalk.boot(
+      await ChannelTalk.boot(
         pluginKey: '0abc4b50-9e66-4b45-b910-eb654a481f08',
         memberHash: token,
         language: Language.korean,
         appearance: Appearance.light,
         channelButtonOption: ChannelButtonOption(
-            position: ChannelButtonPosition.right, xMargin: 16, yMargin: 130));
+          position: ChannelButtonPosition.right,
+          xMargin: 16,
+          yMargin: 130,
+        ),
+      );
 
-    await ChannelTalk.initPushToken(deviceToken: token ?? "");
+      await ChannelTalk.initPushToken(deviceToken: token ?? "");
 
-    await ChannelTalk.showChannelButton();
+      await ChannelTalk.showChannelButton();
 
-    runApp(
-      EasyLocalization(
+      runApp(
+        EasyLocalization(
           supportedLocales: [Locale('en'), Locale('ko')],
           path: 'assets/translations',
           fallbackLocale: Locale('en'),
@@ -78,8 +84,8 @@ void main() {
             providers: [
               Provider(create: (_) => StorageService()),
               ChangeNotifierProvider(
-                  create: (context) =>
-                      AuthModel(context.read<StorageService>())),
+                create: (context) => AuthModel(context.read<StorageService>()),
+              ),
               ChangeNotifierProxyProvider<AuthModel, InfoModel>(
                 create: (context) => InfoModel(),
                 update: (context, authModel, infoModel) {
@@ -103,7 +109,9 @@ void main() {
                 update: (context, infoModel, timetableModel) {
                   if (infoModel.hasData && timetableModel != null) {
                     timetableModel.loadSemesters(
-                        user: infoModel.user, semesters: infoModel.semesters);
+                      user: infoModel.user,
+                      semesters: infoModel.semesters,
+                    );
                   } else if (!infoModel.hasData && timetableModel != null) {}
                   return timetableModel ?? TimetableModel();
                 },
@@ -118,11 +126,13 @@ void main() {
               ChangeNotifierProvider(create: (_) => SettingsModel()),
             ],
             child: OTLApp(),
-          )),
-    );
-  },
-      (error, stack) =>
-          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true));
+          ),
+        ),
+      );
+    },
+    (error, stack) =>
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true),
+  );
 }
 
 class OTLApp extends StatefulWidget {
@@ -181,9 +191,7 @@ class _OTLAppState extends State<OTLApp> {
     try {
       final response = await _dio.post(
         SESSION_REFRESH_URL,
-        data: {
-          'token': currentRefreshToken,
-        },
+        data: {'token': currentRefreshToken},
       );
 
       if (response.statusCode == 200 && response.data != null) {
@@ -192,7 +200,9 @@ class _OTLAppState extends State<OTLApp> {
 
         if (newAccessToken != null && newRefreshToken != null) {
           await _storageService.saveTokens(
-              accessToken: newAccessToken, refreshToken: newRefreshToken);
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+          );
           return true;
         }
       }
@@ -219,9 +229,13 @@ class _OTLAppState extends State<OTLApp> {
   }
 
   Future<void> _handleLoginTokens(
-      String accessToken, String refreshToken) async {
+    String accessToken,
+    String refreshToken,
+  ) async {
     await _storageService.saveTokens(
-        accessToken: accessToken, refreshToken: refreshToken);
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
     Provider.of<AuthModel>(context, listen: false).setLoggedIn(true);
     if (_isLoading) {
       setState(() {
@@ -242,9 +256,7 @@ class _OTLAppState extends State<OTLApp> {
 
     if (_isLoading) {
       return MaterialApp(
-        home: Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
@@ -252,17 +264,21 @@ class _OTLAppState extends State<OTLApp> {
     return MaterialApp(
       builder: (context, child) {
         try {
-          final sendCrashlytics =
-              context.watch<SettingsModel>().getSendCrashlytics();
-          final sendCrashlyticsAnonymously =
-              context.watch<SettingsModel>().getSendCrashlyticsAnonymously();
+          final sendCrashlytics = context
+              .watch<SettingsModel>()
+              .getSendCrashlytics();
+          final sendCrashlyticsAnonymously = context
+              .watch<SettingsModel>()
+              .getSendCrashlyticsAnonymously();
           final hasData = context.watch<InfoModel>().hasData;
 
-          FirebaseCrashlytics.instance
-              .setCrashlyticsCollectionEnabled(sendCrashlytics);
+          FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+            sendCrashlytics,
+          );
           if (!sendCrashlyticsAnonymously && hasData) {
             FirebaseCrashlytics.instance.setUserIdentifier(
-                context.watch<InfoModel>().user.id.toString());
+              context.watch<InfoModel>().user.id.toString(),
+            );
           } else if (!sendCrashlytics) {
             FirebaseCrashlytics.instance.setUserIdentifier('');
           }
@@ -302,10 +318,7 @@ class _OTLAppState extends State<OTLApp> {
         border: InputBorder.none,
         contentPadding: EdgeInsets.only(),
         isDense: true,
-        hintStyle: TextStyle(
-          color: OTLColor.pinksMain,
-          fontSize: 14.0,
-        ),
+        hintStyle: TextStyle(color: OTLColor.pinksMain, fontSize: 14.0),
       ),
     );
 
@@ -315,10 +328,7 @@ class _OTLAppState extends State<OTLApp> {
         backgroundColor: OTLColor.grayE,
         pressElevation: 0.0,
         secondarySelectedColor: OTLColor.grayD,
-        labelStyle: const TextStyle(
-          color: OTLColor.gray3,
-          fontSize: 12.0,
-        ),
+        labelStyle: const TextStyle(color: OTLColor.gray3, fontSize: 12.0),
         secondaryLabelStyle: const TextStyle(
           color: OTLColor.gray3,
           fontSize: 12.0,
@@ -335,7 +345,10 @@ class _OTLAppState extends State<OTLApp> {
 class NoEndOfScrollBehavior extends ScrollBehavior {
   @override
   Widget buildOverscrollIndicator(
-      BuildContext context, Widget child, ScrollableDetails details) {
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
     return child;
   }
 }

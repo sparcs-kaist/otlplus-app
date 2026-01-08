@@ -44,26 +44,28 @@ class TimetableModel extends ChangeNotifier {
   TimetableModel({bool forTest = false}) {
     if (forTest) {
       _user = User(
-          id: 0,
-          email: "email",
-          studentId: "studentId",
-          firstName: "firstName",
-          lastName: "lastName",
-          majors: [],
-          departments: [],
-          myTimetableLectures: [],
-          reviewWritableLectures: [],
-          reviews: []);
+        id: 0,
+        email: "email",
+        studentId: "studentId",
+        firstName: "firstName",
+        lastName: "lastName",
+        majors: [],
+        departments: [],
+        myTimetableLectures: [],
+        reviewWritableLectures: [],
+        reviews: [],
+      );
       _semesters = [
         Semester(
-            year: 2024,
-            semester: 3,
-            beginning: DateTime.now(),
-            end: DateTime.now()),
+          year: 2024,
+          semester: 3,
+          beginning: DateTime.now(),
+          end: DateTime.now(),
+        ),
       ];
       _timetables = [
         Timetable(id: 0, lectures: []),
-        Timetable(id: 1, lectures: [])
+        Timetable(id: 1, lectures: []),
       ];
       _selectedSemesterIndex = 0;
     }
@@ -114,11 +116,12 @@ class TimetableModel extends ChangeNotifier {
   Future<bool> _loadTimetable() async {
     try {
       final response = await DioProvider().dio.get(
-          API_TIMETABLE_URL.replaceFirst("{user_id}", _user.id.toString()),
-          queryParameters: {
-            "year": selectedSemester.year,
-            "semester": selectedSemester.semester
-          });
+        API_TIMETABLE_URL.replaceFirst("{user_id}", _user.id.toString()),
+        queryParameters: {
+          "year": selectedSemester.year,
+          "semester": selectedSemester.semester,
+        },
+      );
 
       List<dynamic> rawTimetables = response.data as List;
 
@@ -135,9 +138,11 @@ class TimetableModel extends ChangeNotifier {
           .toList();
 
       List<Lecture> myLecturesList = _user.myTimetableLectures
-          .where((lecture) =>
-              lecture.year == selectedSemester.year &&
-              lecture.semester == selectedSemester.semester)
+          .where(
+            (lecture) =>
+                lecture.year == selectedSemester.year &&
+                lecture.semester == selectedSemester.semester,
+          )
           .toList();
       Timetable myTimetable = Timetable(id: -1, lectures: myLecturesList);
       _timetables.insert(0, myTimetable);
@@ -154,14 +159,15 @@ class TimetableModel extends ChangeNotifier {
   Future<bool> createTimetable({List<Lecture>? lectures}) async {
     try {
       final response = await DioProvider().dio.post(
-          API_TIMETABLE_URL.replaceFirst("{user_id}", user.id.toString()),
-          data: {
-            "year": selectedSemester.year,
-            "semester": selectedSemester.semester,
-            "lectures": (lectures == null)
-                ? []
-                : lectures.map((lecture) => lecture.id).toList(),
-          });
+        API_TIMETABLE_URL.replaceFirst("{user_id}", user.id.toString()),
+        data: {
+          "year": selectedSemester.year,
+          "semester": selectedSemester.semester,
+          "lectures": (lectures == null)
+              ? []
+              : lectures.map((lecture) => lecture.id).toList(),
+        },
+      );
       final timetable = Timetable.fromJson(response.data);
       _timetables.add(timetable);
       _selectedTimetableIndex = _timetables.length - 1;
@@ -173,37 +179,44 @@ class TimetableModel extends ChangeNotifier {
     return false;
   }
 
-  Future<bool> addLecture(
-      {required Lecture lecture,
-      required FutureOr<bool> Function() noOverlap,
-      required FutureOr<bool> Function(Iterable<Lecture>) onOverlap}) async {
+  Future<bool> addLecture({
+    required Lecture lecture,
+    required FutureOr<bool> Function() noOverlap,
+    required FutureOr<bool> Function(Iterable<Lecture>) onOverlap,
+  }) async {
     try {
       final overlappedLectures = currentTimetable.lectures.where(
-          (timetableLecture) => lecture.classtimes.any((thisClasstime) =>
-              timetableLecture.classtimes.any((classtime) =>
-                  (classtime.day == thisClasstime.day) &&
-                  (classtime.begin < thisClasstime.end) &&
-                  (classtime.end > thisClasstime.begin))));
+        (timetableLecture) => lecture.classtimes.any(
+          (thisClasstime) => timetableLecture.classtimes.any(
+            (classtime) =>
+                (classtime.day == thisClasstime.day) &&
+                (classtime.begin < thisClasstime.end) &&
+                (classtime.end > thisClasstime.begin),
+          ),
+        ),
+      );
 
       if (overlappedLectures.length > 0) {
         if (!await onOverlap(overlappedLectures)) return false;
 
         for (final lecture in overlappedLectures) {
           await DioProvider().dio.post(
-              API_TIMETABLE_REMOVE_LECTURE_URL
-                  .replaceFirst("{user_id}", user.id.toString())
-                  .replaceFirst(
-                      "{timetable_id}", currentTimetable.id.toString()),
-              data: {"lecture": lecture.id});
+            API_TIMETABLE_REMOVE_LECTURE_URL
+                .replaceFirst("{user_id}", user.id.toString())
+                .replaceFirst("{timetable_id}", currentTimetable.id.toString()),
+            data: {"lecture": lecture.id},
+          );
         }
         currentTimetable.lectures.removeWhere(overlappedLectures.contains);
-      } else if (!await noOverlap()) return false;
+      } else if (!await noOverlap())
+        return false;
 
       final response = await DioProvider().dio.post(
-          API_TIMETABLE_ADD_LECTURE_URL
-              .replaceFirst("{user_id}", user.id.toString())
-              .replaceFirst("{timetable_id}", currentTimetable.id.toString()),
-          data: {"lecture": lecture.id});
+        API_TIMETABLE_ADD_LECTURE_URL
+            .replaceFirst("{user_id}", user.id.toString())
+            .replaceFirst("{timetable_id}", currentTimetable.id.toString()),
+        data: {"lecture": lecture.id},
+      );
       final timetable = Timetable.fromJson(response.data);
       _timetables[_selectedTimetableIndex] = timetable;
       notifyListeners();
@@ -217,10 +230,11 @@ class TimetableModel extends ChangeNotifier {
   Future<bool> removeLecture({required Lecture lecture}) async {
     try {
       final response = await DioProvider().dio.post(
-          API_TIMETABLE_REMOVE_LECTURE_URL
-              .replaceFirst("{user_id}", user.id.toString())
-              .replaceFirst("{timetable_id}", currentTimetable.id.toString()),
-          data: {"lecture": lecture.id});
+        API_TIMETABLE_REMOVE_LECTURE_URL
+            .replaceFirst("{user_id}", user.id.toString())
+            .replaceFirst("{timetable_id}", currentTimetable.id.toString()),
+        data: {"lecture": lecture.id},
+      );
       final timetable = Timetable.fromJson(response.data);
       _timetables[_selectedTimetableIndex] = timetable;
       notifyListeners();
@@ -236,10 +250,11 @@ class TimetableModel extends ChangeNotifier {
       if (_timetables.length <= 1) return false;
 
       await DioProvider().dio.delete(
-          API_TIMETABLE_URL.replaceFirst("{user_id}", user.id.toString()) +
-              "/" +
-              currentTimetable.id.toString(),
-          data: {});
+        API_TIMETABLE_URL.replaceFirst("{user_id}", user.id.toString()) +
+            "/" +
+            currentTimetable.id.toString(),
+        data: {},
+      );
 
       _timetables.remove(currentTimetable);
       if (_selectedTimetableIndex > 0) _selectedTimetableIndex--;
@@ -254,16 +269,18 @@ class TimetableModel extends ChangeNotifier {
   Future<bool> shareTimetable(ShareType type, String language) async {
     try {
       final response = await DioProvider().dio.get(
-            API_SHARE_URL.replaceFirst(
-                '{share_type}', type == ShareType.image ? 'image' : 'ical'),
-            queryParameters: {
-              'timetable': currentTimetable.id,
-              'year': selectedSemester.year,
-              'semester': selectedSemester.semester,
-              'language': language,
-            },
-            options: Options(responseType: ResponseType.bytes),
-          );
+        API_SHARE_URL.replaceFirst(
+          '{share_type}',
+          type == ShareType.image ? 'image' : 'ical',
+        ),
+        queryParameters: {
+          'timetable': currentTimetable.id,
+          'year': selectedSemester.year,
+          'semester': selectedSemester.semester,
+          'language': language,
+        },
+        options: Options(responseType: ResponseType.bytes),
+      );
 
       writeFile(type, response.data);
       return true;

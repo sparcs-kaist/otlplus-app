@@ -61,8 +61,9 @@ class LectureGroupBlock extends StatelessWidget {
                       TextSpan(text: lectures.first.departmentCode),
                       const TextSpan(text: " / "),
                       TextSpan(
-                        text:
-                            isEn ? lectures.first.typeEn : lectures.first.type,
+                        text: isEn
+                            ? lectures.first.typeEn
+                            : lectures.first.type,
                       ),
                     ],
                   ),
@@ -74,9 +75,7 @@ class LectureGroupBlock extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 4.0),
             child: SizedBox(
               height: 1,
-              child: ColoredBox(
-                color: OTLColor.grayA,
-              ),
+              child: ColoredBox(color: OTLColor.grayA),
             ),
           ),
           ...lectures.map(

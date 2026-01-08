@@ -31,7 +31,9 @@ class PrivacyPage extends StatelessWidget {
                             children: [
                               TextSpan(text: '\n'),
                               TextSpan(
-                                  text: privacyTitles[index], style: bodyBold),
+                                text: privacyTitles[index],
+                                style: bodyBold,
+                              ),
                               TextSpan(text: '\n'),
                               TextSpan(text: privacyTexts[index]),
                             ],
@@ -40,7 +42,7 @@ class PrivacyPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),
