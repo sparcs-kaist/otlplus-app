@@ -25,7 +25,7 @@ platform :ios do
     sh "flutter pub get"
     sh "bundle exec pod install"
 
-    update_project_team( # Set the right team on your project
+    update_project_team(
       teamid: CredentialsManager::AppfileConfig.try_fetch_value(:team_id)
     )
 
@@ -35,6 +35,7 @@ platform :ios do
       clean: true,
       export_method: "app-store",
       destination: "generic/platform=iOS",
+      xcargs: "-allowProvisioningUpdates"
     )
     upload_to_testflight(
       skip_waiting_for_build_processing: true,

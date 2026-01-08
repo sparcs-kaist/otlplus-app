@@ -198,6 +198,8 @@ jobs:
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install "ndk;27.0.12077973" || true
           # Set NDK environment variable
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+          # Also set ndk.dir in local.properties for Gradle
+          echo "ndk.dir=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> android/local.properties
           echo "✅ Android NDK setup complete"
 
       - name: Set Gradle JVM options for CI
