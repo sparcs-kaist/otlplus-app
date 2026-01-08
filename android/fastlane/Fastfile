@@ -26,7 +26,7 @@ platform :android do
   desc "Deploy a alpha version to the Google Play"
   lane :alpha do
     set_timestamp_version
-    sh "flutter build appbundle --no-native-debug-symbols"
+    sh "flutter build appbundle"
     upload_to_play_store(
       aab: "../build/app/outputs/bundle/release/app-release.aab",
       track: "alpha",

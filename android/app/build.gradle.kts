@@ -66,15 +66,6 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            ndk {
-                debugSymbolLevel = "none"
-            }
-        }
-    }
-
-    packaging {
-        jniLibs {
-            keepDebugSymbols.add("**/*.so")
         }
     }
 
