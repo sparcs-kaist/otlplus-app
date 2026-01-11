@@ -49,7 +49,9 @@ class _MainPageState extends State<MainPage> {
   Future<void> initWidgetData() async {
     final cookieManager = WebviewCookieManager();
     final cookies = await cookieManager.getCookies('https://otl.sparcs.org');
-    initAndroidWidgetData(cookies);
+    if (Platform.isAndroid) {
+      initAndroidWidgetData(cookies);
+    }
     initWidgetKitData(cookies);
   }
 
