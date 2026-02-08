@@ -72,16 +72,8 @@ class _MainPageState extends State<MainPage> {
   ) async {
     try {
       if (Platform.isIOS) {
-        WidgetKit.setItem(
-          'accessToken',
-          accessToken,
-          'group.org.sparcs.otl',
-        );
-        WidgetKit.setItem(
-          'refreshToken',
-          refreshToken,
-          'group.org.sparcs.otl',
-        );
+        WidgetKit.setItem('accessToken', accessToken, 'group.org.sparcs.otl');
+        WidgetKit.setItem('refreshToken', refreshToken, 'group.org.sparcs.otl');
 
         final infoModel = context.read<InfoModel>();
         if (infoModel.hasData) {
