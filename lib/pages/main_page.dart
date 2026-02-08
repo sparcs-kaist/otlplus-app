@@ -12,6 +12,7 @@ import 'package:otlplus/pages/settings_page.dart';
 import 'package:otlplus/pages/user_page.dart';
 import 'package:otlplus/providers/course_search_model.dart';
 import 'package:otlplus/providers/lecture_detail_model.dart';
+import 'package:otlplus/services/storage_service.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
@@ -26,7 +27,6 @@ import 'package:otlplus/widgets/today_timetable.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_widgetkit/flutter_widgetkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:webview_cookie_manager/webview_cookie_manager.dart';
 
 import '../models/lecture.dart';
 
@@ -47,71 +47,52 @@ class _MainPageState extends State<MainPage> {
   }
 
   Future<void> initWidgetData() async {
-    final cookieManager = WebviewCookieManager();
-    final cookies = await cookieManager.getCookies('https://otl.sparcs.org');
-    initAndroidWidgetData(cookies);
-    initWidgetKitData(cookies);
+    final storageService = Provider.of<StorageService>(context, listen: false);
+    final accessToken = await storageService.getAccessToken();
+    final refreshToken = await storageService.getRefreshToken();
+
+    if (accessToken == null || refreshToken == null) return;
+
+    initAndroidWidgetData(accessToken, refreshToken);
+    initWidgetKitData(accessToken, refreshToken);
   }
 
-  Future<void> initAndroidWidgetData(List<Cookie> cookies) async {
+  Future<void> initAndroidWidgetData(
+    String accessToken,
+    String refreshToken,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
-    final cookieHeader = cookies
-        .map((cookie) => "${cookie.name}=${cookie.value}")
-        .join("; ");
-    final csrfToken = cookies
-        .firstWhere((cookie) => cookie.name == "csrftoken")
-        .value;
-    await prefs.setString("cookie_header", cookieHeader);
-    await prefs.setString("csrf_token", csrfToken);
+    await prefs.setString("access_token", accessToken);
+    await prefs.setString("refresh_token", refreshToken);
   }
 
-  Future<void> initWidgetKitData(List<Cookie> cookies) async {
+  Future<void> initWidgetKitData(
+    String accessToken,
+    String refreshToken,
+  ) async {
     try {
-      for (var cookie in cookies) {
-        if (cookie.name == 'refreshToken') {
-          if (Platform.isIOS) {
-            WidgetKit.setItem(
-              'refreshToken',
-              cookie.value,
-              'group.org.sparcs.otl',
-            );
-            WidgetKit.reloadAllTimelines();
-          }
-        }
+      if (Platform.isIOS) {
+        WidgetKit.setItem(
+          'accessToken',
+          accessToken,
+          'group.org.sparcs.otl',
+        );
+        WidgetKit.setItem(
+          'refreshToken',
+          refreshToken,
+          'group.org.sparcs.otl',
+        );
 
-        if (cookie.name == 'csrftoken') {
-          if (Platform.isIOS) {
-            WidgetKit.setItem(
-              'csrftoken',
-              cookie.value,
-              'group.org.sparcs.otl',
-            );
-            WidgetKit.reloadAllTimelines();
-          }
-        }
-
-        if (cookie.name == 'accessToken') {
-          if (Platform.isIOS) {
-            WidgetKit.setItem(
-              'accessToken',
-              cookie.value,
-              'group.org.sparcs.otl',
-            );
-            WidgetKit.reloadAllTimelines();
-          }
-        }
-      }
-      final infoModel = InfoModel();
-      await infoModel.getInfo();
-      if (infoModel.hasData) {
-        if (Platform.isIOS) {
+        final infoModel = context.read<InfoModel>();
+        if (infoModel.hasData) {
           WidgetKit.setItem(
             'uid',
             infoModel.user.id.toString(),
             'group.org.sparcs.otl',
           );
-          WidgetKit.reloadAllTimelines();
         }
+
+        WidgetKit.reloadAllTimelines();
       }
     } catch (exception) {
       print(exception);

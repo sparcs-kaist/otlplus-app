@@ -10,7 +10,7 @@ import Foundation
 import Alamofire
 
 struct URLs {
-    static let base = "https://otl.sparcs.org/"
+    static let base = "https://otl.kaist.ac.kr/"
     
     static var sessionInfo: String { base + "session/info" }
     static var apiTimetable: String { base + "api/users/{user_id}/timetables" }
@@ -120,25 +120,17 @@ struct Department: Codable, Hashable {
 class OTLAPI {
     static let shared = OTLAPI()
     
-    private var csrfToken: String?
     private var refreshToken: String?
     private var accessToken: String?
         
-    private init(csrfToken: String? = nil, refreshToken: String? = nil, accessToken: String? = nil) {
-        self.csrfToken = csrfToken
+    private init(refreshToken: String? = nil, accessToken: String? = nil) {
         self.refreshToken = refreshToken
         self.accessToken = accessToken
-        
-        if (self.csrfToken != nil && self.refreshToken != nil && self.accessToken != nil) {
-            setSessionCookies()
-        }
     }
     
-    func setTokens(csrfToken: String?, refreshToken: String?, accessToken: String?) {
-        self.csrfToken = csrfToken
+    func setTokens(refreshToken: String?, accessToken: String?) {
         self.refreshToken = refreshToken
         self.accessToken = accessToken
-        setSessionCookies()
     }
     
     private let jsonDecoder: JSONDecoder = {
@@ -152,23 +144,34 @@ class OTLAPI {
         return decoder
     }()
     
+    private var authHeaders: HTTPHeaders {
+        var headers: HTTPHeaders = []
+        if let token = accessToken {
+            headers.add(.authorization(bearerToken: token))
+        }
+        if let refresh = refreshToken {
+            headers.add(name: "X-Refresh-Token", value: refresh)
+        }
+        return headers
+    }
+    
     func getTimetables(userID: String, year: Int, semester: Int, completion: @escaping (Result<[Timetable], Error>) -> Void) {
         let url = URLs.apiTimetable.replacingOccurrences(of: "{user_id}", with: userID)
         let parameters: [String: Any] = ["year": year, "semester": semester]
         
-        AF.request(url, method: .get, parameters: parameters).responseData { response in
+        AF.request(url, method: .get, parameters: parameters, headers: authHeaders).responseData { response in
             self.handleResponse(response, completion: completion)
         }
     }
     
     func getSemesters(completion: @escaping (Result<[Semester], Error>) -> Void) {
-        AF.request(URLs.apiSemester, method: .get).responseData { response in
+        AF.request(URLs.apiSemester, method: .get, headers: authHeaders).responseData { response in
             self.handleResponse(response, completion: completion)
         }
     }
 
     func getActualTimetable(userID: String, year: Int, semester: Int, completion: @escaping (Result<[Timetable], Error>) -> Void) {
-        AF.request(URLs.sessionInfo, method: .get).responseData { response in
+        AF.request(URLs.sessionInfo, method: .get, headers: authHeaders).responseData { response in
             switch response.result {
             case .success(let data):
                 do {
@@ -181,29 +184,6 @@ class OTLAPI {
                 }
             case .failure(let error):
                 completion(.failure(error))
-            }
-        }
-    }
-    
-    private func setSessionCookies() {
-        let cookies = [
-            ("csrftoken", csrfToken),
-            ("refreshToken", refreshToken),
-            ("accessToken", accessToken)
-        ]
-        
-        for (name, value) in cookies {
-            if let value = value { // Only set the cookie if the value is not nil
-                let cookieProperties: [HTTPCookiePropertyKey: Any] = [
-                    .domain: "otl.sparcs.org",
-                    .path: "/",
-                    .name: name,
-                    .value: value
-                ]
-                
-                if let cookie = HTTPCookie(properties: cookieProperties) {
-                    AF.session.configuration.httpCookieStorage?.setCookie(cookie)
-                }
             }
         }
     }
