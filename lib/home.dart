@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:otlplus/providers/settings_model.dart';
+import 'package:otlplus/utils/navigator.dart';
+import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:otlplus/pages/dictionary_page.dart';
 import 'package:otlplus/pages/main_page.dart';
 import 'package:otlplus/pages/review_page.dart';
 import 'package:otlplus/pages/timetable_page.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OTLHome extends StatefulWidget {
   static String route = 'home';
@@ -29,18 +34,25 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
       vsync: this,
     );
 
-    // WidgetsBinding.instance.addPostFrameCallback(
-    //   (_) async {
-    //     if ((await SharedPreferences.getInstance())
-    //             .getBool('popup_recruiting_23f') ??
-    //         true) {
-    //       await OTLNavigator.pushDialog(
-    //         context: context,
-    //         builder: (context) => PopUp(),
-    //       );
-    //     }
-    //   },
-    // );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('notification_consent_shown') != true) {
+        await OTLNavigator.pushDialog(
+          context: context,
+          builder: (_) => OTLDialog(
+            type: OTLDialogType.notificationConsent,
+            onTapPos: () {
+              context.read<SettingsModel>().setSendAlarm(true);
+              prefs.setBool('notification_consent_shown', true);
+            },
+            onTapNeg: () {
+              context.read<SettingsModel>().setSendAlarm(false);
+              prefs.setBool('notification_consent_shown', true);
+            },
+          ),
+        );
+      }
+    });
   }
 
   @override

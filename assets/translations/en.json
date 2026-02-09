@@ -175,7 +175,18 @@
     "throw_test_desc": "for testing firebase crashlytics",
     "about": "About",
     "view_licenses": "View Licenses",
-    "show_channel_talk_button": "Show Channel Talk Button"
+    "show_channel_talk_button": "Show Channel Talk Button",
+    "notification": {
+      "receive": "Receive notifications",
+      "receive_desc": "Receive notifications about various topics.",
+      "promotion": "Promotional notifications",
+      "information": "Informational notifications",
+      "subject_suggestion": "Course suggestion notifications",
+      "consent_title": "Notification consent",
+      "consent_desc": "Would you like to receive helpful notifications from OTL Plus, such as course suggestions and announcements?",
+      "accept": "Accept",
+      "decline": "Later"
+    }
   },
   "department": {
     "department": "Dept.",

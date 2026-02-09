@@ -175,7 +175,18 @@
     "throw_test_desc": "Firebase crashlytics 테스트용",
     "about": "정보",
     "view_licenses": "라이선스 보기",
-    "show_channel_talk_button": "채널톡 버튼 표시하기"
+    "show_channel_talk_button": "채널톡 버튼 표시하기",
+    "notification": {
+      "receive": "알림 받기",
+      "receive_desc": "다양한 주제에 대한 알림을 수신합니다.",
+      "promotion": "광고성 알림 수신",
+      "information": "정보성 알림 수신",
+      "subject_suggestion": "과목 제안 알림 수신",
+      "consent_title": "알림 수신 동의",
+      "consent_desc": "OTL Plus에서 과목 제안, 공지사항 등 유용한 정보를 알림으로 받아보시겠습니까?",
+      "accept": "동의",
+      "decline": "나중에"
+    }
   },
   "department": {
     "department": "학과",

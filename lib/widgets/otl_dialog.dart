@@ -37,6 +37,8 @@ enum OTLDialogType {
 
   resetSettings,
 
+  notificationConsent,
+
   about,
 }
 
@@ -134,6 +136,14 @@ extension OTLDialogTypeExt on OTLDialogType {
       content: 'settings.dialog.reset_settings_desc',
       icon: 'alert',
       posText: 'settings.dialog.reset',
+    ),
+    OTLDialogType.notificationConsent: _OTLDialogData(
+      title: 'settings.notification.consent_title',
+      content: 'settings.notification.consent_desc',
+      icon: 'alert',
+      negText: 'settings.notification.decline',
+      posText: 'settings.notification.accept',
+      btnStyle: BtnStyle.even,
     ),
     OTLDialogType.about: _OTLDialogData(
       title: 'Online Timeplanner with Lectures Plus @ KAIST',
@@ -268,6 +278,7 @@ class OTLDialog extends StatelessWidget {
       case OTLDialogType.deleteAccount:
       case OTLDialogType.accountDeleted:
       case OTLDialogType.resetSettings:
+      case OTLDialogType.notificationConsent:
         return Text(content, style: bodyRegular);
       case OTLDialogType.addOverlappingLecture:
       case OTLDialogType.addOverlappingLectureWithTab:
