@@ -19,18 +19,18 @@ struct Provider: IntentTimelineProvider {
     func getSnapshot(for configuration: ConfigurationIntent, in context: Context, completion: @escaping (WidgetEntry) -> ()) {
         let sharedDefaults = UserDefaults.init(suiteName: "group.org.sparcs.otl")
         
-        let refreshToken = sharedDefaults?.string(forKey: "refreshToken")
-        let csrfToken = sharedDefaults?.string(forKey: "csrftoken")
         let accessToken = sharedDefaults?.string(forKey: "accessToken")
+        let refreshToken = sharedDefaults?.string(forKey: "refreshToken")
         let uid = sharedDefaults?.string(forKey: "uid")
         
-        if (refreshToken == nil || csrfToken == nil || accessToken == nil || uid == nil) {
-            // sessionid or uid is not found. Requires login.
+        if (accessToken == nil || refreshToken == nil || uid == nil) {
+            // Tokens or uid not found. Requires login.
             completion(WidgetEntry(date: Date(), timetableData: nil, configuration: configuration))
+            return
         }
         
         let API: OTLAPI = OTLAPI.shared
-        API.setTokens(csrfToken: csrfToken, refreshToken: refreshToken, accessToken: accessToken)
+        API.setTokens(accessToken: accessToken, refreshToken: refreshToken)
         
         API.getSemesters() { result in
             switch result {
@@ -97,22 +97,22 @@ struct Provider: IntentTimelineProvider {
         var entries: [WidgetEntry] = [WidgetEntry]()
         let sharedDefaults = UserDefaults.init(suiteName: "group.org.sparcs.otl")
         
-        let refreshToken = sharedDefaults?.string(forKey: "refreshToken")
-        let csrfToken = sharedDefaults?.string(forKey: "csrftoken")
         let accessToken = sharedDefaults?.string(forKey: "accessToken")
+        let refreshToken = sharedDefaults?.string(forKey: "refreshToken")
         let uid = sharedDefaults?.string(forKey: "uid")
         
-        if (refreshToken == nil || csrfToken == nil || accessToken == nil || uid == nil) {
-            // tokens or uid is not found. Requires login.
+        if (accessToken == nil || refreshToken == nil || uid == nil) {
+            // Tokens or uid not found. Requires login.
             let currentDate = Date()
             entries = [WidgetEntry(date: currentDate, timetableData: nil, configuration: configuration)]
             
             let timeline = Timeline(entries: entries, policy: .never)
             completion(timeline)
+            return
         }
         
         let API: OTLAPI = OTLAPI.shared
-        API.setTokens(csrfToken: csrfToken, refreshToken: refreshToken, accessToken: accessToken)
+        API.setTokens(accessToken: accessToken, refreshToken: refreshToken)
         
         API.getSemesters() { result in
             switch result {
