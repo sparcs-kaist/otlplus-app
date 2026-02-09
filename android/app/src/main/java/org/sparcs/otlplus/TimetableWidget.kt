@@ -30,7 +30,7 @@ data class TimeTableElement(
  * Implementation of App Widget functionality.
  */
 class TimetableWidget : AppWidgetProvider() {
-    private val CHANNEL = "https://otl.kaist.ac.kr"
+    private val CHANNEL = "https://otl.sparcs.org"
 
     override fun onUpdate(
         context: Context,
