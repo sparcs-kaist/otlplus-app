@@ -26,7 +26,8 @@ class SettingsPage extends StatelessWidget {
           color: OTLColor.grayF,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
+            child: SingleChildScrollView(
+              child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -79,6 +80,56 @@ class SettingsPage extends StatelessWidget {
                       },
                     ),
                   ],
+                ),
+                _buildListTile(
+                  title: "settings.notification.receive".tr(),
+                  subtitle: "settings.notification.receive_desc".tr(),
+                  trailing: CupertinoSwitch(
+                    value: context.watch<SettingsModel>().getSendAlarm(),
+                    onChanged: (value) =>
+                        context.read<SettingsModel>().setSendAlarm(value),
+                  ),
+                ),
+                Visibility(
+                  visible: context.watch<SettingsModel>().getSendAlarm(),
+                  child: _buildListTile(
+                    title: "settings.notification.subject_suggestion".tr(),
+                    trailing: CupertinoSwitch(
+                      value: context
+                          .watch<SettingsModel>()
+                          .getSubjectSuggestionAlarm(),
+                      onChanged: (value) => context
+                          .read<SettingsModel>()
+                          .setSubjectSuggestionAlarm(value),
+                    ),
+                  ),
+                ),
+                Visibility(
+                  visible: context.watch<SettingsModel>().getSendAlarm(),
+                  child: _buildListTile(
+                    title: "settings.notification.promotion".tr(),
+                    trailing: CupertinoSwitch(
+                      value:
+                          context.watch<SettingsModel>().getPromotionAlarm(),
+                      onChanged: (value) => context
+                          .read<SettingsModel>()
+                          .setPromotionAlarm(value),
+                    ),
+                  ),
+                ),
+                Visibility(
+                  visible: context.watch<SettingsModel>().getSendAlarm(),
+                  child: _buildListTile(
+                    title: "settings.notification.information".tr(),
+                    trailing: CupertinoSwitch(
+                      value: context
+                          .watch<SettingsModel>()
+                          .getInformationAlarm(),
+                      onChanged: (value) => context
+                          .read<SettingsModel>()
+                          .setInformationAlarm(value),
+                    ),
+                  ),
                 ),
                 _buildListTile(
                   title: "settings.send_error_log".tr(),
@@ -164,6 +215,7 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
               ],
+              ),
             ),
           ),
         ),
