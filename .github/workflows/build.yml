@@ -9,7 +9,7 @@ on:
 env:
   FLUTTER_VERSION: "3.32.x"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "Xcode_16.2"
+  XCODE_VERSION: "Xcode_16.4"
 
 jobs:
   build-android:
@@ -50,9 +50,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Select Xcode version
         run: sudo xcode-select -s '/Applications/${{ env.XCODE_VERSION }}.app/Contents/Developer'
-      - name: Install iOS 18.2 Simulator Runtime
+      - name: Verify iOS SDK
         run: |
-          xcodebuild -downloadPlatform iOS || true
+          xcodebuild -showsdks 2>/dev/null | grep -i iphoneos || true
+          xcrun --sdk iphoneos --show-sdk-path
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
