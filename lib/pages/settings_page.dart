@@ -28,193 +28,210 @@ class SettingsPage extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: SingleChildScrollView(
               child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("settings.language".tr(), style: bodyBold),
-                    Dropdown<bool>(
-                      customButton: Container(
-                        height: 34,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: OTLColor.pinksLight,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.language, color: OTLColor.pinksMain),
-                            const SizedBox(width: 8),
-                            Text(
-                              isEn
-                                  ? "settings.english".tr()
-                                  : "settings.korean".tr(),
-                              style: bodyBold.copyWith(
-                                height: 1.2,
-                                color: OTLColor.pinksMain,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("settings.language".tr(), style: bodyBold),
+                      Dropdown<bool>(
+                        customButton: Container(
+                          height: 34,
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: OTLColor.pinksLight,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.language,
+                                  color: OTLColor.pinksMain),
+                              const SizedBox(width: 8),
+                              Text(
+                                isEn
+                                    ? "settings.english".tr()
+                                    : "settings.korean".tr(),
+                                style: bodyBold.copyWith(
+                                  height: 1.2,
+                                  color: OTLColor.pinksMain,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        items: [
+                          ItemData(
+                            value: false,
+                            text: "settings.korean".tr(),
+                            icon: !isEn ? Icons.check : null,
+                          ),
+                          ItemData(
+                            value: true,
+                            text: "settings.english".tr(),
+                            icon: isEn ? Icons.check : null,
+                          ),
+                        ],
+                        isIconLeft: true,
+                        offsetY: -6,
+                        onChanged: (value) {
+                          if (value!) {
+                            EasyLocalization.of(context)
+                                ?.setLocale(Locale('en'));
+                          } else {
+                            EasyLocalization.of(context)
+                                ?.setLocale(Locale('ko'));
+                          }
+                        },
                       ),
-                      items: [
-                        ItemData(
-                          value: false,
-                          text: "settings.korean".tr(),
-                          icon: !isEn ? Icons.check : null,
-                        ),
-                        ItemData(
-                          value: true,
-                          text: "settings.english".tr(),
-                          icon: isEn ? Icons.check : null,
-                        ),
-                      ],
-                      isIconLeft: true,
-                      offsetY: -6,
+                    ],
+                  ),
+                  _buildListTile(
+                    title: "settings.notification.receive".tr(),
+                    subtitle: "settings.notification.receive_desc".tr(),
+                    trailing: CupertinoSwitch(
+                      value:
+                          context.watch<SettingsModel>().getSendAlarm(),
+                      onChanged: (value) => context
+                          .read<SettingsModel>()
+                          .setSendAlarm(value),
+                    ),
+                  ),
+                  Visibility(
+                    visible:
+                        context.watch<SettingsModel>().getSendAlarm(),
+                    child: _buildListTile(
+                      title: "settings.notification.subject_suggestion"
+                          .tr(),
+                      trailing: CupertinoSwitch(
+                        value: context
+                            .watch<SettingsModel>()
+                            .getSubjectSuggestionAlarm(),
+                        onChanged: (value) => context
+                            .read<SettingsModel>()
+                            .setSubjectSuggestionAlarm(value),
+                      ),
+                    ),
+                  ),
+                  Visibility(
+                    visible:
+                        context.watch<SettingsModel>().getSendAlarm(),
+                    child: _buildListTile(
+                      title: "settings.notification.promotion".tr(),
+                      trailing: CupertinoSwitch(
+                        value: context
+                            .watch<SettingsModel>()
+                            .getPromotionAlarm(),
+                        onChanged: (value) => context
+                            .read<SettingsModel>()
+                            .setPromotionAlarm(value),
+                      ),
+                    ),
+                  ),
+                  Visibility(
+                    visible:
+                        context.watch<SettingsModel>().getSendAlarm(),
+                    child: _buildListTile(
+                      title: "settings.notification.information".tr(),
+                      trailing: CupertinoSwitch(
+                        value: context
+                            .watch<SettingsModel>()
+                            .getInformationAlarm(),
+                        onChanged: (value) => context
+                            .read<SettingsModel>()
+                            .setInformationAlarm(value),
+                      ),
+                    ),
+                  ),
+                  _buildListTile(
+                    title: "settings.send_error_log".tr(),
+                    subtitle: "settings.send_error_log_desc".tr(),
+                    trailing: CupertinoSwitch(
+                      value: context
+                          .watch<SettingsModel>()
+                          .getSendCrashlytics(),
+                      onChanged: (value) => context
+                          .read<SettingsModel>()
+                          .setSendCrashlytics(value),
+                    ),
+                  ),
+                  Visibility(
+                    visible: context
+                        .watch<SettingsModel>()
+                        .getSendCrashlytics(),
+                    child: _buildListTile(
+                      title: "settings.send_anonymously".tr(),
+                      subtitle: "settings.send_anonymously_desc".tr(),
+                      trailing: CupertinoSwitch(
+                        value: context
+                            .watch<SettingsModel>()
+                            .getSendCrashlyticsAnonymously(),
+                        onChanged: (value) => context
+                            .read<SettingsModel>()
+                            .setSendCrashlyticsAnonymously(value),
+                      ),
+                    ),
+                  ),
+                  _buildListTile(
+                    title: "settings.show_channel_talk_button".tr(),
+                    trailing: CupertinoSwitch(
+                      value: context
+                          .watch<SettingsModel>()
+                          .getShowsChannelTalkButton(),
                       onChanged: (value) {
-                        if (value!) {
-                          EasyLocalization.of(context)?.setLocale(Locale('en'));
+                        context
+                            .read<SettingsModel>()
+                            .setShowsChannelTalkButton(value);
+
+                        if (!value) {
+                          ChannelTalk.hideChannelButton();
                         } else {
-                          EasyLocalization.of(context)?.setLocale(Locale('ko'));
+                          ChannelTalk.showChannelButton();
                         }
                       },
                     ),
-                  ],
-                ),
-                _buildListTile(
-                  title: "settings.notification.receive".tr(),
-                  subtitle: "settings.notification.receive_desc".tr(),
-                  trailing: CupertinoSwitch(
-                    value: context.watch<SettingsModel>().getSendAlarm(),
-                    onChanged: (value) =>
-                        context.read<SettingsModel>().setSendAlarm(value),
                   ),
-                ),
-                Visibility(
-                  visible: context.watch<SettingsModel>().getSendAlarm(),
-                  child: _buildListTile(
-                    title: "settings.notification.subject_suggestion".tr(),
-                    trailing: CupertinoSwitch(
-                      value: context
-                          .watch<SettingsModel>()
-                          .getSubjectSuggestionAlarm(),
-                      onChanged: (value) => context
-                          .read<SettingsModel>()
-                          .setSubjectSuggestionAlarm(value),
+                  Visibility(
+                    visible: kDebugMode,
+                    child: _buildListTile(
+                      title: "settings.throw_test".tr(),
+                      subtitle: "settings.throw_test_desc".tr(),
+                      onTap: () => throw Exception(),
                     ),
                   ),
-                ),
-                Visibility(
-                  visible: context.watch<SettingsModel>().getSendAlarm(),
-                  child: _buildListTile(
-                    title: "settings.notification.promotion".tr(),
-                    trailing: CupertinoSwitch(
-                      value:
-                          context.watch<SettingsModel>().getPromotionAlarm(),
-                      onChanged: (value) => context
-                          .read<SettingsModel>()
-                          .setPromotionAlarm(value),
-                    ),
-                  ),
-                ),
-                Visibility(
-                  visible: context.watch<SettingsModel>().getSendAlarm(),
-                  child: _buildListTile(
-                    title: "settings.notification.information".tr(),
-                    trailing: CupertinoSwitch(
-                      value: context
-                          .watch<SettingsModel>()
-                          .getInformationAlarm(),
-                      onChanged: (value) => context
-                          .read<SettingsModel>()
-                          .setInformationAlarm(value),
-                    ),
-                  ),
-                ),
-                _buildListTile(
-                  title: "settings.send_error_log".tr(),
-                  subtitle: "settings.send_error_log_desc".tr(),
-                  trailing: CupertinoSwitch(
-                    value: context.watch<SettingsModel>().getSendCrashlytics(),
-                    onChanged: (value) =>
-                        context.read<SettingsModel>().setSendCrashlytics(value),
-                  ),
-                ),
-                Visibility(
-                  visible: context.watch<SettingsModel>().getSendCrashlytics(),
-                  child: _buildListTile(
-                    title: "settings.send_anonymously".tr(),
-                    subtitle: "settings.send_anonymously_desc".tr(),
-                    trailing: CupertinoSwitch(
-                      value: context
-                          .watch<SettingsModel>()
-                          .getSendCrashlyticsAnonymously(),
-                      onChanged: (value) => context
-                          .read<SettingsModel>()
-                          .setSendCrashlyticsAnonymously(value),
-                    ),
-                  ),
-                ),
-                _buildListTile(
-                  title: "settings.show_channel_talk_button".tr(),
-                  trailing: CupertinoSwitch(
-                    value: context
-                        .watch<SettingsModel>()
-                        .getShowsChannelTalkButton(),
-                    onChanged: (value) {
-                      context.read<SettingsModel>().setShowsChannelTalkButton(
-                        value,
+                  _buildListTile(
+                    title: "settings.reset_all".tr(),
+                    onTap: () {
+                      OTLNavigator.pushDialog(
+                        context: context,
+                        builder: (_) => OTLDialog(
+                          type: OTLDialogType.resetSettings,
+                          onTapPos: () => context
+                              .read<SettingsModel>()
+                              .clearAllValues(),
+                        ),
                       );
-
-                      if (!value) {
-                        ChannelTalk.hideChannelButton();
-                      } else {
-                        ChannelTalk.showChannelButton();
-                      }
                     },
                   ),
-                ),
-                Visibility(
-                  visible: kDebugMode,
-                  child: _buildListTile(
-                    title: "settings.throw_test".tr(),
-                    subtitle: "settings.throw_test_desc".tr(),
-                    onTap: () => throw Exception(),
-                  ),
-                ),
-                _buildListTile(
-                  title: "settings.reset_all".tr(),
-                  onTap: () {
-                    OTLNavigator.pushDialog(
+                  _buildListTile(
+                    title: "settings.about".tr(),
+                    onTap: () => OTLNavigator.pushDialog(
                       context: context,
                       builder: (_) => OTLDialog(
-                        type: OTLDialogType.resetSettings,
-                        onTapPos: () =>
-                            context.read<SettingsModel>().clearAllValues(),
-                      ),
-                    );
-                  },
-                ),
-                _buildListTile(
-                  title: "settings.about".tr(),
-                  onTap: () => OTLNavigator.pushDialog(
-                    context: context,
-                    builder: (_) => OTLDialog(
-                      type: OTLDialogType.about,
-                      onTapContent: () =>
-                          launchUrl(Uri.parse("mailto:$CONTACT")),
-                      onTapPos: () => showLicensePage(
-                        context: context,
-                        applicationName: "",
-                        applicationIcon: Image.asset(
-                          "assets/images/logo.png",
-                          height: 48.0,
+                        type: OTLDialogType.about,
+                        onTapContent: () =>
+                            launchUrl(Uri.parse("mailto:$CONTACT")),
+                        onTapPos: () => showLicensePage(
+                          context: context,
+                          applicationName: "",
+                          applicationIcon: Image.asset(
+                            "assets/images/logo.png",
+                            height: 48.0,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
               ),
             ),
           ),
