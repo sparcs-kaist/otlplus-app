@@ -36,16 +36,14 @@ class SettingsPage extends StatelessWidget {
                       Dropdown<bool>(
                         customButton: Container(
                           height: 34,
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
                             color: OTLColor.pinksLight,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.language,
-                                  color: OTLColor.pinksMain),
+                              Icon(Icons.language, color: OTLColor.pinksMain),
                               const SizedBox(width: 8),
                               Text(
                                 isEn
@@ -75,11 +73,13 @@ class SettingsPage extends StatelessWidget {
                         offsetY: -6,
                         onChanged: (value) {
                           if (value!) {
-                            EasyLocalization.of(context)
-                                ?.setLocale(Locale('en'));
+                            EasyLocalization.of(
+                              context,
+                            )?.setLocale(Locale('en'));
                           } else {
-                            EasyLocalization.of(context)
-                                ?.setLocale(Locale('ko'));
+                            EasyLocalization.of(
+                              context,
+                            )?.setLocale(Locale('ko'));
                           }
                         },
                       ),
@@ -89,19 +89,15 @@ class SettingsPage extends StatelessWidget {
                     title: "settings.notification.receive".tr(),
                     subtitle: "settings.notification.receive_desc".tr(),
                     trailing: CupertinoSwitch(
-                      value:
-                          context.watch<SettingsModel>().getSendAlarm(),
-                      onChanged: (value) => context
-                          .read<SettingsModel>()
-                          .setSendAlarm(value),
+                      value: context.watch<SettingsModel>().getSendAlarm(),
+                      onChanged: (value) =>
+                          context.read<SettingsModel>().setSendAlarm(value),
                     ),
                   ),
                   Visibility(
-                    visible:
-                        context.watch<SettingsModel>().getSendAlarm(),
+                    visible: context.watch<SettingsModel>().getSendAlarm(),
                     child: _buildListTile(
-                      title: "settings.notification.subject_suggestion"
-                          .tr(),
+                      title: "settings.notification.subject_suggestion".tr(),
                       trailing: CupertinoSwitch(
                         value: context
                             .watch<SettingsModel>()
@@ -113,8 +109,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                   Visibility(
-                    visible:
-                        context.watch<SettingsModel>().getSendAlarm(),
+                    visible: context.watch<SettingsModel>().getSendAlarm(),
                     child: _buildListTile(
                       title: "settings.notification.promotion".tr(),
                       trailing: CupertinoSwitch(
@@ -128,8 +123,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                   Visibility(
-                    visible:
-                        context.watch<SettingsModel>().getSendAlarm(),
+                    visible: context.watch<SettingsModel>().getSendAlarm(),
                     child: _buildListTile(
                       title: "settings.notification.information".tr(),
                       trailing: CupertinoSwitch(
@@ -178,9 +172,9 @@ class SettingsPage extends StatelessWidget {
                           .watch<SettingsModel>()
                           .getShowsChannelTalkButton(),
                       onChanged: (value) {
-                        context
-                            .read<SettingsModel>()
-                            .setShowsChannelTalkButton(value);
+                        context.read<SettingsModel>().setShowsChannelTalkButton(
+                          value,
+                        );
 
                         if (!value) {
                           ChannelTalk.hideChannelButton();
@@ -205,9 +199,8 @@ class SettingsPage extends StatelessWidget {
                         context: context,
                         builder: (_) => OTLDialog(
                           type: OTLDialogType.resetSettings,
-                          onTapPos: () => context
-                              .read<SettingsModel>()
-                              .clearAllValues(),
+                          onTapPos: () =>
+                              context.read<SettingsModel>().clearAllValues(),
                         ),
                       );
                     },
