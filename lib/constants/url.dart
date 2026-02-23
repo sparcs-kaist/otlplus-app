@@ -19,6 +19,10 @@ const API_TIMETABLE_ADD_LECTURE_URL =
     API_TIMETABLE_URL + "/{timetable_id}/add-lecture";
 const API_TIMETABLE_REMOVE_LECTURE_URL =
     API_TIMETABLE_URL + "/{timetable_id}/remove-lecture";
+const API_CUSTOM_BLOCK_URL =
+    API_URL + "v2/timetables/{timetable_id}/custom-blocks";
+const API_CUSTOM_BLOCK_DETAIL_URL =
+    API_CUSTOM_BLOCK_URL + "/{block_id}";
 const API_LIKED_REVIEW_URL = API_URL + "/users/{user_id}/liked-reviews";
 const API_SHARE_URL = API_URL + "share/timetable/{share_type}";
 

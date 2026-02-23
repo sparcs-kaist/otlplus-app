@@ -80,7 +80,10 @@
       "ask_delete_lecture": "'{lecture}' 수업을 삭제하시겠습니까?",
       "ask_delete_lecture_with_tab": "'{lecture}' 수업을 {timetable}에서 삭제하시겠습니까?",
       "ask_delete_tab": "{timetable}을(를) 정말 삭제하시겠습니까?",
-      "disabled_delete_last_tab": "마지막 시간표는 삭제할 수 없습니다."
+      "disabled_delete_last_tab": "마지막 시간표는 삭제할 수 없습니다.",
+      "add_custom_block": "커스텀 블록 추가",
+      "delete_custom_block": "커스텀 블록 삭제",
+      "ask_delete_custom_block": "'{block}' 블록을 삭제하시겠습니까?"
     },
     "tab_menu": {
       "copy": "시간표 복제하기",
@@ -109,6 +112,13 @@
       "fri": "금요일",
       "sat": "토요일",
       "sun": "일요일"
+    },
+    "custom_block": {
+      "block_name": "블록 이름",
+      "place": "장소",
+      "day": "요일",
+      "start_time": "시작 시간",
+      "end_time": "종료 시간"
     }
   },
   "dictionary": {

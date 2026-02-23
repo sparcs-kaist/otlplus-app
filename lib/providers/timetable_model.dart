@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
+import 'package:otlplus/models/custom_block.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/timetable.dart';
@@ -136,6 +137,11 @@ class TimetableModel extends ChangeNotifier {
       _timetables = rawTimetables
           .map((timetable) => Timetable.fromJson(timetable))
           .toList();
+
+      // Fetch custom blocks for each timetable
+      for (int i = 0; i < _timetables.length; i++) {
+        await _loadCustomBlocks(_timetables[i]);
+      }
 
       List<Lecture> myLecturesList = _user.myTimetableLectures
           .where(
@@ -283,6 +289,119 @@ class TimetableModel extends ChangeNotifier {
       );
 
       writeFile(type, response.data);
+      return true;
+    } catch (exception) {
+      print(exception);
+    }
+    return false;
+  }
+
+  Future<void> _loadCustomBlocks(Timetable timetable) async {
+    try {
+      final response = await DioProvider().dio.get(
+        API_CUSTOM_BLOCK_URL.replaceFirst(
+          "{timetable_id}",
+          timetable.id.toString(),
+        ),
+      );
+      if (response.data != null && response.data['custom_blocks'] != null) {
+        timetable.customBlocks = (response.data['custom_blocks'] as List)
+            .map((v) => CustomBlock.fromJson(v))
+            .toList();
+      }
+    } catch (exception) {
+      print(exception);
+    }
+  }
+
+  Future<bool> addCustomBlock({
+    required String blockName,
+    required String place,
+    required int day,
+    required int begin,
+    required int end,
+  }) async {
+    try {
+      final response = await DioProvider().dio.post(
+        API_CUSTOM_BLOCK_URL.replaceFirst(
+          "{timetable_id}",
+          currentTimetable.id.toString(),
+        ),
+        data: {
+          "block_name": blockName,
+          "place": place,
+          "day": day,
+          "begin": begin,
+          "end": end,
+        },
+      );
+      final newBlock = CustomBlock(
+        id: response.data['id'],
+        blockName: blockName,
+        place: place,
+        day: day,
+        begin: begin,
+        end: end,
+      );
+      currentTimetable.customBlocks.add(newBlock);
+      notifyListeners();
+      return true;
+    } catch (exception) {
+      print(exception);
+    }
+    return false;
+  }
+
+  Future<bool> removeCustomBlock({required CustomBlock block}) async {
+    try {
+      await DioProvider().dio.delete(
+        API_CUSTOM_BLOCK_DETAIL_URL
+            .replaceFirst(
+              "{timetable_id}",
+              currentTimetable.id.toString(),
+            )
+            .replaceFirst("{block_id}", block.id.toString()),
+      );
+      currentTimetable.customBlocks.remove(block);
+      notifyListeners();
+      return true;
+    } catch (exception) {
+      print(exception);
+    }
+    return false;
+  }
+
+  Future<bool> updateCustomBlock({
+    required CustomBlock block,
+    String? blockName,
+    String? place,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (blockName != null) data['block_name'] = blockName;
+      if (place != null) data['place'] = place;
+
+      await DioProvider().dio.patch(
+        API_CUSTOM_BLOCK_DETAIL_URL
+            .replaceFirst(
+              "{timetable_id}",
+              currentTimetable.id.toString(),
+            )
+            .replaceFirst("{block_id}", block.id.toString()),
+        data: data,
+      );
+      final index = currentTimetable.customBlocks.indexOf(block);
+      if (index >= 0) {
+        currentTimetable.customBlocks[index] = CustomBlock(
+          id: block.id,
+          blockName: blockName ?? block.blockName,
+          place: place ?? block.place,
+          day: block.day,
+          begin: block.begin,
+          end: block.end,
+        );
+      }
+      notifyListeners();
       return true;
     } catch (exception) {
       print(exception);
