@@ -28,7 +28,6 @@ class TimetableData(jsonString: String) {
                         course = lectureJsonObject.getInt("courseId")
                     )
             }
-            println(lectures)
         } catch (e: Exception) {
 //            e.printStackTrace()
         }
