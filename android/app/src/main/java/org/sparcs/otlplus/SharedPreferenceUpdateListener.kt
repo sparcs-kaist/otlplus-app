@@ -13,11 +13,19 @@ class SharedPreferenceUpdateListener(context: Context) {
     private val componentName = ComponentName(context, TimetableWidget::class.java)
 
     private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
-        val intent = Intent(context, TimetableWidget::class.java).apply {
+        val timetableIntent = Intent(context, TimetableWidget::class.java).apply {
             action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+            val componentName = ComponentName(context, TimetableWidget::class.java)
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetManager.getAppWidgetIds(componentName))
         }
-        context.sendBroadcast(intent)
+        context.sendBroadcast(timetableIntent)
+
+        val nextLectureIntent = Intent(context, NextLectureWidget::class.java).apply {
+            action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+            val componentName = ComponentName(context, NextLectureWidget::class.java)
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetManager.getAppWidgetIds(componentName))
+        }
+        context.sendBroadcast(nextLectureIntent)
     }
 
     fun register() {

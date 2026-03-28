@@ -9,28 +9,26 @@ class TimetableData(jsonString: String) {
     init {
         try {
             val jsonObject = JSONObject(jsonString)
-            val myTimetableLectures = jsonObject.getJSONArray("my_timetable_lectures")
+            val myTimetableLectures = jsonObject.getJSONArray("lectures")
 
             lectures = (0 until myTimetableLectures.length()).mapNotNull { index ->
                 val lectureJsonObject = myTimetableLectures.getJSONObject(index)
-                if (lectureJsonObject.getInt("year") != 2025 || lectureJsonObject.getInt("semester") != 1) {
-                    null
-                } else {
-                    Lecture(
-                        name = lectureJsonObject.getString("title"),
+                Lecture(
+                        name = lectureJsonObject.getString("name"),
                         timeBlocks = toTimeBlocks(
-                            lectureJsonObject.getJSONArray("classtimes")
+                            lectureJsonObject.getJSONArray("classes")
                         ),
-                        place = lectureJsonObject.getJSONArray("classtimes")
-                            .getJSONObject(0)
-                            .getString("classroom_short"),
+                        place = lectureJsonObject.getJSONArray("classes")
+                            .getJSONObject(0).let { classJsonObject ->
+                                "(" + classJsonObject.getString("buildingCode") + ") " + classJsonObject.getString("roomName")
+                                                  },
                         professor = lectureJsonObject.getJSONArray("professors")
                             .getJSONObject(0)
                             .getString("name"),
-                        course = lectureJsonObject.getInt("id")
+                        course = lectureJsonObject.getInt("courseId")
                     )
-                }
             }
+            println(lectures)
         } catch (e: Exception) {
 //            e.printStackTrace()
         }

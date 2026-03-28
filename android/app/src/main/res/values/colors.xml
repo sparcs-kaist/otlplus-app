@@ -4,6 +4,7 @@
     <color name="page_background">#F9F0F0</color>
     <color name="primary">#E54C65</color>
     <color name="gray0">#000000</color>
+    <color name="gray88">#888888</color>
     <color name="gray75">#757575</color>
     <color name="accent">#B54896</color>
     <color name="guideline">#40000000</color>

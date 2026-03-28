@@ -30,7 +30,7 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  int _selectedTimetableIndex = 1;
+  int _selectedTimetableIndex = 0;
   int get selectedIndex => _selectedTimetableIndex;
 
   Timetable get currentTimetable => _timetables[_selectedTimetableIndex];

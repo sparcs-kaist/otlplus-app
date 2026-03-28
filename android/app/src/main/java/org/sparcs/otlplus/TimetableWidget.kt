@@ -12,6 +12,7 @@ import org.sparcs.otlplus.api.LocalTime
 import org.sparcs.otlplus.api.TimetableData
 import org.sparcs.otlplus.api.WeekDays
 import org.sparcs.otlplus.constants.BlockColor
+import org.json.JSONObject
 
 val timeTableColumns = listOf(
     R.id.time_table_column_1,
@@ -38,14 +39,15 @@ class TimetableWidget : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         val apiLoader = ApiLoader(context)
-        val sessionUrl = "$CHANNEL/session/info"
 
-        apiLoader.get(sessionUrl) { dataString ->
-//            println(dataString)
-            val timetableData = TimetableData(dataString)
+        apiLoader.get("$CHANNEL/api/v2/semesters/current") { semesterDataString ->
+            val semesterJsonObject = JSONObject(semesterDataString)
+            apiLoader.get("$CHANNEL/api/v2/timetables/my-timetable?year=${semesterJsonObject.getInt("year")}&semester=${semesterJsonObject.getInt("semester")}") { dataString ->
+                val timetableData = TimetableData(dataString)
 
-            for (appWidgetId in appWidgetIds) {
-                updateTimetableWidget(context, appWidgetManager, appWidgetId, timetableData)
+                for (appWidgetId in appWidgetIds) {
+                    updateTimetableWidget(context, appWidgetManager, appWidgetId, timetableData)
+                }
             }
         }
     }
@@ -72,6 +74,7 @@ internal fun updateTimetableWidget(
                 null -> RemoteViews(context.packageName, R.layout.blank_view)
                 else -> RemoteViews(context.packageName, BlockColor.getLayout(timeTableElement.lecture)).apply {
                     setTextViewText(R.id.timetable_block_lecture_name, timeTableElement.lecture.name)
+                    setTextViewText(R.id.timetable_block_lecture_place, timeTableElement.lecture.place)
                 }
             }
 

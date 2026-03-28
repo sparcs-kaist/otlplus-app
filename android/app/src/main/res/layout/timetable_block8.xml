@@ -3,16 +3,34 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="1dp"
+    android:background="@drawable/block_background8"
     android:id="@+id/timetable_block_root">
 
     <TextView
         android:id="@+id/timetable_block_lecture_name"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:textSize="11sp"
         android:ellipsize="end"
         android:textColor="@color/gray0"
-        android:padding="4dp"
-        android:background="@drawable/block_background8"/>
+        android:includeFontPadding="false"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="0dp"/>
+
+    <TextView
+        android:id="@+id/timetable_block_lecture_place"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/timetable_block_lecture_name"
+        android:textSize="9sp"
+        android:ellipsize="end"
+        android:textColor="@color/gray88"
+        android:includeFontPadding="false"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:paddingTop="0dp"
+        android:paddingBottom="4dp"/>
 
 </RelativeLayout>
