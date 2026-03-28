@@ -12,78 +12,75 @@ class IntentHandler: INExtension, ConfigurationIntentHandling {
         
     
     struct Timetable: Decodable, Hashable {
-        let id: Int
         let lectures: [Lecture]
     }
 
     struct Lecture: Decodable, Hashable {
         let id: Int
-        let title: String
-        let title_en: String
-        let course: Int
-        let old_code: String
-        let class_no: String
-        let year: Int
-        let semester: Int
+        let courseId: Int
+        let classNo: String
+        let name: String
+        let subtitle: String
         let code: String
-        let department: Int
-        let department_code: String
-        let department_name: String
-        let department_name_en: String
+        let department: Department
         let type: String
-        let type_en: String
-        let limit: Int
-        let num_people: Int
-        let is_english: Bool
+        let limitPeople: Int
+        let numPeople: Int
         let credit: Int
-        let credit_au: Int
-        let common_title: String
-        let common_title_en: String
-        let class_title: String
-        let class_title_en: String
-        let review_total_weight: Double
-        let grade: Double
-        let speech: Double
+        let creditAU: Int
+        let averageGrade: Double
+        let averageLoad: Double
+        let averageSpeech: Double
+        let isEnglish: Bool
         let professors: [Professor]
-        let classtimes: [Classtime]
-        let examtimes: [Examtime]
+        let classDuration: Int
+        let expDuration: Int
+        let classes: [Classtime]
+        let examTimes: [Examtime]
+    }
+
+    struct Department: Decodable, Hashable {
+        let id: Int
+        let name: String
     }
 
     struct Professor: Decodable, Hashable {
+        let id: Int
         let name: String
-        let name_en: String
-        let professor_id: Int
-        let review_total_weight: Double
     }
 
     struct Classtime: Decodable, Hashable {
-        let building_code: String
-        let classroom: String
-        let classroom_en: String
-        let classroom_short: String
-        let classroom_short_en: String
-        let room_name: String
         let day: Int
         let begin: Int
         let end: Int
+        let buildingCode: String
+        let buildingName: String
+        let roomName: String
     }
 
     struct Examtime: Decodable, Hashable {
-        let str: String
-        let str_en: String
         let day: Int
+        let str: String
         let begin: Int
         let end: Int
     }
     
+    struct TimetableSummary: Decodable {
+        let id: Int
+        let name: String
+    }
+
     func provideNextClassTimetableOptionsCollection(for intent: ConfigurationIntent, with completion: @escaping (INObjectCollection<NextClassTimetable>?, Error?) -> Void) {
         let sharedDefaults = UserDefaults.init(suiteName: "group.org.sparcs.otl")
-        let data: [Timetable]? = try? JSONDecoder().decode([Timetable].self, from: (sharedDefaults?.string(forKey: "timetables")?.data(using: .utf8)) ?? Data())
+        let data: [TimetableSummary]? = try? JSONDecoder().decode([TimetableSummary].self, from: (sharedDefaults?.data(forKey: "timetableSummaries")) ?? Data())
         var tables: [NextClassTimetable] = []
         
         tables.append(NextClassTimetable(identifier: "0", display: NSLocale.current.language.languageCode?.identifier == "en" ? "My Table" : "내 시간표"))
-        for i in 1..<data!.count {
-            tables.append(NextClassTimetable(identifier: "\(i)", display: NSLocale.current.language.languageCode?.identifier == "en" ? "Table \(i)" : "시간표 \(i)"))
+        
+        if let summaries = data {
+            for summary in summaries {
+                tables.append(NextClassTimetable(identifier: "\(summary.id)", display: summary.name))
+            }
         }
         
         let collection = INObjectCollection(items: tables)

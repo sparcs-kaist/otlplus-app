@@ -32,52 +32,46 @@ struct Provider: IntentTimelineProvider {
         let API: OTLAPI = OTLAPI.shared
         API.setTokens(accessToken: accessToken, refreshToken: refreshToken)
         
-        API.getSemesters() { result in
+        API.getCurrentSemester() { result in
             switch result {
-            case .success(let semesters):
-                var semester: Semester {
-                    var t: Semester? = nil
-                    for s in semesters {
-                        let now = Date()
-                        t = (s.beginning! <= now && s.end! >= now) ? s : nil
+            case .success(let semester):
+                // 1. Fetch all timetables summary to update the list in IntentHandler
+                API.getTimetables(year: semester.year, semester: semester.semester) { result in
+                    if case .success(let summaries) = result {
+                        let encoder = JSONEncoder()
+                        if let data = try? encoder.encode(summaries) {
+                            sharedDefaults?.set(data, forKey: "timetableSummaries")
+                        }
                     }
                     
-                    if (t == nil) {
-                        let last: Semester = semesters.last!
-                        t = Semester(year: last.year, semester: last.semester + 1, beginning: nil, end: nil, courseDesciptionSubmission: nil, courseRegistrationPeriodStart: nil, courseRegistrationPeriodEnd: nil, courseAddDropPeriodEnd: nil, courseDropDeadline: nil, courseEvaluationDeadline: nil, gradePosting: nil)
-                    }
-
-                    return t!
-                }
-
-                API.getActualTimetable(userID: uid!, year: semester.year, semester: semester.semester) { result in
-                    switch result {
-                    case .success(let timetable):
-                        // handle my table data
-                        API.getTimetables(userID: uid!, year: semester.year, semester: semester.semester) { result in
-                            switch result {
-                            case .success(var timetables):
-                                // save timetable data
-                                timetables.insert(contentsOf: timetable, at: 0)
-                                let encoder = JSONEncoder()
-                                encoder.outputFormatting = .withoutEscapingSlashes
-                                do {
-                                    let data = try encoder.encode(timetables)
-                                    sharedDefaults?.set(String(data: data, encoding: .utf8), forKey: "timetables")
-                                } catch {
-                                    print(error)
-                                }
-                                let entryDate = Date()
-                                let entry = WidgetEntry(date: entryDate, timetableData: timetables, configuration: configuration)
-                                completion(entry)
-                            case .failure(_):
-                                // request failed, mostly network issue or needing of a new sessionid
-                                completion(WidgetEntry(date: Date(), timetableData: nil, configuration: configuration))
+                    // 2. Fetch the specific selected timetable
+                    let identifier = configuration.nextClassTimetable?.identifier ?? "0"
+                    let completionWithData: (Result<Timetable, Error>) -> Void = { result in
+                        switch result {
+                        case .success(let timetable):
+                            let timetables = [timetable]
+                            let encoder = JSONEncoder()
+                            encoder.outputFormatting = .withoutEscapingSlashes
+                            do {
+                                let data = try encoder.encode(timetables)
+                                sharedDefaults?.set(String(data: data, encoding: .utf8), forKey: "timetables")
+                            } catch {
+                                print(error)
                             }
+                            let entryDate = Date()
+                            let entry = WidgetEntry(date: entryDate, timetableData: timetables, configuration: configuration)
+                            completion(entry)
+                        case .failure(_):
+                            completion(WidgetEntry(date: Date(), timetableData: nil, configuration: configuration))
                         }
-                    case .failure(_):
-                        // request failed, mostly network issue or needing of a new sessionid
-                        completion(WidgetEntry(date: Date(), timetableData: nil, configuration: configuration))
+                    }
+                    
+                    if identifier == "0" {
+                        API.getMyTimetable(year: semester.year, semester: semester.semester, completion: completionWithData)
+                    } else if let timetableId = Int(identifier) {
+                        API.getTimetable(timetableId: timetableId, completion: completionWithData)
+                    } else {
+                        API.getMyTimetable(year: semester.year, semester: semester.semester, completion: completionWithData)
                     }
                 }
             case .failure(_):
@@ -114,65 +108,56 @@ struct Provider: IntentTimelineProvider {
         let API: OTLAPI = OTLAPI.shared
         API.setTokens(accessToken: accessToken, refreshToken: refreshToken)
         
-        API.getSemesters() { result in
+        API.getCurrentSemester() { result in
             switch result {
-            case .success(let semesters):
-                var semester: Semester {
-                    var t: Semester? = nil
-                    for s in semesters {
-                        let now = Date()
-                        t = (s.beginning! <= now && s.end! >= now) ? s : nil
+            case .success(let currentSemester):
+                // 1. Fetch all timetables summary to update the list in IntentHandler
+                API.getTimetables(year: currentSemester.year, semester: currentSemester.semester) { result in
+                    if case .success(let summaries) = result {
+                        let encoder = JSONEncoder()
+                        if let data = try? encoder.encode(summaries) {
+                            sharedDefaults?.set(data, forKey: "timetableSummaries")
+                        }
                     }
                     
-                    if (t == nil) {
-                        let last: Semester = semesters.last!
-                        t = Semester(year: last.year, semester: last.semester + 1, beginning: nil, end: nil, courseDesciptionSubmission: nil, courseRegistrationPeriodStart: nil, courseRegistrationPeriodEnd: nil, courseAddDropPeriodEnd: nil, courseDropDeadline: nil, courseEvaluationDeadline: nil, gradePosting: nil)
+                    // 2. Fetch the specific selected timetable
+                    let identifier = configuration.nextClassTimetable?.identifier ?? "0"
+                    let completionWithData: (Result<Timetable, Error>) -> Void = { result in
+                        switch result {
+                        case .success(let timetable):
+                            let timetables = [timetable]
+                            let encoder = JSONEncoder()
+                            encoder.outputFormatting = .withoutEscapingSlashes
+                            do {
+                                let data = try encoder.encode(timetables)
+                                sharedDefaults?.set(String(data: data, encoding: .utf8), forKey: "timetables")
+                            } catch {
+                                print(error)
+                            }
+                            
+                            let currentDate = Date()
+                            for minutesOffset in 0..<5 {
+                                let entryDate = Calendar.current.date(byAdding: .minute, value: minutesOffset*12, to: currentDate)!
+                                let entry = WidgetEntry(date: entryDate, timetableData: timetables, configuration: configuration)
+                                entries.append(entry)
+                            }
+                            
+                            let timeline = Timeline(entries: entries, policy: .atEnd)
+                            completion(timeline)
+                        case .failure(_):
+                            let currentDate = Date()
+                            entries = [WidgetEntry(date: currentDate, timetableData: nil, configuration: configuration)]
+                            let timeline = Timeline(entries: entries, policy: .never)
+                            completion(timeline)
+                        }
                     }
 
-                    return t!
-                }
-                
-                API.getActualTimetable(userID: uid!, year: semester.year, semester: semester.semester) { result in
-                    switch result {
-                    case .success(let timetable):
-                        API.getTimetables(userID: uid!, year: semester.year, semester: semester.semester) { result in
-                            switch result {
-                            case .success(var timetables):
-                                // save timetable data
-                                timetables.insert(contentsOf: timetable, at: 0)
-                                let encoder = JSONEncoder()
-                                encoder.outputFormatting = .withoutEscapingSlashes
-                                do {
-                                    let data = try encoder.encode(timetables)
-                                    sharedDefaults?.set(String(data: data, encoding: .utf8), forKey: "timetables")
-                                } catch {
-                                    print(error)
-                                }
-                                
-                                let currentDate = Date()
-                                for minutesOffset in 0..<5 {
-                                    let entryDate = Calendar.current.date(byAdding: .minute, value: minutesOffset*12, to: currentDate)!
-                                    let entry = WidgetEntry(date: entryDate, timetableData: timetables, configuration: configuration)
-                                    entries.append(entry)
-                                }
-                                
-                                let timeline = Timeline(entries: entries, policy: .atEnd)
-                                completion(timeline)
-                            case .failure(_):
-                                // request failed, mostly network issue or needing of a new sessionid
-                                let currentDate = Date()
-                                entries = [WidgetEntry(date: currentDate, timetableData: nil, configuration: configuration)]
-                                
-                                let timeline = Timeline(entries: entries, policy: .never)
-                                completion(timeline)
-                            }
-                        }
-                    case .failure(_):
-                        let currentDate = Date()
-                        entries = [WidgetEntry(date: currentDate, timetableData: nil, configuration: configuration)]
-                        
-                        let timeline = Timeline(entries: entries, policy: .never)
-                        completion(timeline)
+                    if identifier == "0" {
+                        API.getMyTimetable(year: currentSemester.year, semester: currentSemester.semester, completion: completionWithData)
+                    } else if let timetableId = Int(identifier) {
+                        API.getTimetable(timetableId: timetableId, completion: completionWithData)
+                    } else {
+                        API.getMyTimetable(year: currentSemester.year, semester: currentSemester.semester, completion: completionWithData)
                     }
                 }
             case .failure(_):

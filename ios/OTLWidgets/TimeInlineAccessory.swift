@@ -44,8 +44,8 @@ struct TimeInlineAccessoryEntryView : View {
         var lectures: [(Int, Lecture)] = getLecturesForDay(timetable: timetable, day: day)
         
         for (i, l) in lectures {
-            if l.classtimes[i].begin >= minutes && begin >= l.classtimes[i].begin {
-                begin = l.classtimes[i].begin
+            if l.classes[i].begin >= minutes && begin >= l.classes[i].begin {
+                begin = l.classes[i].begin
                 index = i
                 lecture = l
             }
@@ -62,8 +62,8 @@ struct TimeInlineAccessoryEntryView : View {
             }
             
             for (i, l) in lectures {
-                if l.classtimes[i].begin >= minutes && begin >= l.classtimes[i].begin {
-                    begin = l.classtimes[i].begin
+                if l.classes[i].begin >= minutes && begin >= l.classes[i].begin {
+                    begin = l.classes[i].begin
                     index = i
                     lecture = l
                 }
@@ -77,7 +77,7 @@ struct TimeInlineAccessoryEntryView : View {
         let c = getNextClass(timetable: timetable, date: date)
         let lecture: Lecture = c.1
         
-        return NSLocale.current.language.languageCode?.identifier == "en" ? lecture.common_title_en : lecture.common_title
+        return lecture.name
     }
     
     func getBegin(timetable: Timetable, date: Date) -> String {
@@ -85,7 +85,7 @@ struct TimeInlineAccessoryEntryView : View {
         let index = c.0
         let lecture: Lecture = c.1
         
-        return String(format:"%02d:%02d", lecture.classtimes[index].begin/60, lecture.classtimes[index].begin%60)
+        return String(format:"%02d:%02d", lecture.classes[index].begin/60, lecture.classes[index].begin%60)
     }
 }
 

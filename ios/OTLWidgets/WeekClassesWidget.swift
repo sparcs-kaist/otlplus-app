@@ -66,17 +66,19 @@ struct WeekClassesWidgetView: View {
                                     ForEach(0..<5) { number in
                                         ZStack(alignment: .topLeading) {
                                             TableLineView()
-                                            ForEach(getLecturesData(data: getLecturesForDay(timetable: entry.timetableData?[Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], day: number))) { data in
-                                                WeekClassesLectureView(lectureName: data.title, colour: data.colour)
-                                                    .frame(height: data.height)
-                                                    .offset(y: data.y)
+                                            if let data = entry.timetableData, !data.isEmpty {
+                                                ForEach(getLecturesData(data: getLecturesForDay(timetable: data[0], day: number))) { lectureData in
+                                                    WeekClassesLectureView(lectureName: lectureData.title, colour: lectureData.colour)
+                                                        .frame(height: lectureData.height)
+                                                        .offset(y: lectureData.y)
+                                                }
                                             }
                                         }
                                     }
                                 }
                                 , alignment: .top
                             )
-                            .offset(y: getOffsetByDate(timetable: entry.timetableData?[Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date))
+                            .offset(y: getOffsetByDate(timetable: (entry.timetableData != nil && !entry.timetableData!.isEmpty) ? entry.timetableData![0] : nil, date: entry.date))
                     }
                 }.padding(16)
                     .mask(
@@ -139,7 +141,7 @@ struct WeekClassesWidgetView: View {
         
         var end = 0
         for lecture in timetable!.lectures {
-            for classtime in lecture.classtimes {
+            for classtime in lecture.classes {
                 end = (classtime.end > end) ? classtime.end : end
             }
         }
@@ -151,16 +153,16 @@ struct WeekClassesWidgetView: View {
         var tmp = [WeekClassesWidgetData]()
         
         for (i, l) in data {
-            let c = l.classtimes[i]
+            let c = l.classes[i]
             
-            let title = NSLocale.current.language.languageCode?.identifier == "en" ? l.title_en : l.title
+            let title = l.name
             let minute = c.end - c.begin
             var height = 0.6833 * Double(minute)
             if minute/30 != 0 {
                 height = height + Double(minute/30 - 1)
             }
             let y = 0.7166 * Double(c.begin - 540) + 5
-            let colour = getColourForCourse(course: l.course)
+            let colour = getColourForCourse(course: l.courseId)
             
             tmp.append(WeekClassesWidgetData(title: title, height: height, y: y, colour: colour))
         }

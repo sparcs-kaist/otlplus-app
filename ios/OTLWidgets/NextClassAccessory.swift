@@ -20,15 +20,15 @@ struct NextClassAccessoryEntryView : View {
         case .accessoryCircular:
             ZStack {
                 AccessoryWidgetBackground()
-                if (entry.timetableData != nil && entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0].lectures.count > 0) {
+                if let data = entry.timetableData, !data.isEmpty, !data[0].lectures.isEmpty {
                     VStack {
                         Image(systemName: "tablecells")
                             .font(.caption2)
                             .widgetAccentable()
-                        Text(getBeginInTwelveHour(timetable: entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date).0)
+                        Text(getBeginInTwelveHour(timetable: data[0], date: entry.date).0)
                             .font(.system(size: 15))
                             .fontWeight(.medium)
-                        Text(getBeginInTwelveHour(timetable: entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date).1)
+                        Text(getBeginInTwelveHour(timetable: data[0], date: entry.date).1)
                             .font(.system(size: 9))
                             .fontWeight(.medium)
                     }
@@ -49,19 +49,19 @@ struct NextClassAccessoryEntryView : View {
             }
         case .accessoryRectangular:
             HStack {
-                if (entry.timetableData != nil && entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0].lectures.count > 0) {
+                if let data = entry.timetableData, !data.isEmpty, !data[0].lectures.isEmpty {
                     VStack(alignment: .leading) {
                         HStack(alignment: .center, spacing: 4) {
                             Circle()
                                 .frame(width: 12, height: 12)
-                            Text("\(getBegin(timetable: entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date)) - \(getEnd(timetable: entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date))")
+                            Text("\(getBegin(timetable: data[0], date: entry.date)) - \(getEnd(timetable: data[0], date: entry.date))")
                                 .font(.headline)
                         }.offset(y: 7)
                             .widgetAccentable()
-                        Text(getName(timetable: entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date))
+                        Text(getName(timetable: data[0], date: entry.date))
                             .font(.headline)
                             .widgetAccentable()
-                        Text(getPlace(timetable: entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date))
+                        Text(getPlace(timetable: data[0], date: entry.date))
                             .foregroundColor(.gray)
                     }
                 } else {
@@ -100,8 +100,8 @@ struct NextClassAccessoryEntryView : View {
         var lectures: [(Int, Lecture)] = getLecturesForDay(timetable: timetable, day: day)
         
         for (i, l) in lectures {
-            if l.classtimes[i].begin >= minutes && begin >= l.classtimes[i].begin {
-                begin = l.classtimes[i].begin
+            if l.classes[i].begin >= minutes && begin >= l.classes[i].begin {
+                begin = l.classes[i].begin
                 index = i
                 lecture = l
             }
@@ -118,8 +118,8 @@ struct NextClassAccessoryEntryView : View {
             }
             
             for (i, l) in lectures {
-                if l.classtimes[i].begin >= minutes && begin >= l.classtimes[i].begin {
-                    begin = l.classtimes[i].begin
+                if l.classes[i].begin >= minutes && begin >= l.classes[i].begin {
+                    begin = l.classes[i].begin
                     index = i
                     lecture = l
                 }
@@ -134,7 +134,7 @@ struct NextClassAccessoryEntryView : View {
         let index = c.0
         let lecture: Lecture = c.1
         
-        var hour = (lecture.classtimes[index].begin >= 720) ? (lecture.classtimes[index].begin-720)/60 : lecture.classtimes[index].begin/60
+        var hour = (lecture.classes[index].begin >= 720) ? (lecture.classes[index].begin-720)/60 : lecture.classes[index].begin/60
         hour = (hour == 0) ? 12 : hour
         
         var am: String {
@@ -145,16 +145,16 @@ struct NextClassAccessoryEntryView : View {
             return NSLocale.current.language.languageCode?.identifier == "en" ? "PM" : "오후"
         }
         
-        let apm = (lecture.classtimes[index].begin >= 720) ? pm : am
+        let apm = (lecture.classes[index].begin >= 720) ? pm : am
         
-        return (String(format:"%02d:%02d", hour, lecture.classtimes[index].begin%60), apm)
+        return (String(format:"%02d:%02d", hour, lecture.classes[index].begin%60), apm)
     }
     
     func getName(timetable: Timetable, date: Date) -> String {
         let c = getNextClass(timetable: timetable, date: date)
         let lecture: Lecture = c.1
         
-        return NSLocale.current.language.languageCode?.identifier == "en" ? lecture.common_title_en : lecture.common_title
+        return lecture.name
     }
     
     func getBegin(timetable: Timetable, date: Date) -> String {
@@ -162,7 +162,7 @@ struct NextClassAccessoryEntryView : View {
         let index = c.0
         let lecture: Lecture = c.1
         
-        return String(format:"%02d:%02d", lecture.classtimes[index].begin/60, lecture.classtimes[index].begin%60)
+        return String(format:"%02d:%02d", lecture.classes[index].begin/60, lecture.classes[index].begin%60)
     }
     
     func getPlace(timetable: Timetable, date: Date) -> String {
@@ -170,7 +170,7 @@ struct NextClassAccessoryEntryView : View {
         let index = c.0
         let lecture: Lecture = c.1
         
-        return NSLocale.current.language.languageCode?.identifier == "en" ? lecture.classtimes[index].classroom_short_en : lecture.classtimes[index].classroom
+        return "(" + lecture.classes[index].buildingCode + ") " + lecture.classes[index].roomName
     }
     
     func getEnd(timetable: Timetable, date: Date) -> String {
@@ -178,7 +178,7 @@ struct NextClassAccessoryEntryView : View {
         let index = c.0
         let lecture: Lecture = c.1
         
-        return String(format:"%02d:%02d", lecture.classtimes[index].end/60, lecture.classtimes[index].end%60)
+        return String(format:"%02d:%02d", lecture.classes[index].end/60, lecture.classes[index].end%60)
     }
 }
 

@@ -99,8 +99,8 @@ func getLecturesForDay(timetable: Timetable?, day: Int) -> [(Int, Lecture)] {
     }
     
     for l in timetable!.lectures {
-        for i in 0..<l.classtimes.count {
-            let c = l.classtimes[i]
+        for i in 0..<l.classes.count {
+            let c = l.classes[i]
             if c.day == day {
                 tmp.append((i, l))
             }
