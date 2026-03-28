@@ -133,7 +133,7 @@ struct NextClassWidgetEntryView : View {
         let c = getNextClass(timetable: timetable, date: date)
         let lecture: Lecture = c.1
         
-        return lecture.name
+        return lecture.name + lecture.subtitle
     }
     
     func getProfessor(timetable: Timetable, date: Date) -> String {

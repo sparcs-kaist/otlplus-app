@@ -155,7 +155,7 @@ struct WeekClassesWidgetView: View {
         for (i, l) in data {
             let c = l.classes[i]
             
-            let title = l.name
+            let title = l.name + l.subtitle
             let minute = c.end - c.begin
             var height = 0.6833 * Double(minute)
             if minute/30 != 0 {

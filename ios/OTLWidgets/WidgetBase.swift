@@ -107,6 +107,11 @@ func getLecturesForDay(timetable: Timetable?, day: Int) -> [(Int, Lecture)] {
         }
     }
     
+    // Sort by begin time
+    tmp.sort { (a, b) -> Bool in
+        return a.1.classes[a.0].begin < b.1.classes[b.0].begin
+    }
+    
     return tmp
 }
 

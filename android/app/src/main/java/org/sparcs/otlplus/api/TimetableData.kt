@@ -14,7 +14,7 @@ class TimetableData(jsonString: String) {
             lectures = (0 until myTimetableLectures.length()).mapNotNull { index ->
                 val lectureJsonObject = myTimetableLectures.getJSONObject(index)
                 Lecture(
-                        name = lectureJsonObject.getString("name"),
+                        name = lectureJsonObject.getString("name") + lectureJsonObject.getString("subtitle"),
                         timeBlocks = toTimeBlocks(
                             lectureJsonObject.getJSONArray("classes")
                         ),

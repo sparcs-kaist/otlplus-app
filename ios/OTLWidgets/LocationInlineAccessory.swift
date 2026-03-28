@@ -77,7 +77,7 @@ struct LocationInlineAccessoryEntryView : View {
         let c = getNextClass(timetable: timetable, date: date)
         let lecture: Lecture = c.1
         
-        return lecture.name
+        return lecture.name + lecture.subtitle
     }
     
     func getPlace(timetable: Timetable, date: Date) -> String {

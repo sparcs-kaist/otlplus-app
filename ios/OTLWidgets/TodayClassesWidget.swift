@@ -157,7 +157,7 @@ struct TodayClassesWidgetView: View {
         for (i, l) in data {
             let c = l.classes[i]
             
-            let title = l.name
+            let title = l.name + l.subtitle
             let place = "(" + c.buildingCode + ") " + c.roomName
             let width = (0.9388*Double(c.end-c.begin)*10).rounded()/10
             let x = 20 + (Double(c.begin-540)*0.95*10).rounded()/10
