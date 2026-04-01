@@ -6,7 +6,8 @@ data class NextLectureInfo(
     val date: String,
     val name: String,
     val place: String,
-    val professor: String
+    val professor: String,
+    val course: Int,
 )
 
 object NextLectureData {
@@ -59,7 +60,8 @@ object NextLectureData {
                     date = dateString,
                     name = nextLecture.name,
                     place = nextLecture.place,
-                    professor = nextLecture.professor + " 교수님"
+                    professor = nextLecture.professor + " 교수님",
+                    course = nextLecture.course,
                 )
             }
         }

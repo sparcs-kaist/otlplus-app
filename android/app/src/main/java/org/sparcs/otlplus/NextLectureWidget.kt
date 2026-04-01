@@ -3,10 +3,12 @@ package org.sparcs.otlplus
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.view.View
 import android.widget.RemoteViews
 import org.sparcs.otlplus.api.ApiLoader
 import org.sparcs.otlplus.api.NextLectureData
 import org.sparcs.otlplus.api.TimetableData
+import org.sparcs.otlplus.constants.BlockColor
 import org.json.JSONObject
 
 /**
@@ -59,11 +61,14 @@ internal fun updateNextLectureWidget(
             it.setTextViewText(R.id.nextLectureName, nextLectureInfo.name)
             it.setTextViewText(R.id.nextLecturePlace, nextLectureInfo.place)
             it.setTextViewText(R.id.nextLectureProfessor, nextLectureInfo.professor)
+            it.setViewVisibility(R.id.nextLectureColor, View.VISIBLE)
+            it.setInt(R.id.nextLectureColor, "setColorFilter", BlockColor.getColor(nextLectureInfo.course))
         } else {
             it.setTextViewText(R.id.nextLectureDate, "")
             it.setTextViewText(R.id.nextLectureName, "다음 강의가 없습니다.")
             it.setTextViewText(R.id.nextLecturePlace, "")
             it.setTextViewText(R.id.nextLectureProfessor, "")
+            it.setViewVisibility(R.id.nextLectureColor, View.GONE)
         }
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, it)
