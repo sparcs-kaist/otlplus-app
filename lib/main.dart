@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:app_links/app_links.dart';
 import 'package:dio/dio.dart';
@@ -6,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+import 'package:in_app_update/in_app_update.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
@@ -146,12 +148,55 @@ class _OTLAppState extends State<OTLApp> {
   final _storageService = StorageService();
   final _dio = DioProvider().dio;
   bool _isLoading = true;
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
     super.initState();
     _initializeApp();
     _initDeepLinks();
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    if (Platform.isAndroid) {
+      try {
+        final info = await InAppUpdate.checkForUpdate();
+        if (info.updateAvailability == UpdateAvailability.updateAvailable) {
+          if (info.immediateUpdateAllowed && info.updatePriority >= 4) {
+            final result = await InAppUpdate.performImmediateUpdate();
+            if (result == AppUpdateResult.userDeniedUpdate) {
+              exit(0);
+            }
+          } else if (info.flexibleUpdateAllowed) {
+            await InAppUpdate.startFlexibleUpdate().then((_) {
+              _showUpdateSnackbar();
+            });
+          }
+        } else if (info.updateAvailability ==
+            UpdateAvailability.developerTriggeredUpdateInProgress) {
+          await InAppUpdate.performImmediateUpdate();
+        }
+      } catch (e) {
+        debugPrint("In-app update error: $e");
+      }
+    }
+  }
+
+  void _showUpdateSnackbar() {
+    _scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text("popup.inapp_flexible_download_complete".tr()),
+        duration: const Duration(days: 1),
+        action: SnackBarAction(
+          label: "popup.inapp_flexible_restart".tr(),
+          onPressed: () async {
+            await InAppUpdate.completeFlexibleUpdate();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -256,12 +301,14 @@ class _OTLAppState extends State<OTLApp> {
 
     if (_isLoading) {
       return MaterialApp(
+        scaffoldMessengerKey: _scaffoldMessengerKey,
         home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
     final authModel = context.watch<AuthModel>();
     return MaterialApp(
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       builder: (context, child) {
         try {
           final sendCrashlytics = context
