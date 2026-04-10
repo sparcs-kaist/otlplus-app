@@ -241,6 +241,8 @@
   },
   "popup": {
     "dont_show_again": "다시 보지 않기",
-    "join_the_event": "이벤트 참여하러 가기"
+    "join_the_event": "이벤트 참여하러 가기",
+    "inapp_flexible_download_complete": "업데이트 다운로드가 완료되었습니다.",
+    "inapp_flexible_restart": "재시작"
   }
 }
