@@ -6,13 +6,13 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.util.TypedValue
 import android.widget.RemoteViews
-import org.sparcs.otlplus.api.ApiLoader
+import androidx.work.*
+import java.util.concurrent.TimeUnit
 import org.sparcs.otlplus.api.Lecture
 import org.sparcs.otlplus.api.LocalTime
 import org.sparcs.otlplus.api.TimetableData
 import org.sparcs.otlplus.api.WeekDays
 import org.sparcs.otlplus.constants.BlockColor
-import org.json.JSONObject
 
 val timeTableColumns = listOf(
     R.id.time_table_column_1,
@@ -31,25 +31,40 @@ data class TimeTableElement(
  * Implementation of App Widget functionality.
  */
 class TimetableWidget : AppWidgetProvider() {
-    private val CHANNEL = "https://otl.sparcs.org"
-
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val apiLoader = ApiLoader(context)
+        // Schedule periodic update if not already scheduled
+        schedulePeriodicUpdate(context)
 
-        apiLoader.get("$CHANNEL/api/v2/semesters/current") { semesterDataString ->
-            val semesterJsonObject = JSONObject(semesterDataString)
-            apiLoader.get("$CHANNEL/api/v2/timetables/my-timetable?year=${semesterJsonObject.getInt("year")}&semester=${semesterJsonObject.getInt("semester")}") { dataString ->
-                val timetableData = TimetableData(dataString)
+        // Trigger immediate update via WorkManager
+        val workRequest = OneTimeWorkRequestBuilder<UpdateWidgetWorker>()
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+        WorkManager.getInstance(context).enqueue(workRequest)
+    }
 
-                for (appWidgetId in appWidgetIds) {
-                    updateTimetableWidget(context, appWidgetManager, appWidgetId, timetableData)
-                }
-            }
-        }
+    override fun onEnabled(context: Context) {
+        schedulePeriodicUpdate(context)
+    }
+
+    private fun schedulePeriodicUpdate(context: Context) {
+        // Schedule periodic update every 30 minutes
+        val periodicWorkRequest = PeriodicWorkRequestBuilder<UpdateWidgetWorker>(30, TimeUnit.MINUTES)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "WidgetUpdateWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            periodicWorkRequest
+        )
     }
 }
 

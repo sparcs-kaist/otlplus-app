@@ -5,44 +5,58 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.view.View
 import android.widget.RemoteViews
-import org.sparcs.otlplus.api.ApiLoader
+import androidx.work.*
 import org.sparcs.otlplus.api.NextLectureData
 import org.sparcs.otlplus.api.TimetableData
 import org.sparcs.otlplus.constants.BlockColor
-import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 /**
  * Implementation of App Widget functionality.
  */
 
 class NextLectureWidget : AppWidgetProvider() {
-    private val CHANNEL = "https://otl.sparcs.org"
-
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val apiLoader = ApiLoader(context)
+        // Schedule periodic update if not already scheduled
+        schedulePeriodicUpdate(context)
 
-        apiLoader.get("$CHANNEL/api/v2/semesters/current") { semesterDataString ->
-            val semesterJsonObject = JSONObject(semesterDataString)
-            apiLoader.get("$CHANNEL/api/v2/timetables/my-timetable?year=${semesterJsonObject.getInt("year")}&semester=${semesterJsonObject.getInt("semester")}") { dataString ->
-                val timetableData = TimetableData(dataString)
-
-                for (appWidgetId in appWidgetIds) {
-                    updateNextLectureWidget(context, appWidgetManager, appWidgetId, timetableData)
-                }
-            }
-        }
+        // Trigger immediate update via WorkManager
+        val workRequest = OneTimeWorkRequestBuilder<UpdateWidgetWorker>()
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+        WorkManager.getInstance(context).enqueue(workRequest)
     }
 
     override fun onEnabled(context: Context) {
-        // Enter relevant functionality for when the first widget is created
+        schedulePeriodicUpdate(context)
+    }
+
+    private fun schedulePeriodicUpdate(context: Context) {
+        // Schedule periodic update every 30 minutes
+        val periodicWorkRequest = PeriodicWorkRequestBuilder<UpdateWidgetWorker>(30, TimeUnit.MINUTES)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "WidgetUpdateWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            periodicWorkRequest
+        )
     }
 
     override fun onDisabled(context: Context) {
-        // Enter relevant functionality for when the last widget is disabled
+
+        // WorkManager will be cancelled if all widgets are removed and you want to stop background updates
+        // However, TimetableWidget also uses the same worker, so we might want to keep it
+        // unless both are disabled. For now, keeping it simple.
     }
 }
 
