@@ -38,6 +38,17 @@ for required in git gh; do
   fi
 done
 
+if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" != "true" ]; then
+  echo "✗ Not inside a git working tree." >&2
+  exit 1
+fi
+
+if [ -f "$(git rev-parse --git-dir)/gitdir" ]; then
+  echo "✗ This script must run in the main repo checkout, not a linked worktree." >&2
+  echo "  cd to the repo root (not .../tree/<branch>) and re-run." >&2
+  exit 1
+fi
+
 START_BRANCH="$(git branch --show-current || true)"
 if [ -z "$START_BRANCH" ]; then
   echo "✗ HEAD is detached. Check out a branch before running this script." >&2
@@ -53,9 +64,10 @@ echo "→ Fetching origin/$MAIN…"
 git fetch origin "$MAIN"
 
 return_to_start() {
-  git checkout "$START_BRANCH" 2>/dev/null || {
-    echo "   (could not return to '$START_BRANCH'; leaving you on current branch)" >&2
-  }
+  if ! git checkout "$START_BRANCH" 2>/dev/null; then
+    echo "   ⚠ could not return to '$START_BRANCH' (branch may have been deleted)" >&2
+    echo "     you are currently on: $(git branch --show-current || echo 'DETACHED HEAD')" >&2
+  fi
 }
 
 for entry in "${BRANCHES[@]}"; do
