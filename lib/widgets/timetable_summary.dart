@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/providers/timetable_model.dart';
 import 'package:provider/provider.dart';
@@ -110,7 +109,7 @@ class TimetableSummary extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
       decoration: BoxDecoration(
         border: Border.symmetric(
-          horizontal: BorderSide(color: OTLColor.pinksLight),
+          horizontal: BorderSide(color: context.colors.backgroundPageDefault),
         ),
       ),
       child: Row(
@@ -128,6 +127,7 @@ class TimetableSummary extends StatelessWidget {
                 mainAxisExtent: 45,
               ),
               itemBuilder: (_, index) => _buildAttribute(
+                context,
                 'timetable.summary.${TYPES_SHORT[index]}'.tr(),
                 typeCredit[index],
                 tempLecture?.typeIdx == index,
@@ -135,26 +135,31 @@ class TimetableSummary extends StatelessWidget {
             ),
           ),
           _buildScore(
+            context,
             'timetable.summary.credit'.tr(),
             allCreditCredit.toString(),
             tempLecture != null && tempLecture.credit > 0,
           ),
           _buildScore(
+            context,
             "AU",
             allAuCredit.toString(),
             tempLecture != null && tempLecture.creditAu > 0,
           ),
           _buildScore(
+            context,
             'timetable.summary.grade'.tr(),
             targetNum > 0 ? LETTERS[(grade / targetNum).round()] : "?",
             tempLecture != null && tempLecture.grade > 0,
           ),
           _buildScore(
+            context,
             'timetable.summary.load'.tr(),
             targetNum > 0 ? LETTERS[(load / targetNum).round()] : "?",
             tempLecture != null && tempLecture.load > 0,
           ),
           _buildScore(
+            context,
             'timetable.summary.speech'.tr(),
             targetNum > 0 ? LETTERS[(speech / targetNum).round()] : "?",
             tempLecture != null && tempLecture.speech > 0,
@@ -164,7 +169,12 @@ class TimetableSummary extends StatelessWidget {
     );
   }
 
-  Widget _buildScore(String title, String content, bool highlight) {
+  Widget _buildScore(
+    BuildContext context,
+    String title,
+    String content,
+    bool highlight,
+  ) {
     return Expanded(
       child: Column(
         children: [
@@ -172,8 +182,10 @@ class TimetableSummary extends StatelessWidget {
             height: 26,
             child: Text(
               content,
-              style: titleBold.copyWith(
-                color: highlight ? OTLColor.pinksMain : OTLColor.gray0,
+              style: context.texts.bigBold.copyWith(
+                color: highlight
+                    ? context.colors.highlightDefault
+                    : context.colors.textDark,
               ),
               textAlign: TextAlign.center,
             ),
@@ -182,8 +194,10 @@ class TimetableSummary extends StatelessWidget {
             height: 17,
             child: Text(
               title,
-              style: labelRegular.copyWith(
-                color: highlight ? OTLColor.pinksMain : OTLColor.gray0,
+              style: context.texts.small.copyWith(
+                color: highlight
+                    ? context.colors.highlightDefault
+                    : context.colors.textDark,
               ),
               textAlign: TextAlign.center,
             ),
@@ -193,15 +207,22 @@ class TimetableSummary extends StatelessWidget {
     );
   }
 
-  Widget _buildAttribute(String title, int value, bool highlight) {
+  Widget _buildAttribute(
+    BuildContext context,
+    String title,
+    int value,
+    bool highlight,
+  ) {
     return Row(
       children: [
         SizedBox(
           width: 28,
           child: Text(
             title,
-            style: labelBold.copyWith(
-              color: highlight ? OTLColor.pinksMain : OTLColor.gray0,
+            style: context.texts.smallBold.copyWith(
+              color: highlight
+                  ? context.colors.highlightDefault
+                  : context.colors.textDark,
             ),
           ),
         ),
@@ -209,8 +230,10 @@ class TimetableSummary extends StatelessWidget {
           width: 17,
           child: Text(
             value.toString(),
-            style: labelRegular.copyWith(
-              color: highlight ? OTLColor.pinksMain : OTLColor.gray0,
+            style: context.texts.small.copyWith(
+              color: highlight
+                  ? context.colors.highlightDefault
+                  : context.colors.textDark,
             ),
           ),
         ),
