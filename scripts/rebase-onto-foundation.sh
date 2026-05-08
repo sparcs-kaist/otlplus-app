@@ -7,13 +7,18 @@
 # --force-with-lease, and mark each PR Ready-for-review.
 #
 # Prerequisites:
-#   - gh CLI authenticated
+#   - git and gh CLI on PATH; gh authenticated
+#   - HEAD is on a real branch, not detached (the script aborts otherwise)
 #   - Working tree clean (the script aborts if `git status` is dirty)
 #   - Network access to origin
 #
-# Safe to re-run: each push uses --force-with-lease (so stale remotes are
-# detected) and a failing rebase is aborted before the script exits, leaving
-# the branch in its pre-rebase state.
+# Safety: each feature branch is hard-reset to origin before rebasing, so any
+# unpushed local commits on those branches will be discarded. Keep your work
+# only on branches outside the five listed here.
+#
+# On a rebase conflict the script aborts the in-progress rebase, returns to
+# your starting branch, and exits non-zero — you can resolve manually, push,
+# and re-run.
 
 set -euo pipefail
 
@@ -33,15 +38,25 @@ for required in git gh; do
   fi
 done
 
+START_BRANCH="$(git branch --show-current || true)"
+if [ -z "$START_BRANCH" ]; then
+  echo "✗ HEAD is detached. Check out a branch before running this script." >&2
+  exit 1
+fi
+
 if [ -n "$(git status --porcelain)" ]; then
   echo "✗ Working tree is dirty. Commit or stash changes and re-run." >&2
   exit 1
 fi
 
-START_BRANCH="$(git branch --show-current)"
-
 echo "→ Fetching origin/$MAIN…"
 git fetch origin "$MAIN"
+
+return_to_start() {
+  git checkout "$START_BRANCH" 2>/dev/null || {
+    echo "   (could not return to '$START_BRANCH'; leaving you on current branch)" >&2
+  }
+}
 
 for entry in "${BRANCHES[@]}"; do
   branch="${entry%%:*}"
@@ -50,7 +65,7 @@ for entry in "${BRANCHES[@]}"; do
   echo "═══ $branch  (PR #$pr) ═══"
 
   if ! git show-ref --verify --quiet "refs/heads/$branch"; then
-    echo "   → tracking $branch from origin"
+    echo "   → creating local '$branch' from origin"
     git branch "$branch" "origin/$branch"
   fi
 
@@ -62,10 +77,10 @@ for entry in "${BRANCHES[@]}"; do
   if GIT_MERGE_AUTOEDIT=no git rebase "origin/$MAIN"; then
     echo "   ✓ rebase clean"
   else
-    echo "   ✗ rebase conflict on $branch – aborting rebase and stopping" >&2
+    echo "   ✗ rebase conflict on $branch – aborting and stopping" >&2
     git rebase --abort || true
-    git checkout "$START_BRANCH" || true
-    echo "   → resolve conflicts manually, push $branch, then re-run this script" >&2
+    return_to_start
+    echo "   → resolve '$branch' vs origin/$MAIN manually, push, then re-run" >&2
     exit 1
   fi
 
@@ -73,10 +88,15 @@ for entry in "${BRANCHES[@]}"; do
   git push --force-with-lease origin "$branch"
 
   echo "   → marking PR #$pr Ready for review"
-  gh pr ready "$pr"
+  if ! gh pr ready "$pr"; then
+    echo "   ⚠ 'gh pr ready $pr' failed (rebase and push already succeeded)." >&2
+    echo "     Flip PR #$pr to Ready manually on GitHub, then re-run to continue." >&2
+    return_to_start
+    exit 1
+  fi
 done
 
-git checkout "$START_BRANCH"
+return_to_start
 echo
 echo "✓ All 5 feature PRs rebased onto $MAIN and marked Ready."
 echo "  Merge order (recommended): #236 → #239 → #240 → #241 → #238"
