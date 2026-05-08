@@ -6,26 +6,46 @@
 # root (not a worktree) to rebase all 5 feature branches onto main, push with
 # --force-with-lease, and mark each PR Ready-for-review.
 #
+# Usage:
+#   bash scripts/rebase-onto-foundation.sh           # fail fast on worktree clashes
+#   bash scripts/rebase-onto-foundation.sh --cleanup # auto-remove conflicting worktrees
+#   bash scripts/rebase-onto-foundation.sh --help
+#
 # Prerequisites:
 #   - git and gh CLI on PATH; gh authenticated
-#   - HEAD is on a real branch, not detached (the script aborts otherwise)
-#   - Working tree clean (the script aborts if `git status` is dirty)
+#   - HEAD is on a real branch, not detached
+#   - Working tree clean (commit or stash first)
 #   - Network access to origin
 #
-# Safety: each feature branch is hard-reset to origin before rebasing, so any
-# unpushed local commits on those branches will be discarded. Keep your work
-# only on branches outside the five listed here.
-#
-# If any of the five branches is checked out in a linked worktree (e.g. under
-# ./tree/), remove or switch that worktree first — git refuses to move a branch
-# that is checked out elsewhere. The script detects this and tells you which
-# worktree to clean up.
-#
-# On a rebase conflict the script aborts the in-progress rebase, returns to
-# your starting branch, and exits non-zero — you can resolve manually, push,
-# and re-run.
+# Safety:
+#   - Feature branches are hard-reset to origin before rebasing, so any unpushed
+#     local commits on those branches are discarded.
+#   - Without --cleanup the script exits with an actionable error if any feature
+#     branch is checked out in a linked worktree (e.g. ./tree/<branch>).
+#   - With --cleanup the script runs `git worktree remove` on each conflicting
+#     worktree before checking out the branch. This deletes the worktree
+#     directory; local commits on that branch that were only in the worktree
+#     are lost the same way --hard-reset would discard them.
 
 set -euo pipefail
+
+CLEANUP_WORKTREES=0
+for arg in "$@"; do
+  case "$arg" in
+    --help|-h)
+      sed -n '3,28p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    --cleanup|--cleanup-worktrees)
+      CLEANUP_WORKTREES=1
+      ;;
+    *)
+      echo "✗ Unknown argument: $arg" >&2
+      echo "  Run with --help for usage." >&2
+      exit 1
+      ;;
+  esac
+done
 
 MAIN="${MAIN:-main}"
 BRANCHES=(
@@ -60,9 +80,52 @@ if [ -z "$START_BRANCH" ]; then
   exit 1
 fi
 
-if [ -n "$(git status --porcelain)" ]; then
-  echo "✗ Working tree is dirty. Commit or stash changes and re-run." >&2
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "✗ Tracked files have uncommitted changes. Commit or stash and re-run." >&2
+  echo "  (untracked files like .../tree/ worktrees are ignored for this check)" >&2
   exit 1
+fi
+
+MAIN_TOPLEVEL="$(git rev-parse --show-toplevel)"
+
+worktree_holding() {
+  git worktree list --porcelain | awk -v b="refs/heads/$1" '
+    /^worktree / { wt = $2 }
+    $0 == "branch " b { print wt; exit }
+  '
+}
+
+CLASHES=()
+for entry in "${BRANCHES[@]}"; do
+  branch="${entry%%:*}"
+  wt="$(worktree_holding "$branch")"
+  if [ -n "$wt" ] && [ "$wt" != "$MAIN_TOPLEVEL" ]; then
+    CLASHES+=("$branch:$wt")
+  fi
+done
+
+if [ "${#CLASHES[@]}" -gt 0 ]; then
+  echo "Found ${#CLASHES[@]} feature branch(es) checked out in linked worktrees:"
+  for c in "${CLASHES[@]}"; do
+    echo "  $c"
+  done
+  if [ "$CLEANUP_WORKTREES" -eq 1 ]; then
+    echo
+    echo "→ --cleanup specified; removing each worktree"
+    for c in "${CLASHES[@]}"; do
+      wt="${c#*:}"
+      echo "   git worktree remove $wt"
+      git worktree remove "$wt"
+    done
+  else
+    echo
+    echo "Re-run with --cleanup to remove them automatically, or clean up by hand:"
+    for c in "${CLASHES[@]}"; do
+      wt="${c#*:}"
+      echo "   git worktree remove $wt"
+    done
+    exit 1
+  fi
 fi
 
 echo "→ Fetching origin/$MAIN…"
@@ -80,18 +143,6 @@ for entry in "${BRANCHES[@]}"; do
   pr="${entry##*:}"
   echo
   echo "═══ $branch  (PR #$pr) ═══"
-
-  checked_out_at="$(git worktree list --porcelain | awk -v b="refs/heads/$branch" '
-    /^worktree / { wt = $2 }
-    $0 == "branch " b { print wt; exit }
-  ')"
-  if [ -n "$checked_out_at" ] && [ "$checked_out_at" != "$(git rev-parse --show-toplevel)" ]; then
-    echo "   ✗ '$branch' is already checked out in another worktree: $checked_out_at" >&2
-    echo "     Remove or switch that worktree first, then re-run:" >&2
-    echo "       git worktree remove $checked_out_at" >&2
-    return_to_start
-    exit 1
-  fi
 
   if ! git show-ref --verify --quiet "refs/heads/$branch"; then
     echo "   → creating local '$branch' from origin"
