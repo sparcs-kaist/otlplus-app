@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
@@ -26,7 +25,7 @@ class LikedReviewPage extends StatelessWidget {
 
     return OTLScaffold(
       child: OTLLayout(
-        middle: Text('user.liked_review'.tr(), style: titleBold),
+        middle: Text('user.liked_review'.tr(), style: context.texts.bigBold),
         body: Container(
           constraints: const BoxConstraints.expand(),
           child: Card(
@@ -87,12 +86,12 @@ class LikedReviewPage extends StatelessWidget {
                                         top: 4.0,
                                         bottom: 12.0,
                                       ),
-                                      child: const Center(
+                                      child: Center(
                                         child: SizedBox(
                                           width: 24,
                                           height: 24,
                                           child: CircularProgressIndicator(
-                                            color: OTLColor.grayE,
+                                            color: context.colors.lineDefault,
                                             strokeWidth: 2,
                                           ),
                                         ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -115,12 +115,12 @@ class LatestReviewsPage extends StatelessWidget {
                   delegate: SliverChildListDelegate([
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
-                      child: const Center(
+                      child: Center(
                         child: SizedBox(
                           width: 24,
                           height: 24,
                           child: CircularProgressIndicator(
-                            color: OTLColor.grayE,
+                            color: context.colors.lineDefault,
                             strokeWidth: 2,
                           ),
                         ),
@@ -173,12 +173,12 @@ class HallOfFamePage extends StatelessWidget {
                   delegate: SliverChildListDelegate([
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
-                      child: const Center(
+                      child: Center(
                         child: SizedBox(
                           width: 24,
                           height: 24,
                           child: CircularProgressIndicator(
-                            color: OTLColor.grayE,
+                            color: context.colors.lineDefault,
                             strokeWidth: 2,
                           ),
                         ),

@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/user.dart';
@@ -41,9 +40,9 @@ class MyReviewPage extends StatelessWidget {
 
     return OTLScaffold(
       child: OTLLayout(
-        middle: Text('user.my_review'.tr(), style: titleBold),
+        middle: Text('user.my_review'.tr(), style: context.texts.bigBold),
         body: ColoredBox(
-          color: OTLColor.grayF,
+          color: context.colors.backgroundSectionDefault,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: SingleChildScrollView(
@@ -59,7 +58,7 @@ class MyReviewPage extends StatelessWidget {
                               padding: const EdgeInsets.only(bottom: 8.0),
                               child: Text(
                                 '${semester.year} ${["", "semester.spring".tr(), "semester.summer".tr(), "semester.fall".tr(), "semester.winter".tr()][semester.semester]}',
-                                style: labelBold,
+                                style: context.texts.smallBold,
                               ),
                             ),
                             ..._buildLectureBlocks(
