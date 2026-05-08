@@ -5,7 +5,7 @@ import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/pages/lecture_search_page.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/providers/lecture_detail_model.dart';
 import 'package:otlplus/providers/lecture_search_model.dart';
@@ -33,7 +33,7 @@ class _LectureSearchState extends State<LectureSearch> {
         }
       },
       child: ColoredBox(
-        color: OTLColor.grayF,
+        color: context.colors.backgroundSectionDefault,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -51,7 +51,7 @@ class _LectureSearchState extends State<LectureSearch> {
                           context,
                           LectureSearchPage(openKeyboard: true),
                         ),
-                        color: OTLColor.pinksLight,
+                        color: context.colors.backgroundPageDefault,
                         child: Padding(
                           padding: EdgeInsets.all(8.0),
                           child: SizedBox(
@@ -65,7 +65,7 @@ class _LectureSearchState extends State<LectureSearch> {
                                   height: 24.0,
                                   width: 24.0,
                                   colorFilter: ColorFilter.mode(
-                                    OTLColor.pinksMain,
+                                    context.colors.highlightDefault,
                                     BlendMode.srcIn,
                                   ),
                                 ),
