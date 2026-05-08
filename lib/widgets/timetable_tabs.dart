@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/widgets/dropdown.dart';
 
@@ -61,7 +61,7 @@ class _TimetableTabsState extends State<TimetableTabs> {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: OTLColor.pinksLight,
+            color: context.colors.backgroundPageDefault,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Icon(Icons.add, size: 16),
@@ -73,8 +73,10 @@ class _TimetableTabsState extends State<TimetableTabs> {
       i == 0
           ? 'timetable.my_tab'.tr()
           : 'timetable.tab'.tr(args: [i.toString()]),
-      style: bodyBold.copyWith(
-        color: i == _index ? OTLColor.grayF : OTLColor.gray0,
+      style: context.texts.normalBold.copyWith(
+        color: i == _index
+            ? context.colors.textBright
+            : context.colors.textDark,
       ),
       textAlign: TextAlign.center,
     );
@@ -87,14 +89,18 @@ class _TimetableTabsState extends State<TimetableTabs> {
             height: 28,
             padding: EdgeInsets.fromLTRB(12, 0, 8, 0),
             decoration: BoxDecoration(
-              color: OTLColor.pinksMain,
+              color: context.colors.highlightDefault,
               borderRadius: BorderRadius.circular(100),
             ),
             child: Row(
               children: [
                 text,
                 const SizedBox(width: 6),
-                Icon(Icons.more_vert, color: OTLColor.grayF, size: 16),
+                Icon(
+                  Icons.more_vert,
+                  color: context.colors.textBright,
+                  size: 16,
+                ),
               ],
             ),
           ),
@@ -119,14 +125,9 @@ class _TimetableTabsState extends State<TimetableTabs> {
                 value: 3,
                 text: 'timetable.tab_menu.delete'.tr(),
                 icon: Icons.delete_outlined,
-                textColor: OTLColor.red,
+                textColor: OTLColor.red, // legacy: no web red semantic
               ),
             ],
-            /*ItemData(
-                value: 4,
-                text: 'timetable.tab_menu.syllabus'.tr(),
-                icon: Icons.sticky_note_2_outlined,
-              ),*/
           ],
           offsetFromLeft: true,
           onChanged: (value) {
@@ -134,7 +135,6 @@ class _TimetableTabsState extends State<TimetableTabs> {
             if (value == 1) widget.onExportTap(ShareType.image);
             if (value == 2) widget.onExportTap(ShareType.ical);
             if (value == 3) widget.onDeleteTap(i);
-            // if (value == 4) Pass
           },
         ),
       );
@@ -144,7 +144,7 @@ class _TimetableTabsState extends State<TimetableTabs> {
       height: 28,
       margin: const EdgeInsets.only(right: 8),
       decoration: BoxDecoration(
-        color: OTLColor.pinksLight,
+        color: context.colors.backgroundPageDefault,
         borderRadius: BorderRadius.circular(20),
       ),
       child: GestureDetector(
