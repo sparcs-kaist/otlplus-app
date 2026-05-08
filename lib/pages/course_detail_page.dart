@@ -26,8 +26,8 @@ class CourseDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final CourseDetailModel courseDetailModel =
-        context.watch<CourseDetailModel>();
+    final CourseDetailModel courseDetailModel = context
+        .watch<CourseDetailModel>();
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
 
     return OTLScaffold(
@@ -35,8 +35,8 @@ class CourseDetailPage extends StatelessWidget {
         middle: Text(
           courseDetailModel.hasData
               ? (isEn
-                  ? courseDetailModel.course.titleEn
-                  : courseDetailModel.course.title)
+                    ? courseDetailModel.course.titleEn
+                    : courseDetailModel.course.title)
               : '',
           style: context.texts.bigBold,
         ),
@@ -46,8 +46,8 @@ class CourseDetailPage extends StatelessWidget {
           ),
           child:
               context.select<CourseDetailModel, bool>((model) => model.hasData)
-                  ? _buildBody(context)
-                  : Center(child: const CircularProgressIndicator()),
+              ? _buildBody(context)
+              : Center(child: const CircularProgressIndicator()),
         ),
       ),
     );
@@ -146,8 +146,8 @@ class CourseDetailPage extends StatelessWidget {
         professor == null
             ? "common.all".tr()
             : (isEn
-                ? (professor.nameEn == '' ? professor.name : professor.nameEn)
-                : professor.name),
+                  ? (professor.nameEn == '' ? professor.name : professor.nameEn)
+                  : professor.name),
         style: context.texts.small,
       ),
       selected: (professor == null
@@ -155,10 +155,10 @@ class CourseDetailPage extends StatelessWidget {
           : selectedFilter == professor.professorId.toString()),
       onSelected: (isSelected) {
         context.read<CourseDetailModel>().setFilter(
-              (professor != null && isSelected)
-                  ? professor.professorId.toString()
-                  : "ALL",
-            );
+          (professor != null && isSelected)
+              ? professor.professorId.toString()
+              : "ALL",
+        );
       },
     );
   }
@@ -267,9 +267,7 @@ class CourseDetailPage extends StatelessWidget {
               style: context.texts.normalBold,
             ),
             const SizedBox(width: 8.0),
-            Expanded(
-              child: Text(course.summary, style: context.texts.normal),
-            ),
+            Expanded(child: Text(course.summary, style: context.texts.normal)),
           ],
         ),
         const SizedBox(height: 4.0),
@@ -392,23 +390,24 @@ class CourseDetailPage extends StatelessWidget {
                       )),
             )
             .map((lecture) {
-          Review? existingReview;
-          try {
-            existingReview = user.reviews.firstWhere(
-              (review) => review.lecture.id == lecture.id,
-              orElse: null,
-            );
-          } catch (_) {}
-          return ReviewWriteBlock(
-            lecture: lecture,
-            existingReview: existingReview,
-            isSimple: false,
-            onUploaded: (review) {
-              context.read<InfoModel>().getInfo();
-              context.read<CourseDetailModel>().updateCourseReviews(review);
-            },
-          );
-        }).toList(),
+              Review? existingReview;
+              try {
+                existingReview = user.reviews.firstWhere(
+                  (review) => review.lecture.id == lecture.id,
+                  orElse: null,
+                );
+              } catch (_) {}
+              return ReviewWriteBlock(
+                lecture: lecture,
+                existingReview: existingReview,
+                isSimple: false,
+                onUploaded: (review) {
+                  context.read<InfoModel>().getInfo();
+                  context.read<CourseDetailModel>().updateCourseReviews(review);
+                },
+              );
+            })
+            .toList(),
         ...context.select<CourseDetailModel, List<Widget>>((model) {
           if (model.reviews?.isEmpty == true) {
             return [

@@ -5,7 +5,7 @@ import 'package:otlplus/theme/context_ext.dart';
 
 class ExpandableText extends StatefulWidget {
   const ExpandableText(this.text, {Key? key, this.maxLines = 5, this.style})
-      : super(key: key);
+    : super(key: key);
 
   final String text;
   final int maxLines;

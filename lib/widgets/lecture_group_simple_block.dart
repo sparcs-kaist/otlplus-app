@@ -46,11 +46,13 @@ class LectureGroupSimpleBlock extends StatelessWidget {
                           ? const Radius.circular(4.0)
                           : Radius.zero,
                     ),
-                    color: (lecture.professors.any(
-                      (professor) =>
-                          professor.professorId.toString() == filter,
-                    ))
-                        ? OTLColor.pinksSub // legacy: pinksSub
+                    color:
+                        (lecture.professors.any(
+                          (professor) =>
+                              professor.professorId.toString() == filter,
+                        ))
+                        ? OTLColor
+                              .pinksSub // legacy: pinksSub
                         : context.colors.lineDefault,
                   ),
                   child: ClipRRect(
@@ -65,9 +67,9 @@ class LectureGroupSimpleBlock extends StatelessWidget {
                     child: BackgroundButton(
                       onTap: () {
                         context.read<LectureDetailModel>().loadLecture(
-                              lecture.id,
-                              false,
-                            );
+                          lecture.id,
+                          false,
+                        );
                         OTLNavigator.push(
                           context,
                           LectureDetailPage(fromCourseDetailPage: true),

@@ -23,7 +23,7 @@ import 'package:otlplus/widgets/review_write_block.dart';
 
 class LectureDetailPage extends StatelessWidget {
   LectureDetailPage({Key? key, this.fromCourseDetailPage = false})
-      : super(key: key);
+    : super(key: key);
 
   static String route = 'lecture_detail_page';
   final bool fromCourseDetailPage;
@@ -39,8 +39,7 @@ class LectureDetailPage extends StatelessWidget {
     final payloadJson = jsonEncode(payload);
     final payloadBase64 = base64Encode(utf8.encode(payloadJson));
 
-    return Uri.https(
-        "erp.kaist.ac.kr", "/com/lgin/SsoCtr/initExtPageWork.do", {
+    return Uri.https("erp.kaist.ac.kr", "/com/lgin/SsoCtr/initExtPageWork.do", {
       "link": "estblSubjt",
       "params": payloadBase64,
     }).toString();
@@ -48,8 +47,8 @@ class LectureDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LectureDetailModel lectureDetailModel =
-        context.watch<LectureDetailModel>();
+    final LectureDetailModel lectureDetailModel = context
+        .watch<LectureDetailModel>();
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
 
     return OTLScaffold(
@@ -57,24 +56,25 @@ class LectureDetailPage extends StatelessWidget {
         middle: Text(
           lectureDetailModel.hasData
               ? (isEn
-                  ? lectureDetailModel.lecture.titleEn
-                  : lectureDetailModel.lecture.title)
+                    ? lectureDetailModel.lecture.titleEn
+                    : lectureDetailModel.lecture.title)
               : '',
           style: context.texts.bigBold,
         ),
         body: Card(
           shape: const RoundedRectangleBorder(),
-          child: context.select<LectureDetailModel, bool>(
-                  (model) => model.hasData)
+          child:
+              context.select<LectureDetailModel, bool>((model) => model.hasData)
               ? _buildBody(context)
               : Center(child: const CircularProgressIndicator()),
         ),
-        trailing: (context.select<LectureDetailModel, bool>(
-                    (model) => model.hasData,
-                  ) &&
+        trailing:
+            (context.select<LectureDetailModel, bool>(
+                  (model) => model.hasData,
+                ) &&
                 context.select<LectureDetailModel, bool>(
-                    (model) => model.isUpdateEnabled,
-                  ) &&
+                  (model) => model.isUpdateEnabled,
+                ) &&
                 context.read<TimetableModel>().selectedIndex != 0)
             ? _buildUpdateButton(context)
             : null,
@@ -135,10 +135,7 @@ class LectureDetailPage extends StatelessWidget {
                 context: context,
                 builder: (_) => OTLDialog(
                   type: OTLDialogType.addLectureWithTab,
-                  namedArgs: {
-                    'lecture': lectureTitle,
-                    'timetable': timetable,
-                  },
+                  namedArgs: {'lecture': lectureTitle, 'timetable': timetable},
                   onTapPos: () => result = true,
                 ),
               );
@@ -213,8 +210,7 @@ class LectureDetailPage extends StatelessWidget {
             ),
             safariVCOptions: SafariViewControllerOptions(
               barCollapsingEnabled: true,
-              dismissButtonStyle:
-                  SafariViewControllerDismissButtonStyle.close,
+              dismissButtonStyle: SafariViewControllerDismissButtonStyle.close,
               modalPresentationCapturesStatusBarAppearance: true,
             ),
           ),
@@ -357,12 +353,9 @@ class LectureDetailPage extends StatelessWidget {
           ),
           TableRow(
             children: <Widget>[
-              _buildStatus(
-                  context, "review.grade".tr(), lecture.gradeLetter),
-              _buildStatus(
-                  context, "review.load".tr(), lecture.loadLetter),
-              _buildStatus(
-                  context, "review.speech".tr(), lecture.speechLetter),
+              _buildStatus(context, "review.grade".tr(), lecture.gradeLetter),
+              _buildStatus(context, "review.load".tr(), lecture.loadLetter),
+              _buildStatus(context, "review.speech".tr(), lecture.speechLetter),
             ],
           ),
         ],
@@ -370,8 +363,7 @@ class LectureDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAttribute(
-      BuildContext context, String title, String content) {
+  Widget _buildAttribute(BuildContext context, String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4.0),
       child: Row(
@@ -418,16 +410,19 @@ class LectureDetailPage extends StatelessWidget {
               .join(", "),
         ),
         _buildAttribute(
-            context, "dictionary.limit".tr(), lecture.limit.toString()),
+          context,
+          "dictionary.limit".tr(),
+          lecture.limit.toString(),
+        ),
         _buildAttribute(
           context,
           "dictionary.exam".tr(),
           (lecture.examtimes.length == 0)
               ? "common.no_info".tr()
               : lecture.examtimes
-                  .map((examtime) => isEn ? examtime.strEn : examtime.str)
-                  .toSet()
-                  .join(", "),
+                    .map((examtime) => isEn ? examtime.strEn : examtime.str)
+                    .toSet()
+                    .join(", "),
         ),
       ],
     );
