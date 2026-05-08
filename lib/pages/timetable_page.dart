@@ -10,7 +10,7 @@ import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:otlplus/widgets/semester_picker.dart';
 import 'package:otlplus/widgets/timetable_mode_control.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/providers/lecture_detail_model.dart';
 import 'package:otlplus/providers/timetable_model.dart';
@@ -69,7 +69,7 @@ class _TimetablePageState extends State<TimetablePage> {
         children: <Widget>[
           Expanded(
             child: ColoredBox(
-              color: OTLColor.grayF,
+              color: context.colors.backgroundSectionDefault,
               child: Column(
                 children: <Widget>[
                   SizedBox(
@@ -78,11 +78,11 @@ class _TimetablePageState extends State<TimetablePage> {
                       children: [
                         Expanded(
                           child: Container(
-                            color: OTLColor.pinksLight,
+                            color: context.colors.backgroundPageDefault,
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                color: OTLColor.grayF,
+                                color: context.colors.backgroundSectionDefault,
                                 borderRadius: BorderRadius.only(
                                   topLeft: Radius.circular(16),
                                 ),
@@ -110,7 +110,7 @@ class _TimetablePageState extends State<TimetablePage> {
                               child: Icon(
                                 Icons.search,
                                 size: 24,
-                                color: OTLColor.pinksMain,
+                                color: context.colors.highlightDefault,
                               ),
                             ),
                           )
@@ -167,7 +167,7 @@ class _TimetablePageState extends State<TimetablePage> {
             child: RepaintBoundary(
               key: _paintKey,
               child: Container(
-                color: OTLColor.grayF,
+                color: context.colors.backgroundSectionDefault,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildTimetable(context, lectures, isExamTime),
               ),
@@ -255,11 +255,6 @@ class _TimetablePageState extends State<TimetablePage> {
         timetableModel.createTimetable(
           lectures: timetableModel.currentTimetable.lectures,
         );
-        /*if (_isSearchOpened) return;
-        setState(() {
-          _isSearchOpened = true;
-          _selectedLecture = null;
-        });*/
       },
       onDeleteTap: (i) {
         if (i == 0) {
