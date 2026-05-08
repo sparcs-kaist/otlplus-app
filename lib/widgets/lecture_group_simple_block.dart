@@ -1,14 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/pages/lecture_detail_page.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/extensions/lecture.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/providers/lecture_detail_model.dart';
+import 'package:otlplus/theme/context_ext.dart';
 
 class LectureGroupSimpleBlock extends StatelessWidget {
   final List<Lecture> lectures;
@@ -34,7 +34,7 @@ class LectureGroupSimpleBlock extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: ListTile.divideTiles(
-              color: OTLColor.gray0,
+              color: context.colors.textDark,
               tiles: lectures.map(
                 (lecture) => Container(
                   decoration: BoxDecoration(
@@ -46,13 +46,12 @@ class LectureGroupSimpleBlock extends StatelessWidget {
                           ? const Radius.circular(4.0)
                           : Radius.zero,
                     ),
-                    color:
-                        (lecture.professors.any(
-                          (professor) =>
-                              professor.professorId.toString() == filter,
-                        ))
-                        ? OTLColor.pinksSub
-                        : OTLColor.grayE,
+                    color: (lecture.professors.any(
+                      (professor) =>
+                          professor.professorId.toString() == filter,
+                    ))
+                        ? OTLColor.pinksSub // legacy: pinksSub
+                        : context.colors.lineDefault,
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.vertical(
@@ -66,9 +65,9 @@ class LectureGroupSimpleBlock extends StatelessWidget {
                     child: BackgroundButton(
                       onTap: () {
                         context.read<LectureDetailModel>().loadLecture(
-                          lecture.id,
-                          false,
-                        );
+                              lecture.id,
+                              false,
+                            );
                         OTLNavigator.push(
                           context,
                           LectureDetailPage(fromCourseDetailPage: true),
@@ -81,11 +80,11 @@ class LectureGroupSimpleBlock extends StatelessWidget {
                         ),
                         child: Text.rich(
                           TextSpan(
-                            style: bodyRegular,
+                            style: context.texts.normal,
                             children: [
                               TextSpan(
                                 text: lecture.classTitle,
-                                style: bodyBold,
+                                style: context.texts.normalBold,
                               ),
                               TextSpan(text: ' '),
                               TextSpan(
