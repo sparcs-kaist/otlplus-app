@@ -132,8 +132,7 @@ if [ "${#CLASHES[@]}" -gt 0 ]; then
     echo
     echo "Re-run with --cleanup to remove them automatically, or clean up by hand:"
     for c in "${CLASHES[@]}"; do
-      wt="${c#*:}"
-      echo "   git worktree remove $wt"
+      echo "   git worktree remove ${c#*:}"
     done
     exit 1
   fi
