@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:provider/provider.dart';
 import 'package:otlplus/extensions/semester.dart';
@@ -36,7 +35,7 @@ class _SemesterPickerState extends State<SemesterPicker> {
       padding: const EdgeInsets.all(8.0),
       child: Text(
         context.watch<TimetableModel>().selectedSemester.title,
-        style: displayBold.copyWith(height: 1.448),
+        style: context.texts.biggerBold.copyWith(height: 1.448),
       ),
     );
   }
@@ -54,7 +53,9 @@ class _SemesterPickerState extends State<SemesterPicker> {
           : null,
       icon: Icons.navigate_before_outlined,
       iconSize: 24,
-      color: canGoPreviousSemester ? OTLColor.gray0 : OTLColor.grayA,
+      color: canGoPreviousSemester
+          ? context.colors.textDark
+          : context.colors.textDisable,
       padding: const EdgeInsets.all(4.0),
       tapEffect: canGoPreviousSemester
           ? ButtonTapEffect.lighten
@@ -75,7 +76,9 @@ class _SemesterPickerState extends State<SemesterPicker> {
           : null,
       icon: Icons.navigate_next_outlined,
       iconSize: 24,
-      color: canGoNextSemester ? OTLColor.gray0 : OTLColor.grayA,
+      color: canGoNextSemester
+          ? context.colors.textDark
+          : context.colors.textDisable,
       padding: const EdgeInsets.all(4.0),
       tapEffect: canGoNextSemester
           ? ButtonTapEffect.lighten
