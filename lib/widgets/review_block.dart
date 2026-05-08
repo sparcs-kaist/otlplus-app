@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/extensions/review.dart';
@@ -48,7 +47,7 @@ class _ReviewBlockState extends State<ReviewBlock> {
           alignment: Alignment.bottomRight,
           children: [
             BackgroundButton(
-              color: OTLColor.grayE,
+              color: context.colors.lineDefault,
               onTap: widget.onTap,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -60,13 +59,13 @@ class _ReviewBlockState extends State<ReviewBlock> {
                   children: <Widget>[
                     Text.rich(
                       TextSpan(
-                        style: bodyRegular,
+                        style: context.texts.normal,
                         children: <TextSpan>[
                           TextSpan(
                             text: isEn
                                 ? widget.review.lecture.titleEn
                                 : widget.review.lecture.title,
-                            style: bodyBold,
+                            style: context.texts.normalBold,
                           ),
                           const TextSpan(text: " "),
                           TextSpan(
@@ -99,7 +98,9 @@ class _ReviewBlockState extends State<ReviewBlock> {
                     ExpandableText(
                       content.trim(),
                       maxLines: widget.maxLines,
-                      style: bodyRegular.copyWith(color: OTLColor.gray0),
+                      style: context.texts.normal.copyWith(
+                        color: context.colors.textDark,
+                      ),
                     ),
                     const SizedBox(height: 6.0),
                     Row(
@@ -107,34 +108,34 @@ class _ReviewBlockState extends State<ReviewBlock> {
                       children: <Widget>[
                         Text.rich(
                           TextSpan(
-                            style: labelRegular,
+                            style: context.texts.small,
                             children: <TextSpan>[
                               TextSpan(text: "review.likes".tr()),
                               const TextSpan(text: " "),
                               TextSpan(
                                 text: _like.toString(),
-                                style: labelBold,
+                                style: context.texts.smallBold,
                               ),
                               const TextSpan(text: "  "),
                               TextSpan(text: "review.grade".tr()),
                               const TextSpan(text: " "),
                               TextSpan(
                                 text: widget.review.gradeLetter,
-                                style: labelBold,
+                                style: context.texts.smallBold,
                               ),
                               const TextSpan(text: "  "),
                               TextSpan(text: "review.load".tr()),
                               const TextSpan(text: " "),
                               TextSpan(
                                 text: widget.review.loadLetter,
-                                style: labelBold,
+                                style: context.texts.smallBold,
                               ),
                               const TextSpan(text: "  "),
                               TextSpan(text: "review.speech".tr()),
                               const TextSpan(text: " "),
                               TextSpan(
                                 text: widget.review.speechLetter,
-                                style: labelBold,
+                                style: context.texts.smallBold,
                               ),
                             ],
                           ),
@@ -149,21 +150,21 @@ class _ReviewBlockState extends State<ReviewBlock> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconTextButton(
-                  color: OTLColor.pinksMain,
+                  color: context.colors.highlightDefault,
                   iconSize: 16.0,
                   icon: _liked
                       ? Icons.thumb_up_alt
                       : Icons.thumb_up_alt_outlined,
                   spaceBetween: 4.0,
                   text: "review.like".tr(),
-                  textStyle: labelRegular,
+                  textStyle: context.texts.small,
                   padding: EdgeInsets.fromLTRB(3, 8, 10, 8),
                   onTap: _liked ? _uploadCancel : _uploadLike,
                 ),
                 IconTextButton(
-                  color: OTLColor.gray5,
+                  color: context.colors.textLight,
                   text: "review.report".tr(),
-                  textStyle: labelRegular,
+                  textStyle: context.texts.small,
                   onTap: _report,
                   padding: EdgeInsets.fromLTRB(3, 8, 10, 8),
                 ),
