@@ -1,8 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 
 class SearchTextfield extends StatefulWidget {
   const SearchTextfield({
@@ -27,7 +26,7 @@ class _SearchTextfieldState extends State<SearchTextfield> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8.0),
       child: ColoredBox(
-        color: OTLColor.grayF,
+        color: context.colors.backgroundSectionDefault,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
           child: Row(
@@ -37,7 +36,7 @@ class _SearchTextfieldState extends State<SearchTextfield> {
                 height: 24.0,
                 width: 24.0,
                 colorFilter: ColorFilter.mode(
-                  OTLColor.pinksMain,
+                  context.colors.highlightDefault,
                   BlendMode.srcIn,
                 ),
               ),
@@ -50,10 +49,12 @@ class _SearchTextfieldState extends State<SearchTextfield> {
                   onSubmitted: (value) {
                     widget.focusNode?.unfocus();
                   },
-                  style: bodyRegular,
+                  style: context.texts.normal,
                   decoration: InputDecoration(
                     hintText: "common.search_hint".tr(),
-                    hintStyle: bodyRegular.copyWith(color: OTLColor.grayA),
+                    hintStyle: context.texts.normal.copyWith(
+                      color: context.colors.textPlaceholder,
+                    ),
                   ),
                 ),
               ),
