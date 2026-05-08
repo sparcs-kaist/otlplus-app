@@ -1,8 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/privacy.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
 
 class PrivacyPage extends StatelessWidget {
@@ -12,16 +11,16 @@ class PrivacyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return OTLScaffold(
       child: OTLLayout(
-        middle: Text('title.privacy'.tr(), style: titleBold),
+        middle: Text('title.privacy'.tr(), style: context.texts.bigBold),
         body: ColoredBox(
-          color: OTLColor.grayF,
+          color: context.colors.backgroundPageDefault,
           child: Padding(
             padding: EdgeInsets.all(16.0),
             child: ListView(
               children: [
                 Text.rich(
                   TextSpan(
-                    style: bodyRegular,
+                    style: context.texts.normal,
                     children: <TextSpan>[
                       TextSpan(
                         text: privacyText0,
@@ -32,7 +31,7 @@ class PrivacyPage extends StatelessWidget {
                               TextSpan(text: '\n'),
                               TextSpan(
                                 text: privacyTitles[index],
-                                style: bodyBold,
+                                style: context.texts.normalBold,
                               ),
                               TextSpan(text: '\n'),
                               TextSpan(text: privacyTexts[index]),
