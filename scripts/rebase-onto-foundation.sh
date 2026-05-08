@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#
+# ---8<--- help-start
 # rebase-onto-foundation.sh
 #
 # After Foundation PR #237 merges to main, run this script from the otl-app repo
@@ -26,6 +26,7 @@
 #     worktree before checking out the branch. This deletes the worktree
 #     directory; local commits on that branch that were only in the worktree
 #     are lost the same way --hard-reset would discard them.
+# ---8<--- help-end
 
 set -euo pipefail
 
@@ -33,7 +34,11 @@ CLEANUP_WORKTREES=0
 for arg in "$@"; do
   case "$arg" in
     --help|-h)
-      sed -n '3,28p' "$0" | sed 's/^# \{0,1\}//'
+      awk '
+        /^# ---8<--- help-end/ { exit }
+        inside { sub(/^# ?/, ""); print }
+        /^# ---8<--- help-start/ { inside = 1 }
+      ' "$0"
       exit 0
       ;;
     --cleanup|--cleanup-worktrees)
@@ -115,7 +120,13 @@ if [ "${#CLASHES[@]}" -gt 0 ]; then
     for c in "${CLASHES[@]}"; do
       wt="${c#*:}"
       echo "   git worktree remove $wt"
-      git worktree remove "$wt"
+      if ! git worktree remove "$wt"; then
+        echo "   ✗ 'git worktree remove $wt' failed." >&2
+        echo "     The worktree likely has uncommitted changes." >&2
+        echo "     Commit/discard them there, or run:" >&2
+        echo "       git worktree remove --force $wt" >&2
+        exit 1
+      fi
     done
   else
     echo
