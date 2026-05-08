@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/providers/settings_model.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/widgets/dropdown.dart';
 import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -21,9 +20,9 @@ class SettingsPage extends StatelessWidget {
 
     return OTLScaffold(
       child: OTLLayout(
-        middle: Text('title.settings'.tr(), style: titleBold),
+        middle: Text('title.settings'.tr(), style: context.texts.bigBold),
         body: ColoredBox(
-          color: OTLColor.grayF,
+          color: context.colors.backgroundPageDefault,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: SingleChildScrollView(
@@ -32,26 +31,32 @@ class SettingsPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("settings.language".tr(), style: bodyBold),
+                      Text(
+                        "settings.language".tr(),
+                        style: context.texts.normalBold,
+                      ),
                       Dropdown<bool>(
                         customButton: Container(
                           height: 34,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            color: OTLColor.pinksLight,
+                            color: context.colors.backgroundPageDefault,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.language, color: OTLColor.pinksMain),
+                              Icon(
+                                Icons.language,
+                                color: context.colors.highlightDefault,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 isEn
                                     ? "settings.english".tr()
                                     : "settings.korean".tr(),
-                                style: bodyBold.copyWith(
+                                style: context.texts.normalBold.copyWith(
                                   height: 1.2,
-                                  color: OTLColor.pinksMain,
+                                  color: context.colors.highlightDefault,
                                 ),
                               ),
                             ],
@@ -86,6 +91,7 @@ class SettingsPage extends StatelessWidget {
                     ],
                   ),
                   _buildListTile(
+                    context,
                     title: "settings.notification.receive".tr(),
                     subtitle: "settings.notification.receive_desc".tr(),
                     trailing: CupertinoSwitch(
@@ -97,6 +103,7 @@ class SettingsPage extends StatelessWidget {
                   Visibility(
                     visible: context.watch<SettingsModel>().getSendAlarm(),
                     child: _buildListTile(
+                      context,
                       title: "settings.notification.subject_suggestion".tr(),
                       trailing: CupertinoSwitch(
                         value: context
@@ -111,6 +118,7 @@ class SettingsPage extends StatelessWidget {
                   Visibility(
                     visible: context.watch<SettingsModel>().getSendAlarm(),
                     child: _buildListTile(
+                      context,
                       title: "settings.notification.promotion".tr(),
                       trailing: CupertinoSwitch(
                         value: context
@@ -125,6 +133,7 @@ class SettingsPage extends StatelessWidget {
                   Visibility(
                     visible: context.watch<SettingsModel>().getSendAlarm(),
                     child: _buildListTile(
+                      context,
                       title: "settings.notification.information".tr(),
                       trailing: CupertinoSwitch(
                         value: context
@@ -137,6 +146,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                   _buildListTile(
+                    context,
                     title: "settings.send_error_log".tr(),
                     subtitle: "settings.send_error_log_desc".tr(),
                     trailing: CupertinoSwitch(
@@ -153,6 +163,7 @@ class SettingsPage extends StatelessWidget {
                         .watch<SettingsModel>()
                         .getSendCrashlytics(),
                     child: _buildListTile(
+                      context,
                       title: "settings.send_anonymously".tr(),
                       subtitle: "settings.send_anonymously_desc".tr(),
                       trailing: CupertinoSwitch(
@@ -166,6 +177,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                   _buildListTile(
+                    context,
                     title: "settings.show_channel_talk_button".tr(),
                     trailing: CupertinoSwitch(
                       value: context
@@ -187,12 +199,14 @@ class SettingsPage extends StatelessWidget {
                   Visibility(
                     visible: kDebugMode,
                     child: _buildListTile(
+                      context,
                       title: "settings.throw_test".tr(),
                       subtitle: "settings.throw_test_desc".tr(),
                       onTap: () => throw Exception(),
                     ),
                   ),
                   _buildListTile(
+                    context,
                     title: "settings.reset_all".tr(),
                     onTap: () {
                       OTLNavigator.pushDialog(
@@ -206,6 +220,7 @@ class SettingsPage extends StatelessWidget {
                     },
                   ),
                   _buildListTile(
+                    context,
                     title: "settings.about".tr(),
                     onTap: () => OTLNavigator.pushDialog(
                       context: context,
@@ -233,7 +248,8 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildListTile({
+  Widget _buildListTile(
+    BuildContext context, {
     required String title,
     String? subtitle,
     Widget? trailing,
@@ -253,10 +269,10 @@ class SettingsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: bodyBold),
+                    Text(title, style: context.texts.normalBold),
                     if (subtitle != null) ...[
                       const SizedBox(height: 4),
-                      Text(subtitle, style: bodyRegular),
+                      Text(subtitle, style: context.texts.normal),
                     ],
                   ],
                 ),
