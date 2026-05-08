@@ -50,10 +50,7 @@ class LectureGroupBlock extends StatelessWidget {
                       style: context.texts.normalBold,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      lectures.first.oldCode,
-                      style: context.texts.normal,
-                    ),
+                    Text(lectures.first.oldCode, style: context.texts.normal),
                   ],
                 ),
                 Text.rich(

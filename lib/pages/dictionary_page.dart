@@ -113,9 +113,7 @@ class _DictionaryPageState extends State<DictionaryPage> {
 Widget _buildCopyRight(BuildContext context) {
   return Text.rich(
     TextSpan(
-      style: context.texts.small.copyWith(
-        color: context.colors.textDisable,
-      ),
+      style: context.texts.small.copyWith(color: context.colors.textDisable),
       children: [
         TextSpan(text: 'otlplus@sparcs.org'),
         TextSpan(text: '\n'),

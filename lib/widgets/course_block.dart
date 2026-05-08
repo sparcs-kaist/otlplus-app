@@ -33,10 +33,7 @@ class CourseBlock extends StatelessWidget {
                       style: context.texts.normalBold,
                     ),
                     const TextSpan(text: " "),
-                    TextSpan(
-                      text: course.oldCode,
-                      style: context.texts.normal,
-                    ),
+                    TextSpan(text: course.oldCode, style: context.texts.normal),
                   ],
                 ),
               ),

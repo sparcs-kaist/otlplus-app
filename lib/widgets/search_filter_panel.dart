@@ -258,7 +258,8 @@ class _RadioSelectButtonState extends State<RadioSelectButton> {
       child: BackgroundButton(
         onTap: () => widget.setOption(!widget.option.selected),
         color: widget.option.selected
-            ? OTLColor.pinksSub // legacy: no direct web token
+            ? OTLColor
+                  .pinksSub // legacy: no direct web token
             : context.colors.lineDefault,
         child: SizedBox(
           height: 32.0,
@@ -361,8 +362,7 @@ class _SilderSelectionState extends State<SilderSelection> {
                       innerThumbRadius: 7,
                       outerThumbColor:
                           OTLColor.pinksSub, // legacy: no direct web token
-                      innerThumbColor:
-                          context.colors.backgroundSectionDefault,
+                      innerThumbColor: context.colors.backgroundSectionDefault,
                       shadowColor: context.colors.textDark,
                     ),
                     trackHeight: 5.0,
