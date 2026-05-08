@@ -18,7 +18,6 @@ import 'package:otlplus/providers/liked_review_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/services/storage_service.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/home.dart';
 import 'package:otlplus/pages/login_page.dart';
 import 'package:otlplus/providers/auth_model.dart';
@@ -27,8 +26,8 @@ import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/lecture_detail_model.dart';
 import 'package:otlplus/providers/latest_reviews_model.dart';
 import 'package:otlplus/providers/lecture_search_model.dart';
+import 'package:otlplus/theme/app_theme.dart';
 import 'package:otlplus/providers/timetable_model.dart';
-import 'package:otlplus/utils/create_material_color.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 
@@ -296,6 +295,8 @@ class _OTLAppState extends State<OTLApp> {
       locale: context.locale,
       title: "OTL",
       home: authModel.isLogined ? OTLHome() : LoginPage(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.light,
       routes: {
         LikedReviewPage.route: (_) => LikedReviewPage(),
         MyReviewPage.route: (_) => MyReviewPage(),
@@ -308,37 +309,7 @@ class _OTLAppState extends State<OTLApp> {
   }
 
   ThemeData _buildTheme() {
-    final base = ThemeData(
-      useMaterial3: false,
-      fontFamily: 'NotoSansKR',
-      primarySwatch: createMaterialColor(OTLColor.pinksMain),
-      canvasColor: OTLColor.grayF,
-      iconTheme: const IconThemeData(color: OTLColor.gray3),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: InputBorder.none,
-        contentPadding: EdgeInsets.only(),
-        isDense: true,
-        hintStyle: TextStyle(color: OTLColor.pinksMain, fontSize: 14.0),
-      ),
-    );
-
-    return base.copyWith(
-      cardTheme: base.cardTheme.copyWith(margin: const EdgeInsets.only()),
-      chipTheme: base.chipTheme.copyWith(
-        backgroundColor: OTLColor.grayE,
-        pressElevation: 0.0,
-        secondarySelectedColor: OTLColor.grayD,
-        labelStyle: const TextStyle(color: OTLColor.gray3, fontSize: 12.0),
-        secondaryLabelStyle: const TextStyle(
-          color: OTLColor.gray3,
-          fontSize: 12.0,
-        ),
-      ),
-      textTheme: base.textTheme.apply(
-        bodyColor: OTLColor.gray3,
-        displayColor: OTLColor.gray3,
-      ),
-    );
+    return AppTheme.light();
   }
 }
 
