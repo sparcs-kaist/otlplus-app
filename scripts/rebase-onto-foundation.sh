@@ -16,6 +16,11 @@
 # unpushed local commits on those branches will be discarded. Keep your work
 # only on branches outside the five listed here.
 #
+# If any of the five branches is checked out in a linked worktree (e.g. under
+# ./tree/), remove or switch that worktree first — git refuses to move a branch
+# that is checked out elsewhere. The script detects this and tells you which
+# worktree to clean up.
+#
 # On a rebase conflict the script aborts the in-progress rebase, returns to
 # your starting branch, and exits non-zero — you can resolve manually, push,
 # and re-run.
@@ -75,6 +80,18 @@ for entry in "${BRANCHES[@]}"; do
   pr="${entry##*:}"
   echo
   echo "═══ $branch  (PR #$pr) ═══"
+
+  checked_out_at="$(git worktree list --porcelain | awk -v b="refs/heads/$branch" '
+    /^worktree / { wt = $2 }
+    $0 == "branch " b { print wt; exit }
+  ')"
+  if [ -n "$checked_out_at" ] && [ "$checked_out_at" != "$(git rev-parse --show-toplevel)" ]; then
+    echo "   ✗ '$branch' is already checked out in another worktree: $checked_out_at" >&2
+    echo "     Remove or switch that worktree first, then re-run:" >&2
+    echo "       git worktree remove $checked_out_at" >&2
+    return_to_start
+    exit 1
+  fi
 
   if ! git show-ref --verify --quiet "refs/heads/$branch"; then
     echo "   → creating local '$branch' from origin"
