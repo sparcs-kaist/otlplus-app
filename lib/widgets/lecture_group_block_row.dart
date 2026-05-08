@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/extensions/lecture.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/widgets/otl_dialog.dart';
@@ -53,7 +52,9 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
           },
           onLongPress: widget.onLongPress,
           child: Container(
-            decoration: BoxDecoration(color: selected ? OTLColor.grayD : null),
+            decoration: BoxDecoration(
+              color: selected ? context.colors.lineDark : null,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -68,7 +69,7 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
                             children: <InlineSpan>[
                               TextSpan(
                                 text: widget.lecture.classTitle,
-                                style: bodyBold,
+                                style: context.texts.normalBold,
                               ),
                               WidgetSpan(child: const SizedBox(width: 8)),
                               WidgetSpan(
@@ -76,7 +77,7 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
                                   isEn
                                       ? widget.lecture.professorsStrShortEn
                                       : widget.lecture.professorsStrShort,
-                                  style: bodyRegular,
+                                  style: context.texts.normal,
                                 ),
                               ),
                             ],
@@ -100,7 +101,7 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
                             icon: 'assets/icons/info.svg',
                             iconSize: 20.0,
                             onTap: widget.onLongPress,
-                            color: OTLColor.gray0,
+                            color: context.colors.textDark,
                           ),
                           SizedBox(width: 6.0),
                           IconTextButton(
@@ -116,8 +117,8 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
                                 : 'assets/icons/add.svg',
                             iconSize: 24,
                             color: alreadyAdded
-                                ? OTLColor.pinksMain
-                                : OTLColor.gray0,
+                                ? context.colors.highlightDefault
+                                : context.colors.textDark,
                           ),
                         ],
                       ),

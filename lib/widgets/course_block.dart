@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/extensions/course.dart';
 import 'package:otlplus/models/course.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
@@ -19,7 +18,7 @@ class CourseBlock extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(4.0),
       child: BackgroundButton(
-        color: OTLColor.grayE,
+        color: context.colors.lineDefault,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
@@ -31,23 +30,26 @@ class CourseBlock extends StatelessWidget {
                   children: <TextSpan>[
                     TextSpan(
                       text: isEn ? course.titleEn : course.title,
-                      style: bodyBold,
+                      style: context.texts.normalBold,
                     ),
                     const TextSpan(text: " "),
-                    TextSpan(text: course.oldCode, style: bodyRegular),
+                    TextSpan(
+                      text: course.oldCode,
+                      style: context.texts.normal,
+                    ),
                   ],
                 ),
               ),
-              _buildDivider(),
+              _buildDivider(context),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text("dictionary.type".tr(), style: labelBold),
+                  Text("dictionary.type".tr(), style: context.texts.smallBold),
                   const SizedBox(width: 8.0),
                   Expanded(
                     child: Text(
                       "${isEn ? course.department?.nameEn : course.department?.name}, ${isEn ? course.typeEn : course.type}",
-                      style: labelRegular,
+                      style: context.texts.small,
                     ),
                   ),
                 ],
@@ -56,12 +58,15 @@ class CourseBlock extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text("dictionary.professors".tr(), style: labelBold),
+                  Text(
+                    "dictionary.professors".tr(),
+                    style: context.texts.smallBold,
+                  ),
                   const SizedBox(width: 8.0),
                   Expanded(
                     child: Text(
                       isEn ? course.professorsStrEn : course.professorsStr,
-                      style: labelRegular,
+                      style: context.texts.small,
                     ),
                   ),
                 ],
@@ -70,9 +75,14 @@ class CourseBlock extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text("dictionary.description".tr(), style: labelBold),
+                  Text(
+                    "dictionary.description".tr(),
+                    style: context.texts.smallBold,
+                  ),
                   const SizedBox(width: 8.0),
-                  Expanded(child: Text(course.summary, style: labelRegular)),
+                  Expanded(
+                    child: Text(course.summary, style: context.texts.small),
+                  ),
                 ],
               ),
             ],
@@ -82,7 +92,7 @@ class CourseBlock extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(color: OTLColor.gray0.withValues(alpha: .25));
+  Widget _buildDivider(BuildContext context) {
+    return Divider(color: context.colors.textDark.withValues(alpha: .25));
   }
 }
