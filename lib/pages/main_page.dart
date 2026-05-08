@@ -333,9 +333,7 @@ class _MainPageState extends State<MainPage> {
   Widget _buildCopyRight() {
     return Text.rich(
       TextSpan(
-        style: context.texts.small.copyWith(
-          color: context.colors.textLighter,
-        ),
+        style: context.texts.small.copyWith(color: context.colors.textLighter),
         children: [
           TextSpan(text: 'otlplus@sparcs.org'),
           TextSpan(text: '\n'),

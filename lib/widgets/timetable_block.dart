@@ -86,9 +86,7 @@ class TimetableBlock extends StatelessWidget {
         Text(
           title,
           style: context.texts.small.copyWith(
-            color: isTemp
-                ? context.colors.textBright
-                : context.colors.textDark,
+            color: isTemp ? context.colors.textBright : context.colors.textDark,
             overflow: TextOverflow.ellipsis,
           ),
           maxLines: 2,

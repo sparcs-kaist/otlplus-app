@@ -207,11 +207,7 @@ class _MapViewState extends State<MapView> {
                         color: _darken(
                           _blockColor(
                             context,
-                            widget
-                                .lectures[buildingCode]![i]
-                                .keys
-                                .first
-                                .course,
+                            widget.lectures[buildingCode]![i].keys.first.course,
                           ),
                         ),
                         shape: BoxShape.circle,
@@ -350,8 +346,7 @@ class _MapViewState extends State<MapView> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: _blockColor(context, lecture.course),
-                    borderRadius:
-                        BorderRadius.circular(isMultiLine ? 13 : 100),
+                    borderRadius: BorderRadius.circular(isMultiLine ? 13 : 100),
                   ),
                   child: Text(location, style: context.texts.small),
                 );
