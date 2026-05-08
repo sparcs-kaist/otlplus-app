@@ -39,11 +39,7 @@ class UserPage extends StatelessWidget {
                         "${user.firstName} ${user.lastName}",
                       ),
                       _buildContent(context, "user.email", user.email),
-                      _buildContent(
-                        context,
-                        "user.student_id",
-                        user.studentId,
-                      ),
+                      _buildContent(context, "user.student_id", user.studentId),
                       _buildContent(
                         context,
                         "user.major",
