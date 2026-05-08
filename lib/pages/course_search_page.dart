@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/providers/course_search_model.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
@@ -52,7 +51,7 @@ class _CourseSearchPageState extends State<CourseSearchPage> {
           padding: EdgeInsets.only(right: 16.0),
           child: SearchTextfield(
             autoFocus: _searchTextController.text == '' && widget.openKeyboard,
-            backgroundColor: OTLColor.grayF,
+            backgroundColor: context.colors.backgroundSectionDefault,
             textController: _searchTextController,
             focusNode: _focusNode,
           ),
@@ -87,10 +86,14 @@ class _CourseSearchPageState extends State<CourseSearchPage> {
                       },
                       child: Text(
                         "common.reset_all".tr(),
-                        style: bodyBold.copyWith(color: OTLColor.pinksMain),
+                        style: context.texts.normalBold.copyWith(
+                          color: context.colors.highlightDefault,
+                        ),
                       ),
                       style: ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll(OTLColor.grayF),
+                        backgroundColor: WidgetStatePropertyAll(
+                          context.colors.backgroundSectionDefault,
+                        ),
                         shape: WidgetStatePropertyAll(
                           RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8.0),
@@ -118,7 +121,10 @@ class _CourseSearchPageState extends State<CourseSearchPage> {
                           _focusNode.requestFocus();
                         }
                       },
-                      child: Text("common.search".tr(), style: bodyBold),
+                      child: Text(
+                        "common.search".tr(),
+                        style: context.texts.normalBold,
+                      ),
                     ),
                   ),
                 ],
