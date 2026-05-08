@@ -23,7 +23,9 @@ class AppTheme {
         border: InputBorder.none,
         contentPadding: EdgeInsets.zero,
         isDense: true,
-        hintStyle: WebTextStyles.normal.copyWith(color: WebTextBase.placeholder),
+        hintStyle: WebTextStyles.normal.copyWith(
+          color: WebTextBase.placeholder,
+        ),
       ),
       extensions: <ThemeExtension<dynamic>>[colors, texts],
     );
@@ -34,7 +36,9 @@ class AppTheme {
         backgroundColor: WebBackgroundBlockBase.dark,
         pressElevation: 0,
         secondarySelectedColor: WebLineBase.block,
-        labelStyle: WebTextStyles.small.copyWith(color: WebTextBase.defaultColor),
+        labelStyle: WebTextStyles.small.copyWith(
+          color: WebTextBase.defaultColor,
+        ),
         secondaryLabelStyle: WebTextStyles.small.copyWith(
           color: WebTextBase.defaultColor,
         ),
@@ -61,7 +65,9 @@ class AppTheme {
         border: InputBorder.none,
         contentPadding: EdgeInsets.zero,
         isDense: true,
-        hintStyle: WebTextStyles.normal.copyWith(color: WebTextDark.placeholder),
+        hintStyle: WebTextStyles.normal.copyWith(
+          color: WebTextDark.placeholder,
+        ),
       ),
       extensions: <ThemeExtension<dynamic>>[colors, texts],
     );
@@ -72,7 +78,9 @@ class AppTheme {
         backgroundColor: WebBackgroundButtonDark.dark,
         pressElevation: 0,
         secondarySelectedColor: WebLineDark.block,
-        labelStyle: WebTextStyles.small.copyWith(color: WebTextDark.defaultColor),
+        labelStyle: WebTextStyles.small.copyWith(
+          color: WebTextDark.defaultColor,
+        ),
         secondaryLabelStyle: WebTextStyles.small.copyWith(
           color: WebTextDark.defaultColor,
         ),

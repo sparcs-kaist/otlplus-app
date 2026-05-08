@@ -6,7 +6,9 @@ class WebColorsDark {
   static const Color primary = Color(0xFF000000); // darkThemeColors.primary
   static const Color secondary = Color(0xFF2D2D2D); // darkThemeColors.secondary
   static const Color tertiary = Color(0xFF2F2F2F); // darkThemeColors.tertiary
-  static const Color background = Color(0xFF000000); // darkThemeColors.background
+  static const Color background = Color(
+    0xFF000000,
+  ); // darkThemeColors.background
   static const Color backgroundText = Color(
     0xFF000000,
   ); // darkThemeColors.backgroundText
@@ -54,7 +56,9 @@ class WebBackgroundTabDark {
   static const Color defaultColor = Color(
     0xFF000000,
   ); // darkThemeColors.Background.Tab.default
-  static const Color dark = Color(0xFF151515); // darkThemeColors.Background.Tab.dark
+  static const Color dark = Color(
+    0xFF151515,
+  ); // darkThemeColors.Background.Tab.dark
   static const Color darker = Color(
     0xFF1F1F1F,
   ); // darkThemeColors.Background.Tab.darker
@@ -97,8 +101,12 @@ class WebHighlightDark {
 class WebLineDark {
   const WebLineDark._();
 
-  static const Color defaultColor = Color(0xFF2F2F2F); // darkThemeColors.Line.default
-  static const Color divider = Color(0xFF2F2F2F); // darkThemeColors.Line.divider
+  static const Color defaultColor = Color(
+    0xFF2F2F2F,
+  ); // darkThemeColors.Line.default
+  static const Color divider = Color(
+    0xFF2F2F2F,
+  ); // darkThemeColors.Line.divider
   static const Color block = Color(0xFF343434); // darkThemeColors.Line.block
   static const Color dark = Color(0xFF000000); // darkThemeColors.Line.dark
   static const Color darker = Color(0xFF000000); // darkThemeColors.Line.darker
@@ -108,21 +116,31 @@ class WebTextDark {
   const WebTextDark._();
 
   static const Color bright = Color(0xFF000000); // darkThemeColors.Text.bright
-  static const Color disable = Color(0xFF606060); // darkThemeColors.Text.disable
+  static const Color disable = Color(
+    0xFF606060,
+  ); // darkThemeColors.Text.disable
   static const Color placeholder = Color(
     0xFF949494,
   ); // darkThemeColors.Text.placeholder
-  static const Color lighter = Color(0xFF9F9F9F); // darkThemeColors.Text.lighter
+  static const Color lighter = Color(
+    0xFF9F9F9F,
+  ); // darkThemeColors.Text.lighter
   static const Color light = Color(0xFF838383); // darkThemeColors.Text.light
-  static const Color defaultColor = Color(0xFFBDBDBD); // darkThemeColors.Text.default
+  static const Color defaultColor = Color(
+    0xFFBDBDBD,
+  ); // darkThemeColors.Text.default
   static const Color dark = Color(0xFFFFFFFF); // darkThemeColors.Text.dark
 }
 
 class WebTimetableDark {
   const WebTimetableDark._();
 
-  static const Color title = Color(0xFF000000); // darkThemeColors.TimeTable.title
-  static const Color detail = Color(0xFF4C4C4C); // darkThemeColors.TimeTable.detail
+  static const Color title = Color(
+    0xFF000000,
+  ); // darkThemeColors.TimeTable.title
+  static const Color detail = Color(
+    0xFF4C4C4C,
+  ); // darkThemeColors.TimeTable.detail
 }
 
 class WebTileTimetableDark {

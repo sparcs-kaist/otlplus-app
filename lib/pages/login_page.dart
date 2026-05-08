@@ -202,7 +202,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   child: Text(
                     'OTL+',
-                    style: texts.smallBold.copyWith(color: colors.highlightDark),
+                    style: texts.smallBold.copyWith(
+                      color: colors.highlightDark,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),

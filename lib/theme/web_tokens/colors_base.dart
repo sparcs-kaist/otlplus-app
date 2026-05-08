@@ -7,7 +7,9 @@ class WebColorsBase {
   static const Color secondary = Color(0xFF000000); // colors.secondary
   static const Color tertiary = Color(0xFF000000); // colors.tertiary
   static const Color background = Color(0xFFFFFFFF); // colors.background
-  static const Color backgroundText = Color(0xFFFFFFFF); // colors.backgroundText
+  static const Color backgroundText = Color(
+    0xFFFFFFFF,
+  ); // colors.backgroundText
 }
 
 class WebBackgroundBlockBase {
@@ -51,9 +53,7 @@ class WebBackgroundTabBase {
     0xFFFFFFFF,
   ); // colors.Background.Tab.default
   static const Color dark = Color(0xFFE0E0E0); // colors.Background.Tab.dark
-  static const Color darker = Color(
-    0xFFD6D6D6,
-  ); // colors.Background.Tab.darker
+  static const Color darker = Color(0xFFD6D6D6); // colors.Background.Tab.darker
 }
 
 class WebBackgroundButtonBase {
@@ -62,9 +62,7 @@ class WebBackgroundButtonBase {
   static const Color defaultColor = Color(
     0xFFF5F5F5,
   ); // colors.Background.Button.default
-  static const Color dark = Color(
-    0xFFEBEBEB,
-  ); // colors.Background.Button.dark
+  static const Color dark = Color(0xFFEBEBEB); // colors.Background.Button.dark
   static const Color highlight = Color(
     0xFFF9F0F0,
   ); // colors.Background.Button.highlight
@@ -84,7 +82,9 @@ class WebBackgroundTileBase {
 class WebHighlightBase {
   const WebHighlightBase._();
 
-  static const Color defaultColor = Color(0xFFE54C65); // colors.Highlight.default
+  static const Color defaultColor = Color(
+    0xFFE54C65,
+  ); // colors.Highlight.default
   static const Color dark = Color(0xFF963246); // colors.Highlight.dark
 }
 
@@ -103,9 +103,7 @@ class WebTextBase {
 
   static const Color bright = Color(0xFFFFFFFF); // colors.Text.bright
   static const Color disable = Color(0xFFAAAAAA); // colors.Text.disable
-  static const Color placeholder = Color(
-    0xFFAAAAAA,
-  ); // colors.Text.placeholder
+  static const Color placeholder = Color(0xFFAAAAAA); // colors.Text.placeholder
   static const Color lighter = Color(0xFF888888); // colors.Text.lighter
   static const Color light = Color(0xFF555555); // colors.Text.light
   static const Color defaultColor = Color(0xFF333333); // colors.Text.default

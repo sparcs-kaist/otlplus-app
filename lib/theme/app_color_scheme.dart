@@ -350,23 +350,17 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       timetableDetail: timetableDetail ?? this.timetableDetail,
       tileTimetableRed1: tileTimetableRed1 ?? this.tileTimetableRed1,
       tileTimetableRed2: tileTimetableRed2 ?? this.tileTimetableRed2,
-      tileTimetableOrange1:
-          tileTimetableOrange1 ?? this.tileTimetableOrange1,
-      tileTimetableOrange2:
-          tileTimetableOrange2 ?? this.tileTimetableOrange2,
-      tileTimetableYellow1:
-          tileTimetableYellow1 ?? this.tileTimetableYellow1,
-      tileTimetableYellow2:
-          tileTimetableYellow2 ?? this.tileTimetableYellow2,
+      tileTimetableOrange1: tileTimetableOrange1 ?? this.tileTimetableOrange1,
+      tileTimetableOrange2: tileTimetableOrange2 ?? this.tileTimetableOrange2,
+      tileTimetableYellow1: tileTimetableYellow1 ?? this.tileTimetableYellow1,
+      tileTimetableYellow2: tileTimetableYellow2 ?? this.tileTimetableYellow2,
       tileTimetableGreen1: tileTimetableGreen1 ?? this.tileTimetableGreen1,
       tileTimetableGreen2: tileTimetableGreen2 ?? this.tileTimetableGreen2,
       tileTimetableGreen3: tileTimetableGreen3 ?? this.tileTimetableGreen3,
       tileTimetableBlue1: tileTimetableBlue1 ?? this.tileTimetableBlue1,
       tileTimetableBlue2: tileTimetableBlue2 ?? this.tileTimetableBlue2,
-      tileTimetablePurple1:
-          tileTimetablePurple1 ?? this.tileTimetablePurple1,
-      tileTimetablePurple2:
-          tileTimetablePurple2 ?? this.tileTimetablePurple2,
+      tileTimetablePurple1: tileTimetablePurple1 ?? this.tileTimetablePurple1,
+      tileTimetablePurple2: tileTimetablePurple2 ?? this.tileTimetablePurple2,
       tileTimetablePink1: tileTimetablePink1 ?? this.tileTimetablePink1,
       tileTimetablePink2: tileTimetablePink2 ?? this.tileTimetablePink2,
       gradientBlue: gradientBlue ?? this.gradientBlue,
@@ -396,14 +390,26 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       textBright: Color.lerp(textBright, other.textBright, t)!,
       textDisable: Color.lerp(textDisable, other.textDisable, t)!,
       textPlaceholder: Color.lerp(textPlaceholder, other.textPlaceholder, t)!,
-      backgroundPageDefault:
-          Color.lerp(backgroundPageDefault, other.backgroundPageDefault, t)!,
-      backgroundBlockDefault:
-          Color.lerp(backgroundBlockDefault, other.backgroundBlockDefault, t)!,
-      backgroundBlockDark:
-          Color.lerp(backgroundBlockDark, other.backgroundBlockDark, t)!,
-      backgroundBlockDarker:
-          Color.lerp(backgroundBlockDarker, other.backgroundBlockDarker, t)!,
+      backgroundPageDefault: Color.lerp(
+        backgroundPageDefault,
+        other.backgroundPageDefault,
+        t,
+      )!,
+      backgroundBlockDefault: Color.lerp(
+        backgroundBlockDefault,
+        other.backgroundBlockDefault,
+        t,
+      )!,
+      backgroundBlockDark: Color.lerp(
+        backgroundBlockDark,
+        other.backgroundBlockDark,
+        t,
+      )!,
+      backgroundBlockDarker: Color.lerp(
+        backgroundBlockDarker,
+        other.backgroundBlockDarker,
+        t,
+      )!,
       backgroundBlockHighlight: Color.lerp(
         backgroundBlockHighlight,
         other.backgroundBlockHighlight,
@@ -419,12 +425,21 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
         other.backgroundSectionTransparent,
         t,
       )!,
-      backgroundTabDefault:
-          Color.lerp(backgroundTabDefault, other.backgroundTabDefault, t)!,
-      backgroundTabDark:
-          Color.lerp(backgroundTabDark, other.backgroundTabDark, t)!,
-      backgroundTabDarker:
-          Color.lerp(backgroundTabDarker, other.backgroundTabDarker, t)!,
+      backgroundTabDefault: Color.lerp(
+        backgroundTabDefault,
+        other.backgroundTabDefault,
+        t,
+      )!,
+      backgroundTabDark: Color.lerp(
+        backgroundTabDark,
+        other.backgroundTabDark,
+        t,
+      )!,
+      backgroundTabDarker: Color.lerp(
+        backgroundTabDarker,
+        other.backgroundTabDarker,
+        t,
+      )!,
       backgroundButtonDefault: Color.lerp(
         backgroundButtonDefault,
         other.backgroundButtonDefault,
@@ -450,7 +465,11 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
         other.backgroundTileHighlight,
         t,
       )!,
-      highlightDefault: Color.lerp(highlightDefault, other.highlightDefault, t)!,
+      highlightDefault: Color.lerp(
+        highlightDefault,
+        other.highlightDefault,
+        t,
+      )!,
       highlightDark: Color.lerp(highlightDark, other.highlightDark, t)!,
       lineDefault: Color.lerp(lineDefault, other.lineDefault, t)!,
       lineDivider: Color.lerp(lineDivider, other.lineDivider, t)!,
@@ -459,36 +478,81 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       lineDarker: Color.lerp(lineDarker, other.lineDarker, t)!,
       timetableTitle: Color.lerp(timetableTitle, other.timetableTitle, t)!,
       timetableDetail: Color.lerp(timetableDetail, other.timetableDetail, t)!,
-      tileTimetableRed1:
-          Color.lerp(tileTimetableRed1, other.tileTimetableRed1, t)!,
-      tileTimetableRed2:
-          Color.lerp(tileTimetableRed2, other.tileTimetableRed2, t)!,
-      tileTimetableOrange1:
-          Color.lerp(tileTimetableOrange1, other.tileTimetableOrange1, t)!,
-      tileTimetableOrange2:
-          Color.lerp(tileTimetableOrange2, other.tileTimetableOrange2, t)!,
-      tileTimetableYellow1:
-          Color.lerp(tileTimetableYellow1, other.tileTimetableYellow1, t)!,
-      tileTimetableYellow2:
-          Color.lerp(tileTimetableYellow2, other.tileTimetableYellow2, t)!,
-      tileTimetableGreen1:
-          Color.lerp(tileTimetableGreen1, other.tileTimetableGreen1, t)!,
-      tileTimetableGreen2:
-          Color.lerp(tileTimetableGreen2, other.tileTimetableGreen2, t)!,
-      tileTimetableGreen3:
-          Color.lerp(tileTimetableGreen3, other.tileTimetableGreen3, t)!,
-      tileTimetableBlue1:
-          Color.lerp(tileTimetableBlue1, other.tileTimetableBlue1, t)!,
-      tileTimetableBlue2:
-          Color.lerp(tileTimetableBlue2, other.tileTimetableBlue2, t)!,
-      tileTimetablePurple1:
-          Color.lerp(tileTimetablePurple1, other.tileTimetablePurple1, t)!,
-      tileTimetablePurple2:
-          Color.lerp(tileTimetablePurple2, other.tileTimetablePurple2, t)!,
-      tileTimetablePink1:
-          Color.lerp(tileTimetablePink1, other.tileTimetablePink1, t)!,
-      tileTimetablePink2:
-          Color.lerp(tileTimetablePink2, other.tileTimetablePink2, t)!,
+      tileTimetableRed1: Color.lerp(
+        tileTimetableRed1,
+        other.tileTimetableRed1,
+        t,
+      )!,
+      tileTimetableRed2: Color.lerp(
+        tileTimetableRed2,
+        other.tileTimetableRed2,
+        t,
+      )!,
+      tileTimetableOrange1: Color.lerp(
+        tileTimetableOrange1,
+        other.tileTimetableOrange1,
+        t,
+      )!,
+      tileTimetableOrange2: Color.lerp(
+        tileTimetableOrange2,
+        other.tileTimetableOrange2,
+        t,
+      )!,
+      tileTimetableYellow1: Color.lerp(
+        tileTimetableYellow1,
+        other.tileTimetableYellow1,
+        t,
+      )!,
+      tileTimetableYellow2: Color.lerp(
+        tileTimetableYellow2,
+        other.tileTimetableYellow2,
+        t,
+      )!,
+      tileTimetableGreen1: Color.lerp(
+        tileTimetableGreen1,
+        other.tileTimetableGreen1,
+        t,
+      )!,
+      tileTimetableGreen2: Color.lerp(
+        tileTimetableGreen2,
+        other.tileTimetableGreen2,
+        t,
+      )!,
+      tileTimetableGreen3: Color.lerp(
+        tileTimetableGreen3,
+        other.tileTimetableGreen3,
+        t,
+      )!,
+      tileTimetableBlue1: Color.lerp(
+        tileTimetableBlue1,
+        other.tileTimetableBlue1,
+        t,
+      )!,
+      tileTimetableBlue2: Color.lerp(
+        tileTimetableBlue2,
+        other.tileTimetableBlue2,
+        t,
+      )!,
+      tileTimetablePurple1: Color.lerp(
+        tileTimetablePurple1,
+        other.tileTimetablePurple1,
+        t,
+      )!,
+      tileTimetablePurple2: Color.lerp(
+        tileTimetablePurple2,
+        other.tileTimetablePurple2,
+        t,
+      )!,
+      tileTimetablePink1: Color.lerp(
+        tileTimetablePink1,
+        other.tileTimetablePink1,
+        t,
+      )!,
+      tileTimetablePink2: Color.lerp(
+        tileTimetablePink2,
+        other.tileTimetablePink2,
+        t,
+      )!,
       gradientBlue: _lerpColorList(gradientBlue, other.gradientBlue, t),
       gradientPurple: _lerpColorList(gradientPurple, other.gradientPurple, t),
       gradientPeach: _lerpColorList(gradientPeach, other.gradientPeach, t),
