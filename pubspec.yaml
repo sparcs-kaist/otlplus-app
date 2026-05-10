@@ -1,7 +1,7 @@
 ---
 name: otlplus
 description: Online Timeplanner with Lectures Plus App @ KAIST
-version: 2.5.17+260108
+version: 2.5.18+260109
 environment:
   sdk: ">=3.8.0 <4.0.0"
   flutter: ">=3.32.0"
@@ -40,6 +40,7 @@ dependencies:
     git:
       url: https://github.com/happycastle114/channel_talk_flutter
       ref: main
+  in_app_update: ^4.2.5
 dev_dependencies:
   test: "^1.25.7"
   http: "^1.2.2"
