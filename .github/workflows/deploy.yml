@@ -232,6 +232,9 @@ jobs:
       IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
       IOS_PROVISIONING_PROFILE_WIDGET: ${{ secrets.IOS_PROVISIONING_PROFILE_WIDGET }}
       IOS_PROVISIONING_PROFILE_INTENTS: ${{ secrets.IOS_PROVISIONING_PROFILE_INTENTS }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     steps:
       - name: Checkout code
@@ -432,12 +435,61 @@ jobs:
           
           echo "🎉 All iOS certificate and profile validations passed!"
 
+      - name: Extract provisioning profile names
+        run: |
+          set -euo pipefail
+          PP_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          extract_name() {
+            local file="$1"
+            if [ ! -f "$file" ]; then
+              echo ""
+              return
+            fi
+            security cms -D -i "$file" 2>/dev/null \
+              | plutil -extract Name raw - 2>/dev/null \
+              || true
+          }
+
+          MAIN_NAME=$(extract_name "$PP_DIR/profile.mobileprovision")
+          WIDGET_NAME=$(extract_name "$PP_DIR/profile_widget.mobileprovision")
+          INTENTS_NAME=$(extract_name "$PP_DIR/profile_intents.mobileprovision")
+
+          echo "📋 Extracted profile names:"
+          echo "  • Main:    ${MAIN_NAME:-<missing>}"
+          echo "  • Widget:  ${WIDGET_NAME:-<missing>}"
+          echo "  • Intents: ${INTENTS_NAME:-<missing>}"
+
+          if [ -z "$MAIN_NAME" ] || [ -z "$WIDGET_NAME" ] || [ -z "$INTENTS_NAME" ]; then
+            echo "⚠️  At least one profile name is empty — Fastfile will fall back to legacy build_app config."
+            echo "    For App Store export this will likely fail. Verify all 3 IOS_PROVISIONING_PROFILE* secrets."
+          fi
+
+          {
+            echo "IOS_PROFILE_NAME=$MAIN_NAME"
+            echo "IOS_WIDGET_PROFILE_NAME=$WIDGET_NAME"
+            echo "IOS_INTENTS_PROFILE_NAME=$INTENTS_NAME"
+          } >> "$GITHUB_ENV"
+
       - name: Install Flutter dependencies
         run: flutter pub get
 
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install
+
+      - name: Debug App Store Connect API key availability
+        run: |
+          if [ -n "$APP_STORE_CONNECT_KEY_ID" ] && [ -n "$APP_STORE_CONNECT_ISSUER_ID" ] && [ -n "$APP_STORE_CONNECT_API_KEY" ]; then
+            echo "✅ App Store Connect API key is configured — TestFlight upload will use API key auth"
+          else
+            echo "⚠️  App Store Connect API key NOT fully configured — falling back to APPLE_ID + APPLE_PASSWORD auth"
+            echo "   This often fails when 2FA is enabled or APPLE_PASSWORD is not an app-specific password."
+            echo "   To fix: add these GitHub secrets:"
+            echo "     - APP_STORE_CONNECT_KEY_ID"
+            echo "     - APP_STORE_CONNECT_ISSUER_ID"
+            echo "     - APP_STORE_CONNECT_API_KEY  (.p8 file content, raw or base64)"
+          fi
 
       - name: Deploy to TestFlight
         working-directory: ios
