@@ -462,6 +462,27 @@ jobs:
             echo "$uuid"
           }
 
+          validate_profile() {
+            local label="$1"
+            local name="$2"
+            local uuid="$3"
+            local expiration="$4"
+
+            if [ -z "$name" ] || [ -z "$uuid" ] || [ -z "$expiration" ]; then
+              echo "❌ ERROR: $label provisioning profile metadata is incomplete."
+              echo "       name=${name:-<missing>}, uuid=${uuid:-<missing>}, expiration=${expiration:-<missing>}"
+              exit 1
+            fi
+
+            expiration_epoch=$(ruby -rtime -e 'puts Time.parse(ARGV[0]).to_i' "$expiration")
+            now_epoch=$(date +%s)
+            if [ "$expiration_epoch" -le "$now_epoch" ]; then
+              echo "❌ ERROR: $label provisioning profile has expired: $name ($expiration)"
+              echo "       Refresh the corresponding IOS_PROVISIONING_PROFILE* GitHub secret in the Release environment."
+              exit 1
+            fi
+          }
+
           MAIN_PROFILE="$PP_DIR/profile.mobileprovision"
           WIDGET_PROFILE="$PP_DIR/profile_widget.mobileprovision"
           INTENTS_PROFILE="$PP_DIR/profile_intents.mobileprovision"
@@ -472,17 +493,18 @@ jobs:
           MAIN_UUID=$(install_by_uuid "$MAIN_PROFILE")
           WIDGET_UUID=$(install_by_uuid "$WIDGET_PROFILE")
           INTENTS_UUID=$(install_by_uuid "$INTENTS_PROFILE")
+          MAIN_EXPIRATION=$(extract_field "$MAIN_PROFILE" ExpirationDate)
+          WIDGET_EXPIRATION=$(extract_field "$WIDGET_PROFILE" ExpirationDate)
+          INTENTS_EXPIRATION=$(extract_field "$INTENTS_PROFILE" ExpirationDate)
 
           echo "📋 Extracted profile metadata:"
-          echo "  • Main:    ${MAIN_NAME:-<missing>} (${MAIN_UUID:-missing UUID})"
-          echo "  • Widget:  ${WIDGET_NAME:-<missing>} (${WIDGET_UUID:-missing UUID})"
-          echo "  • Intents: ${INTENTS_NAME:-<missing>} (${INTENTS_UUID:-missing UUID})"
+          echo "  • Main:    ${MAIN_NAME:-<missing>} (${MAIN_UUID:-missing UUID}) expires ${MAIN_EXPIRATION:-<missing>}"
+          echo "  • Widget:  ${WIDGET_NAME:-<missing>} (${WIDGET_UUID:-missing UUID}) expires ${WIDGET_EXPIRATION:-<missing>}"
+          echo "  • Intents: ${INTENTS_NAME:-<missing>} (${INTENTS_UUID:-missing UUID}) expires ${INTENTS_EXPIRATION:-<missing>}"
 
-          if [ -z "$MAIN_NAME" ] || [ -z "$WIDGET_NAME" ] || [ -z "$INTENTS_NAME" ] ||
-             [ -z "$MAIN_UUID" ] || [ -z "$WIDGET_UUID" ] || [ -z "$INTENTS_UUID" ]; then
-            echo "⚠️  At least one profile name or UUID is empty — Fastfile will fall back to legacy build_app config."
-            echo "    For App Store export this will likely fail. Verify all 3 IOS_PROVISIONING_PROFILE* secrets."
-          fi
+          validate_profile "Main" "$MAIN_NAME" "$MAIN_UUID" "$MAIN_EXPIRATION"
+          validate_profile "Widget" "$WIDGET_NAME" "$WIDGET_UUID" "$WIDGET_EXPIRATION"
+          validate_profile "Intents" "$INTENTS_NAME" "$INTENTS_UUID" "$INTENTS_EXPIRATION"
 
           {
             echo "IOS_PROFILE_NAME=$MAIN_NAME"

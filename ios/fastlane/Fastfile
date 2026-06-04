@@ -82,11 +82,6 @@ platform :ios do
         clean: true,
         export_method: "app-store",
         destination: "generic/platform=iOS",
-        xcargs: [
-          "DEVELOPMENT_TEAM=#{team_id}",
-          "CODE_SIGN_STYLE=Manual",
-          "CODE_SIGN_IDENTITY='Apple Distribution'",
-        ].join(" "),
         export_options: {
           method: "app-store",
           signingStyle: "manual",
