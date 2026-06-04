@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Store deployment target"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - android
+          - ios
 
 env:
   FLUTTER_VERSION: "3.32.x"
@@ -13,6 +24,7 @@ env:
 jobs:
   
   deploy-android:
+    if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'android' }}
     environment: Release
     name: Deploy Android to Google Play
     runs-on: ubuntu-latest
@@ -220,6 +232,7 @@ jobs:
           rm -f android/key.properties
 
   deploy-ios:
+    if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'ios' }}
     environment: Release
     name: Deploy iOS to TestFlight
     runs-on: macos-15
