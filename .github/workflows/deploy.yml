@@ -24,7 +24,11 @@ env:
 jobs:
   
   deploy-android:
-    if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'android' }}
+    if: >-
+      ${{
+        (github.event_name == 'push' && !contains(github.ref_name, '-ios-only')) ||
+        (github.event_name == 'workflow_dispatch' && github.ref_type == 'tag' && (inputs.platform == 'all' || inputs.platform == 'android'))
+      }}
     environment: Release
     name: Deploy Android to Google Play
     runs-on: ubuntu-latest
@@ -232,7 +236,11 @@ jobs:
           rm -f android/key.properties
 
   deploy-ios:
-    if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'ios' }}
+    if: >-
+      ${{
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && github.ref_type == 'tag' && (inputs.platform == 'all' || inputs.platform == 'ios'))
+      }}
     environment: Release
     name: Deploy iOS to TestFlight
     runs-on: macos-15

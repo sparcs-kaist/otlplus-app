@@ -81,6 +81,8 @@ FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD=****-****-****-****
 
 - Android: Google Play 스토어 `비공개 테스트 - Alpha` 트랙으로 업로드
 - iOS: TestFlight로 업로드
+- 일반 `v*` 태그는 Android와 iOS를 모두 배포합니다.
+- Android가 이미 업로드된 뒤 iOS만 재시도해야 한다면 `v2.5.19-ios-only.1`처럼 `-ios-only`가 포함된 `v*` 태그를 사용합니다.
 
 ```bash
 cd android && bundle exec fastlane alpha && cd ../ios && bundle exec fastlane alpha
