@@ -435,33 +435,52 @@ jobs:
           
           echo "🎉 All iOS certificate and profile validations passed!"
 
-      - name: Extract provisioning profile names
+      - name: Extract provisioning profile metadata
         run: |
           set -euo pipefail
           PP_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
 
-          extract_name() {
+          extract_field() {
             local file="$1"
+            local field="$2"
             if [ ! -f "$file" ]; then
               echo ""
               return
             fi
             security cms -D -i "$file" 2>/dev/null \
-              | plutil -extract Name raw - 2>/dev/null \
+              | plutil -extract "$field" raw - 2>/dev/null \
               || true
           }
 
-          MAIN_NAME=$(extract_name "$PP_DIR/profile.mobileprovision")
-          WIDGET_NAME=$(extract_name "$PP_DIR/profile_widget.mobileprovision")
-          INTENTS_NAME=$(extract_name "$PP_DIR/profile_intents.mobileprovision")
+          install_by_uuid() {
+            local file="$1"
+            local uuid
+            uuid=$(extract_field "$file" UUID)
+            if [ -n "$uuid" ]; then
+              cp "$file" "$PP_DIR/$uuid.mobileprovision"
+            fi
+            echo "$uuid"
+          }
 
-          echo "📋 Extracted profile names:"
-          echo "  • Main:    ${MAIN_NAME:-<missing>}"
-          echo "  • Widget:  ${WIDGET_NAME:-<missing>}"
-          echo "  • Intents: ${INTENTS_NAME:-<missing>}"
+          MAIN_PROFILE="$PP_DIR/profile.mobileprovision"
+          WIDGET_PROFILE="$PP_DIR/profile_widget.mobileprovision"
+          INTENTS_PROFILE="$PP_DIR/profile_intents.mobileprovision"
 
-          if [ -z "$MAIN_NAME" ] || [ -z "$WIDGET_NAME" ] || [ -z "$INTENTS_NAME" ]; then
-            echo "⚠️  At least one profile name is empty — Fastfile will fall back to legacy build_app config."
+          MAIN_NAME=$(extract_field "$MAIN_PROFILE" Name)
+          WIDGET_NAME=$(extract_field "$WIDGET_PROFILE" Name)
+          INTENTS_NAME=$(extract_field "$INTENTS_PROFILE" Name)
+          MAIN_UUID=$(install_by_uuid "$MAIN_PROFILE")
+          WIDGET_UUID=$(install_by_uuid "$WIDGET_PROFILE")
+          INTENTS_UUID=$(install_by_uuid "$INTENTS_PROFILE")
+
+          echo "📋 Extracted profile metadata:"
+          echo "  • Main:    ${MAIN_NAME:-<missing>} (${MAIN_UUID:-missing UUID})"
+          echo "  • Widget:  ${WIDGET_NAME:-<missing>} (${WIDGET_UUID:-missing UUID})"
+          echo "  • Intents: ${INTENTS_NAME:-<missing>} (${INTENTS_UUID:-missing UUID})"
+
+          if [ -z "$MAIN_NAME" ] || [ -z "$WIDGET_NAME" ] || [ -z "$INTENTS_NAME" ] ||
+             [ -z "$MAIN_UUID" ] || [ -z "$WIDGET_UUID" ] || [ -z "$INTENTS_UUID" ]; then
+            echo "⚠️  At least one profile name or UUID is empty — Fastfile will fall back to legacy build_app config."
             echo "    For App Store export this will likely fail. Verify all 3 IOS_PROVISIONING_PROFILE* secrets."
           fi
 
@@ -469,6 +488,9 @@ jobs:
             echo "IOS_PROFILE_NAME=$MAIN_NAME"
             echo "IOS_WIDGET_PROFILE_NAME=$WIDGET_NAME"
             echo "IOS_INTENTS_PROFILE_NAME=$INTENTS_NAME"
+            echo "IOS_PROFILE_UUID=$MAIN_UUID"
+            echo "IOS_WIDGET_PROFILE_UUID=$WIDGET_UUID"
+            echo "IOS_INTENTS_PROFILE_UUID=$INTENTS_UUID"
           } >> "$GITHUB_ENV"
 
       - name: Install Flutter dependencies

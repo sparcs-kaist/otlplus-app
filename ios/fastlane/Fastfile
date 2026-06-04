@@ -15,6 +15,30 @@
 
 default_platform(:ios)
 
+def apply_release_profile(target:, profile_path:, team_id:)
+  unless File.exist?(profile_path)
+    UI.user_error!("Missing provisioning profile for #{target}: #{profile_path}")
+  end
+
+  update_code_signing_settings(
+    use_automatic_signing: false,
+    path: "Runner.xcodeproj",
+    team_id: team_id,
+    targets: [target],
+    build_configurations: ["Release"],
+    code_sign_identity: "Apple Distribution",
+    sdk: "iphoneos*",
+  )
+
+  update_project_provisioning(
+    xcodeproj: "Runner.xcodeproj",
+    profile: profile_path,
+    target_filter: "^#{Regexp.escape(target)}$",
+    build_configuration: "Release",
+    code_signing_identity: "Apple Distribution",
+  )
+end
+
 platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :alpha do
@@ -31,13 +55,27 @@ platform :ios do
     main_profile    = ENV["IOS_PROFILE_NAME"]
     widget_profile  = ENV["IOS_WIDGET_PROFILE_NAME"]
     intents_profile = ENV["IOS_INTENTS_PROFILE_NAME"]
+    main_profile_uuid    = ENV["IOS_PROFILE_UUID"]
+    widget_profile_uuid  = ENV["IOS_WIDGET_PROFILE_UUID"]
+    intents_profile_uuid = ENV["IOS_INTENTS_PROFILE_UUID"]
+    profile_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
+    main_profile_path = File.join(profile_dir, "profile.mobileprovision")
+    widget_profile_path = File.join(profile_dir, "profile_widget.mobileprovision")
+    intents_profile_path = File.join(profile_dir, "profile_intents.mobileprovision")
 
     use_manual_signing = !main_profile.to_s.empty? &&
                          !widget_profile.to_s.empty? &&
-                         !intents_profile.to_s.empty?
+                         !intents_profile.to_s.empty? &&
+                         !main_profile_uuid.to_s.empty? &&
+                         !widget_profile_uuid.to_s.empty? &&
+                         !intents_profile_uuid.to_s.empty?
 
     if use_manual_signing
       UI.message("📝 Using manual code signing with explicit provisioning profiles")
+      apply_release_profile(target: "Runner", profile_path: main_profile_path, team_id: team_id)
+      apply_release_profile(target: "OTLWidgetsExtension", profile_path: widget_profile_path, team_id: team_id)
+      apply_release_profile(target: "OTLPlusIntents", profile_path: intents_profile_path, team_id: team_id)
+
       build_app(
         workspace: "Runner.xcworkspace",
         scheme: "Runner",
@@ -54,9 +92,9 @@ platform :ios do
           signingStyle: "manual",
           teamID: team_id,
           provisioningProfiles: {
-            "org.sparcs.otlplus"         => main_profile,
-            "org.sparcs.otlplus.widget"  => widget_profile,
-            "org.sparcs.otlplus.intents" => intents_profile,
+            "org.sparcs.otlplus"         => main_profile_uuid,
+            "org.sparcs.otlplus.widget"  => widget_profile_uuid,
+            "org.sparcs.otlplus.intents" => intents_profile_uuid,
           },
         },
       )
