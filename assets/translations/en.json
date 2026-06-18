@@ -240,6 +240,8 @@
   },
   "popup": {
     "dont_show_again": "Don't Show Again",
-    "join_the_event": "Join the Event"
+    "join_the_event": "Join the Event",
+    "inapp_flexible_download_complete": "Update download is complete.",
+    "inapp_flexible_restart": "Restart"
   }
 }

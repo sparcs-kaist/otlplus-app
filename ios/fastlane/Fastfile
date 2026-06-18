@@ -15,6 +15,30 @@
 
 default_platform(:ios)
 
+def apply_release_profile(target:, profile_path:, team_id:)
+  unless File.exist?(profile_path)
+    UI.user_error!("Missing provisioning profile for #{target}: #{profile_path}")
+  end
+
+  update_code_signing_settings(
+    use_automatic_signing: false,
+    path: "Runner.xcodeproj",
+    team_id: team_id,
+    targets: [target],
+    build_configurations: ["Release"],
+    code_sign_identity: "Apple Distribution",
+    sdk: "iphoneos*",
+  )
+
+  update_project_provisioning(
+    xcodeproj: "Runner.xcodeproj",
+    profile: profile_path,
+    target_filter: "^#{Regexp.escape(target)}$",
+    build_configuration: "Release",
+    code_signing_identity: "Apple Distribution",
+  )
+end
+
 platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :alpha do
@@ -25,19 +49,85 @@ platform :ios do
     sh "flutter pub get"
     sh "bundle exec pod install"
 
-    update_project_team(
-      teamid: CredentialsManager::AppfileConfig.try_fetch_value(:team_id)
-    )
+    team_id = CredentialsManager::AppfileConfig.try_fetch_value(:team_id)
+    update_project_team(teamid: team_id)
 
-    build_app(
-      workspace: "Runner.xcworkspace",
-      scheme: "Runner",
-      clean: true,
-      export_method: "app-store",
-      destination: "generic/platform=iOS",
-    )
-    upload_to_testflight(
-      skip_waiting_for_build_processing: true,
-    )
+    main_profile    = ENV["IOS_PROFILE_NAME"]
+    widget_profile  = ENV["IOS_WIDGET_PROFILE_NAME"]
+    intents_profile = ENV["IOS_INTENTS_PROFILE_NAME"]
+    main_profile_uuid    = ENV["IOS_PROFILE_UUID"]
+    widget_profile_uuid  = ENV["IOS_WIDGET_PROFILE_UUID"]
+    intents_profile_uuid = ENV["IOS_INTENTS_PROFILE_UUID"]
+    profile_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
+    main_profile_path = File.join(profile_dir, "profile.mobileprovision")
+    widget_profile_path = File.join(profile_dir, "profile_widget.mobileprovision")
+    intents_profile_path = File.join(profile_dir, "profile_intents.mobileprovision")
+
+    use_manual_signing = !main_profile.to_s.empty? &&
+                         !widget_profile.to_s.empty? &&
+                         !intents_profile.to_s.empty? &&
+                         !main_profile_uuid.to_s.empty? &&
+                         !widget_profile_uuid.to_s.empty? &&
+                         !intents_profile_uuid.to_s.empty?
+
+    if use_manual_signing
+      UI.message("📝 Using manual code signing with explicit provisioning profiles")
+      apply_release_profile(target: "Runner", profile_path: main_profile_path, team_id: team_id)
+      apply_release_profile(target: "OTLWidgetsExtension", profile_path: widget_profile_path, team_id: team_id)
+      apply_release_profile(target: "OTLPlusIntents", profile_path: intents_profile_path, team_id: team_id)
+
+      build_app(
+        workspace: "Runner.xcworkspace",
+        scheme: "Runner",
+        clean: true,
+        export_method: "app-store",
+        destination: "generic/platform=iOS",
+        export_options: {
+          method: "app-store",
+          signingStyle: "manual",
+          teamID: team_id,
+          provisioningProfiles: {
+            "org.sparcs.otlplus"         => main_profile_uuid,
+            "org.sparcs.otlplus.widget"  => widget_profile_uuid,
+            "org.sparcs.otlplus.intents" => intents_profile_uuid,
+          },
+        },
+      )
+    else
+      UI.message("⚠️ IOS_*_PROFILE_NAME env vars not set, falling back to legacy build_app config")
+      build_app(
+        workspace: "Runner.xcworkspace",
+        scheme: "Runner",
+        clean: true,
+        export_method: "app-store",
+        destination: "generic/platform=iOS",
+      )
+    end
+
+    asc_key_id     = ENV["APP_STORE_CONNECT_KEY_ID"]
+    asc_issuer_id  = ENV["APP_STORE_CONNECT_ISSUER_ID"]
+    asc_key_content = ENV["APP_STORE_CONNECT_API_KEY"]
+
+    if !asc_key_id.to_s.empty? && !asc_issuer_id.to_s.empty? && !asc_key_content.to_s.empty?
+      UI.message("🔑 Using App Store Connect API key for upload")
+      # Auto-detect: raw .p8 files contain "BEGIN PRIVATE KEY"; otherwise treat as base64
+      is_base64 = !asc_key_content.include?("BEGIN PRIVATE KEY")
+      api_key = app_store_connect_api_key(
+        key_id: asc_key_id,
+        issuer_id: asc_issuer_id,
+        key_content: asc_key_content,
+        is_key_content_base64: is_base64,
+        in_house: false,
+      )
+      upload_to_testflight(
+        api_key: api_key,
+        skip_waiting_for_build_processing: true,
+      )
+    else
+      UI.message("🔑 Using Apple ID + app-specific password for upload (legacy)")
+      upload_to_testflight(
+        skip_waiting_for_build_processing: true,
+      )
+    end
   end
 end
