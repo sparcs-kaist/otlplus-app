@@ -20,8 +20,8 @@ struct LocationInlineAccessoryEntryView : View {
         case .accessoryInline:
             HStack {
                 Image(systemName: "tablecells")
-                if (entry.timetableData != nil && entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0].lectures.count > 0) {
-                    Text("\(getPlace(timetable: entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date)) \(getName(timetable: entry.timetableData![Int(entry.configuration.nextClassTimetable?.identifier ?? "0") ?? 0], date: entry.date))")
+                if let data = entry.timetableData, !data.isEmpty, !data[0].lectures.isEmpty {
+                    Text("\(getPlace(timetable: data[0], date: entry.date)) \(getName(timetable: data[0], date: entry.date))")
                 } else {
                     Text(LocalizedStringKey("nextclasswidget.nodata"))
                 }
@@ -44,8 +44,8 @@ struct LocationInlineAccessoryEntryView : View {
         var lectures: [(Int, Lecture)] = getLecturesForDay(timetable: timetable, day: day)
         
         for (i, l) in lectures {
-            if l.classtimes[i].begin >= minutes && begin >= l.classtimes[i].begin {
-                begin = l.classtimes[i].begin
+            if l.classes[i].begin >= minutes && begin >= l.classes[i].begin {
+                begin = l.classes[i].begin
                 index = i
                 lecture = l
             }
@@ -62,8 +62,8 @@ struct LocationInlineAccessoryEntryView : View {
             }
             
             for (i, l) in lectures {
-                if l.classtimes[i].begin >= minutes && begin >= l.classtimes[i].begin {
-                    begin = l.classtimes[i].begin
+                if l.classes[i].begin >= minutes && begin >= l.classes[i].begin {
+                    begin = l.classes[i].begin
                     index = i
                     lecture = l
                 }
@@ -77,7 +77,7 @@ struct LocationInlineAccessoryEntryView : View {
         let c = getNextClass(timetable: timetable, date: date)
         let lecture: Lecture = c.1
         
-        return NSLocale.current.language.languageCode?.identifier == "en" ? lecture.common_title_en : lecture.common_title
+        return lecture.name + lecture.subtitle
     }
     
     func getPlace(timetable: Timetable, date: Date) -> String {
@@ -85,7 +85,7 @@ struct LocationInlineAccessoryEntryView : View {
         let index = c.0
         let lecture: Lecture = c.1
         
-        return NSLocale.current.language.languageCode?.identifier == "en" ? lecture.classtimes[index].classroom_short_en : lecture.classtimes[index].classroom_short
+        return "(" + lecture.classes[index].buildingCode + ") " + lecture.classes[index].roomName
     }
 }
 

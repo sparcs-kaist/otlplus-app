@@ -23,5 +23,26 @@ object BlockColor {
         R.layout.timetable_block15,
     )
 
+    val blockColors = intArrayOf(
+        0xFFF2CECE.toInt(),
+        0xFFF4B3AE.toInt(),
+        0xFFF2BCA0.toInt(),
+        0xFFF0D3AB.toInt(),
+        0xFFF1E1A9.toInt(),
+        0xFFF4F2B3.toInt(),
+        0xFFDBF4BE.toInt(),
+        0xFFBEEDD7.toInt(),
+        0xFFB7E2DE.toInt(),
+        0xFFC9EAF4.toInt(),
+        0xFFB4D3ED.toInt(),
+        0xFFB9C5ED.toInt(),
+        0xFFCCC6ED.toInt(),
+        0xFFD8C1F0.toInt(),
+        0xFFEBCAEF.toInt(),
+        0xFFF4BADB.toInt(),
+    )
+
     fun getLayout(lecture: Lecture) = blockColorsLayout[lecture.course % 16]
+
+    fun getColor(course: Int) = blockColors[course % 16]
 }

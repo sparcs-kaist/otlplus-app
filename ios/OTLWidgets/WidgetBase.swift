@@ -99,12 +99,17 @@ func getLecturesForDay(timetable: Timetable?, day: Int) -> [(Int, Lecture)] {
     }
     
     for l in timetable!.lectures {
-        for i in 0..<l.classtimes.count {
-            let c = l.classtimes[i]
+        for i in 0..<l.classes.count {
+            let c = l.classes[i]
             if c.day == day {
                 tmp.append((i, l))
             }
         }
+    }
+    
+    // Sort by begin time
+    tmp.sort { (a, b) -> Bool in
+        return a.1.classes[a.0].begin < b.1.classes[b.0].begin
     }
     
     return tmp
