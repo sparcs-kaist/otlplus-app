@@ -1,0 +1,231 @@
+name: Firebase App Distribution
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Distribution target"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+      groups:
+        description: "Firebase App Distribution tester groups (comma-separated)"
+        required: false
+        default: "testers"
+
+env:
+  FLUTTER_VERSION: "3.32.x"
+  JAVA_VERSION: "17"
+  XCODE_VERSION: "Xcode_16.4"
+
+jobs:
+  distribute-android:
+    if: >-
+      ${{
+        (github.event_name == 'push' && !contains(github.ref_name, '-ios-only')) ||
+        (github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'android'))
+      }}
+    name: Distribute Android via Firebase
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Decode Android keystore
+        run: |
+          if [ -z "$ANDROID_KEYSTORE" ]; then
+            echo "::error::ANDROID_KEYSTORE secret is not set"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE" | base64 -d > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOF
+          storeFile=app/upload-keystore.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          EOF
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Create service account file
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set"
+            exit 1
+          fi
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
+
+      - name: Distribute to Firebase App Distribution
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+        run: |
+          GROUPS="${{ github.event_name == 'workflow_dispatch' && inputs.groups || 'testers' }}"
+          firebase appdistribution:distribute-android \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --app "$FIREBASE_APP_ID_ANDROID" \
+            --groups "$GROUPS" \
+            --release-notes "Build ${{ github.ref_name }} (${{ github.sha }})"
+
+      - name: Clean up
+        if: always()
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
+          rm -f "$RUNNER_TEMP/firebase-service-account.json"
+
+  distribute-ios:
+    if: >-
+      ${{
+        (github.event_name == 'push' && !contains(github.ref_name, '-android-only')) ||
+        (github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'ios'))
+      }}
+    name: Distribute iOS via Firebase
+    runs-on: macos-15
+    environment: Release
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      IOS_CERTIFICATES_P12: ${{ secrets.IOS_CERTIFICATES_P12 }}
+      IOS_CERTIFICATES_PASSWORD: ${{ secrets.IOS_CERTIFICATES_PASSWORD }}
+      IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+      IOS_PROVISIONING_PROFILE_WIDGET: ${{ secrets.IOS_PROVISIONING_PROFILE_WIDGET }}
+      IOS_PROVISIONING_PROFILE_INTENTS: ${{ secrets.IOS_PROVISIONING_PROFILE_INTENTS }}
+      FIREBASE_APP_ID_IOS: ${{ secrets.FIREBASE_APP_ID_IOS }}
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s '/Applications/${{ env.XCODE_VERSION }}.app/Contents/Developer'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install --repo-update
+
+      - name: Import certificates and provisioning profiles
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain"
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import distribution certificate
+          CERT_PATH="$RUNNER_TEMP/certificates.p12"
+          echo "$IOS_CERTIFICATES_P12" | base64 --decode -o "$CERT_PATH"
+          security import "$CERT_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$IOS_CERTIFICATES_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          # Install provisioning profiles
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILES_DIR"
+
+          echo "$IOS_PROVISIONING_PROFILE" | base64 --decode -o "$RUNNER_TEMP/profile_main.mobileprovision"
+          echo "$IOS_PROVISIONING_PROFILE_WIDGET" | base64 --decode -o "$RUNNER_TEMP/profile_widget.mobileprovision"
+          echo "$IOS_PROVISIONING_PROFILE_INTENTS" | base64 --decode -o "$RUNNER_TEMP/profile_intents.mobileprovision"
+
+          # Extract UUIDs and install by UUID (Xcode lookup format)
+          for profile in main widget intents; do
+            UUID=$(security cms -D -i "$RUNNER_TEMP/profile_${profile}.mobileprovision" \
+              | plutil -extract UUID raw -)
+            cp "$RUNNER_TEMP/profile_${profile}.mobileprovision" "$PROFILES_DIR/${UUID}.mobileprovision"
+            echo "Installed ${profile} profile: $UUID"
+          done
+
+          # Export keychain password for cleanup
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+      - name: Build IPA
+        working-directory: ios
+        run: |
+          flutter build ipa --release \
+            --export-options-plist=ExportOptions.plist \
+            2>&1 || flutter build ios --release --no-codesign
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Create service account file
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set"
+            exit 1
+          fi
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
+
+      - name: Distribute to Firebase App Distribution
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+        run: |
+          GROUPS="${{ github.event_name == 'workflow_dispatch' && inputs.groups || 'testers' }}"
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" -type f | head -1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "::error::No IPA file found in build/ios/ipa/"
+            exit 1
+          fi
+          firebase appdistribution:distribute-ios \
+            "$IPA_PATH" \
+            --app "$FIREBASE_APP_ID_IOS" \
+            --groups "$GROUPS" \
+            --release-notes "Build ${{ github.ref_name }} (${{ github.sha }})"
+
+      - name: Clean up
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/certificates.p12"
+          rm -f "$RUNNER_TEMP/firebase-service-account.json"
+          rm -f "$RUNNER_TEMP"/profile_*.mobileprovision
+          if [ -n "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+          fi
