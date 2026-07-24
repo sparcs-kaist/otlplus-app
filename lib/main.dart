@@ -42,12 +42,11 @@ void main() {
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      
-      await SentryFlutter.init(
-        (options) {
-          options.dsn = 'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
-        },
-      );
+
+      await SentryFlutter.init((options) {
+        options.dsn =
+            'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
+      });
 
       await EasyLocalization.ensureInitialized();
 
