@@ -1,8 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
 
 class PeoplePage extends StatelessWidget {
@@ -12,23 +11,25 @@ class PeoplePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return OTLScaffold(
       child: OTLLayout(
-        middle: Text('title.credit'.tr(), style: titleBold),
+        middle: Text('title.credit'.tr(), style: context.texts.bigBold),
         body: ColoredBox(
-          color: OTLColor.grayF,
+          color: context.colors.backgroundPageDefault,
           child: SingleChildScrollView(
             child: Padding(
               padding: EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildContainer('2023.03 ~'),
-                  ..._get202303(),
+                  _buildContainer(context, '2023.03 ~'),
+                  ..._get202303(context),
                   const SizedBox(height: 32.0),
-                  _buildContainer('2020.03 ~ 2023.02'),
+                  _buildContainer(context, '2020.03 ~ 2023.02'),
                   const SizedBox(height: 12.0),
                   Text(
                     'common.coming'.tr(),
-                    style: bodyRegular.copyWith(color: OTLColor.grayA),
+                    style: context.texts.normal.copyWith(
+                      color: context.colors.textDisable,
+                    ),
                   ),
                 ],
               ),
@@ -39,19 +40,19 @@ class PeoplePage extends StatelessWidget {
     );
   }
 
-  _buildContainer(String title) {
+  _buildContainer(BuildContext context, String title) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 6.0),
       decoration: BoxDecoration(
-        color: OTLColor.pinksLight,
+        color: context.colors.backgroundPageDefault,
         borderRadius: BorderRadius.circular(16.0),
       ),
       width: double.infinity,
-      child: Center(child: Text(title, style: titleRegular)),
+      child: Center(child: Text(title, style: context.texts.big)),
     );
   }
 
-  List<Widget> _get202303() {
+  List<Widget> _get202303(BuildContext context) {
     const List<String> positions = [
       'Project Manager',
       'Tech Lead',
@@ -76,12 +77,15 @@ class PeoplePage extends StatelessWidget {
       ['platypus', 'star', 'lobe', 'seungho', 'soongyu', 'edge'],
     ];
 
+    // legacy: SPARCS brand color — not part of OTL design tokens
+    const sparcsColor = Color(0xFFEBA12A);
+
     return List.generate(
       4,
       (i) => Column(
         children: [
           const SizedBox(height: 12.0),
-          Text(positions[i], style: labelBold),
+          Text(positions[i], style: context.texts.smallBold),
           ...List.generate(
             people[i].length,
             (j) => Column(
@@ -96,7 +100,7 @@ class PeoplePage extends StatelessWidget {
                     Text(
                       people[i][j],
                       style: TextStyle(
-                        color: Color(0xFFEBA12A),
+                        color: sparcsColor, // legacy: SPARCS brand
                         fontSize: 15,
                         fontFamily: 'Raleway',
                         fontWeight: FontWeight.w800,
@@ -110,7 +114,9 @@ class PeoplePage extends StatelessWidget {
                       child: Text(
                         people_info[people[i][j]]['name'],
                         style: TextStyle(
-                          color: Color(0xFFEBA12A).withValues(alpha: .4),
+                          color: sparcsColor.withValues(
+                            alpha: .4,
+                          ), // legacy: SPARCS brand
                           fontFamily: 'NanumSquare',
                           fontSize: 9.5,
                           fontWeight: FontWeight.w800,

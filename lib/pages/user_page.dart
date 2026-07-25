@@ -2,16 +2,15 @@ import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/pages/liked_review_page.dart';
 import 'package:otlplus/pages/my_review_page.dart';
 import 'package:otlplus/providers/auth_model.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/providers/info_model.dart';
 
 class UserPage extends StatelessWidget {
@@ -22,9 +21,9 @@ class UserPage extends StatelessWidget {
 
     return OTLScaffold(
       child: OTLLayout(
-        middle: Text('title.my_information'.tr(), style: titleBold),
+        middle: Text('title.my_information'.tr(), style: context.texts.bigBold),
         body: ColoredBox(
-          color: OTLColor.grayF,
+          color: context.colors.backgroundPageDefault,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: Column(
@@ -35,12 +34,14 @@ class UserPage extends StatelessWidget {
                   child: Column(
                     children: [
                       _buildContent(
+                        context,
                         "user.name",
                         "${user.firstName} ${user.lastName}",
                       ),
-                      _buildContent("user.email", user.email),
-                      _buildContent("user.student_id", user.studentId),
+                      _buildContent(context, "user.email", user.email),
+                      _buildContent(context, "user.student_id", user.studentId),
                       _buildContent(
+                        context,
                         "user.major",
                         user.majors
                             .map(
@@ -49,7 +50,7 @@ class UserPage extends StatelessWidget {
                             )
                             .join(", "),
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                     ],
                   ),
                 ),
@@ -67,14 +68,14 @@ class UserPage extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildDivider(),
+                  child: _buildDivider(context),
                 ),
-                _buildAccount('assets/icons/logout.svg', () {
+                _buildAccount(context, 'assets/icons/logout.svg', () {
                   context.read<AuthModel>().logout();
                   OTLNavigator.pop(context);
                 }, 'user.logout'.tr()),
                 if (Platform.isIOS)
-                  _buildAccount(Icons.highlight_off, () {
+                  _buildAccount(context, Icons.highlight_off, () {
                     OTLNavigator.pushDialog(
                       context: context,
                       builder: (_) => OTLDialog(
@@ -95,18 +96,18 @@ class UserPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(color: OTLColor.gray0.withValues(alpha: .25));
+  Widget _buildDivider(BuildContext context) {
+    return Divider(color: context.colors.lineDivider);
   }
 
-  Widget _buildContent(String title, String body) {
+  Widget _buildContent(BuildContext context, String title, String body) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         children: [
-          Text(title.tr(), style: bodyBold),
+          Text(title.tr(), style: context.texts.normalBold),
           const SizedBox(width: 8.0),
-          Text(body),
+          Text(body, style: context.texts.normal),
         ],
       ),
     );
@@ -133,7 +134,7 @@ class UserPage extends StatelessWidget {
                         'arg': icon,
                         'height': 24.0,
                         'width': 24.0,
-                        'color': OTLColor.pinksMain,
+                        'color': context.colors.highlightDefault,
                       },
                     },
                     {
@@ -142,8 +143,8 @@ class UserPage extends StatelessWidget {
                         'child': {
                           'Text': {
                             'arg': text,
-                            'style': bodyBold.copyWith(
-                              color: OTLColor.pinksMain,
+                            'style': context.texts.normalBold.copyWith(
+                              color: context.colors.highlightDefault,
                             ),
                           },
                         },
@@ -156,7 +157,7 @@ class UserPage extends StatelessWidget {
                         'child': {
                           'Icon': {
                             'arg': Icons.navigate_next,
-                            'color': OTLColor.pinksMain,
+                            'color': context.colors.highlightDefault,
                           },
                         },
                       },
@@ -172,15 +173,20 @@ class UserPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAccount(dynamic icon, void Function()? onTap, String? text) {
+  Widget _buildAccount(
+    BuildContext context,
+    dynamic icon,
+    void Function()? onTap,
+    String? text,
+  ) {
     return Align(
       alignment: Alignment.centerLeft,
       child: IconTextButton(
         icon: icon,
         onTap: onTap,
         text: text,
-        color: OTLColor.pinksMain,
-        textStyle: bodyBold,
+        color: context.colors.highlightDefault,
+        textStyle: context.texts.normalBold,
         spaceBetween: 8.0,
         padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
       ),
