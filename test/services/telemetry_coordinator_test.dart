@@ -113,6 +113,23 @@ void main() {
     expect(analytics.operations, isEmpty);
   });
 
+  test('reports uncaught errors as fatal with a stable reason', () async {
+    final analytics = _FakeAnalyticsClient();
+    final crashReporting = _FakeCrashReportingClient();
+    final coordinator = TelemetryCoordinator(
+      analytics: analytics,
+      crashReporting: crashReporting,
+    );
+
+    await coordinator.recordFatal(
+      StateError('unexpected state'),
+      StackTrace.current,
+      reason: 'uncaught_zone_error',
+    );
+
+    expect(crashReporting.reportedReasons, <String>['uncaught_zone_error']);
+  });
+
   test('synchronizes each distinct ready telemetry state once', () async {
     final analytics = _FakeAnalyticsClient();
     final crashReporting = _FakeCrashReportingClient();
