@@ -41,6 +41,8 @@ jobs:
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
+      POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -77,8 +79,18 @@ jobs:
           keyAlias=$ANDROID_KEY_ALIAS
           EOF
 
+      - name: Validate PostHog configuration
+        run: |
+          if [ -z "$POSTHOG_API_KEY" ]; then
+            echo "::error::POSTHOG_API_KEY repository variable is not set"
+            exit 1
+          fi
+
       - name: Build APK
-        run: flutter build apk --release
+        run: >-
+          flutter build apk --release
+          --dart-define=POSTHOG_API_KEY="$POSTHOG_API_KEY"
+          --dart-define=POSTHOG_HOST="$POSTHOG_HOST"
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
@@ -127,6 +139,8 @@ jobs:
       IOS_PROVISIONING_PROFILE_INTENTS: ${{ secrets.IOS_PROVISIONING_PROFILE_INTENTS }}
       FIREBASE_APP_ID_IOS: ${{ secrets.FIREBASE_APP_ID_IOS }}
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
+      POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -189,9 +203,17 @@ jobs:
       - name: Build IPA
         working-directory: ios
         run: |
+          if [ -z "$POSTHOG_API_KEY" ]; then
+            echo "::error::POSTHOG_API_KEY repository variable is not set"
+            exit 1
+          fi
           flutter build ipa --release \
             --export-options-plist=ExportOptions.plist \
-            2>&1 || flutter build ios --release --no-codesign
+            --dart-define=POSTHOG_API_KEY="$POSTHOG_API_KEY" \
+            --dart-define=POSTHOG_HOST="$POSTHOG_HOST" \
+            2>&1 || flutter build ios --release --no-codesign \
+            --dart-define=POSTHOG_API_KEY="$POSTHOG_API_KEY" \
+            --dart-define=POSTHOG_HOST="$POSTHOG_HOST"
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools

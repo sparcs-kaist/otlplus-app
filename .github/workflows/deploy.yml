@@ -39,6 +39,8 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
+      POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -207,6 +209,13 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Validate PostHog configuration
+        run: |
+          if [ -z "$POSTHOG_API_KEY" ]; then
+            echo "::error::POSTHOG_API_KEY repository variable is not set"
+            exit 1
+          fi
+
       - name: Setup Android NDK
         run: |
           echo "🔧 Setting up Android NDK..."
@@ -257,6 +266,8 @@ jobs:
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
+      POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -542,6 +553,13 @@ jobs:
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install
+
+      - name: Validate PostHog configuration
+        run: |
+          if [ -z "$POSTHOG_API_KEY" ]; then
+            echo "::error::POSTHOG_API_KEY repository variable is not set"
+            exit 1
+          fi
 
       - name: Debug App Store Connect API key availability
         run: |
