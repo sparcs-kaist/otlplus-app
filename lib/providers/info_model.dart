@@ -4,6 +4,7 @@ import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/user.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const SCHEDULE_NAME = [
@@ -18,22 +19,10 @@ const SCHEDULE_NAME = [
 ];
 
 class InfoModel extends ChangeNotifier {
-  bool _hasData = false;
-  bool get hasData => _hasData;
+  final TelemetryCoordinator? _telemetry;
 
-  User? _user;
-  User get user => _user!;
-
-  List<Semester> _semesters = <Semester>[];
-  List<Semester> get semesters => _semesters;
-
-  Map<String, dynamic>? _currentSchedule;
-  Map<String, dynamic>? get currentSchedule => _currentSchedule;
-
-  Set<int> _years = <int>{};
-  Set<int> get years => _years;
-
-  InfoModel({bool forTest = false}) {
+  InfoModel({bool forTest = false, TelemetryCoordinator? telemetry})
+    : _telemetry = telemetry {
     if (forTest) {
       _user = User(
         id: 0,
@@ -62,6 +51,21 @@ class InfoModel extends ChangeNotifier {
       };
     }
   }
+
+  bool _hasData = false;
+  bool get hasData => _hasData;
+
+  User? _user;
+  User get user => _user!;
+
+  List<Semester> _semesters = <Semester>[];
+  List<Semester> get semesters => _semesters;
+
+  Map<String, dynamic>? _currentSchedule;
+  Map<String, dynamic>? get currentSchedule => _currentSchedule;
+
+  Set<int> _years = <int>{};
+  Set<int> get years => _years;
 
   void clearData() {
     // _user = null;
@@ -104,9 +108,13 @@ class InfoModel extends ChangeNotifier {
         _updateChannelTalkUser(_user);
         notifyListeners();
       }
-    } catch (e) {
-      print("Failed to get user info: $e");
-      throw e;
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'load_user_info',
+      );
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 

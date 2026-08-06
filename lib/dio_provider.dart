@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/services/storage_service.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:provider/provider.dart';
 import 'package:otlplus/providers/auth_model.dart';
 import 'package:flutter/material.dart';
@@ -17,10 +18,15 @@ class DioProvider {
   bool _isRefreshingToken = false;
 
   static BuildContext? _navigatorContext;
+  static TelemetryCoordinator? _telemetry;
   static BuildContext? get navigatorContext => _navigatorContext;
 
   static void setNavigatorContext(BuildContext context) {
     _navigatorContext = context;
+  }
+
+  static void configureTelemetry(TelemetryCoordinator telemetry) {
+    _telemetry = telemetry;
   }
 
   DioProvider._internal() {
@@ -47,6 +53,15 @@ class DioProvider {
         // 기존 구현에서는 401 상태가 오면 바로 로그아웃을 호출하여
         // 토큰이 만료된 경우에도 자동 로그인 상태가 해제되는 문제가 있었다.
         onError: (DioException e, handler) async {
+          final statusCode = e.response?.statusCode;
+          if (e.type != DioExceptionType.cancel &&
+              (statusCode == null || statusCode >= 500)) {
+            await _telemetry?.recordNonFatal(
+              e,
+              StackTrace.current,
+              operation: 'http_request',
+            );
+          }
           if (e.response?.statusCode == 401) {
             if (!_isRefreshingToken) {
               _isRefreshingToken = true;
@@ -56,7 +71,7 @@ class DioProvider {
                 try {
                   final response = await _dio.fetch(e.requestOptions);
                   return handler.resolve(response);
-                } catch (err) {
+                } catch (_) {
                   // If retry fails, fall through to logout
                 }
               }
@@ -68,13 +83,19 @@ class DioProvider {
                   _navigatorContext!,
                   listen: false,
                 ).logout();
-              } catch (err) {
-                print("Error accessing AuthModel for logout: $err");
+              } catch (error, stackTrace) {
+                await _telemetry?.recordNonFatal(
+                  error,
+                  stackTrace,
+                  operation: 'automatic_logout',
+                );
                 await _storageService.deleteTokens();
               }
             } else {
-              print(
-                "Navigator context not set in DioProvider. Cannot trigger logout via AuthModel.",
+              await _telemetry?.recordNonFatal(
+                StateError('Navigator context is unavailable'),
+                StackTrace.current,
+                operation: 'automatic_logout',
               );
               await _storageService.deleteTokens();
             }
@@ -111,8 +132,12 @@ class DioProvider {
           return true;
         }
       }
-    } catch (e) {
-      print('Error refreshing token in DioProvider: $e');
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'refresh_session',
+      );
     }
     return false;
   }
