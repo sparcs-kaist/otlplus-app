@@ -48,6 +48,8 @@ platform :ios do
     )
     sh "flutter pub get"
     sh "bundle exec pod install"
+    posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
+    sh "flutter build ios --config-only --release --no-codesign --dart-define=POSTHOG_API_KEY=#{ENV.fetch('POSTHOG_API_KEY')} --dart-define=POSTHOG_HOST=#{posthog_host}"
 
     team_id = CredentialsManager::AppfileConfig.try_fetch_value(:team_id)
     update_project_team(teamid: team_id)
