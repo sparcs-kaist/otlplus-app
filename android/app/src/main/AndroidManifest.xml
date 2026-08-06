@@ -20,6 +20,9 @@
         android:fullBackupContent="true"
         android:icon="@mipmap/ic_launcher"
         android:label="OTL">
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
         <receiver
             android:name=".TimetableWidget"
             android:exported="false">
