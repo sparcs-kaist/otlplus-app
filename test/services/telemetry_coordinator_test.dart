@@ -36,6 +36,7 @@ class _FakeCrashReportingClient implements CrashReportingClient {
   final List<String> identifiers = <String>[];
   final List<bool> collectionStates = <bool>[];
   final List<String> operations = <String>[];
+  final List<String> reportedReasons = <String>[];
   var deleteUnsentReportsCount = 0;
 
   @override
@@ -50,7 +51,9 @@ class _FakeCrashReportingClient implements CrashReportingClient {
     StackTrace stackTrace, {
     required bool fatal,
     required String reason,
-  }) async {}
+  }) async {
+    reportedReasons.add(reason);
+  }
 
   @override
   Future<void> recordFlutterFatalError(FlutterErrorDetails details) async {}
@@ -69,6 +72,47 @@ class _FakeCrashReportingClient implements CrashReportingClient {
 }
 
 void main() {
+  test('initializes analytics and reports sanitized nonfatal errors', () async {
+    final analytics = _FakeAnalyticsClient();
+    final crashReporting = _FakeCrashReportingClient();
+    final coordinator = TelemetryCoordinator(
+      analytics: analytics,
+      crashReporting: crashReporting,
+    );
+
+    await coordinator.initialize();
+    await coordinator.recordNonFatal(
+      Exception('secret response body'),
+      StackTrace.current,
+      operation: 'load_courses',
+    );
+
+    expect(analytics.initializeCount, 1);
+    expect(crashReporting.reportedReasons, <String>['load_courses']);
+  });
+
+  test('does not synchronize a state before settings are ready', () async {
+    final analytics = _FakeAnalyticsClient();
+    final crashReporting = _FakeCrashReportingClient();
+    final coordinator = TelemetryCoordinator(
+      analytics: analytics,
+      crashReporting: crashReporting,
+    );
+
+    await coordinator.synchronize(
+      const TelemetryState(
+        isReady: false,
+        crashlyticsEnabled: true,
+        crashlyticsAnonymous: false,
+        analyticsEnabled: true,
+        userIdentifier: '42',
+      ),
+    );
+
+    expect(crashReporting.operations, isEmpty);
+    expect(analytics.operations, isEmpty);
+  });
+
   test('synchronizes each distinct ready telemetry state once', () async {
     final analytics = _FakeAnalyticsClient();
     final crashReporting = _FakeCrashReportingClient();
