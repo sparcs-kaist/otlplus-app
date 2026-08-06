@@ -3,6 +3,7 @@ name: Test
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 env:
   FLUTTER_VERSION: "3.32.x"
