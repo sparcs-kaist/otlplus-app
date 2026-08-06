@@ -36,7 +36,6 @@ import 'package:otlplus/providers/timetable_model.dart';
 import 'package:otlplus/utils/create_material_color.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
-
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'firebase_options.dart';
@@ -50,12 +49,10 @@ void main() {
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-
       await SentryFlutter.init((options) {
         options.dsn =
             'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
       });
-
       await EasyLocalization.ensureInitialized();
 
       await Firebase.initializeApp(
@@ -64,6 +61,10 @@ void main() {
       await telemetryCoordinator.initialize();
       DioProvider.configureTelemetry(telemetryCoordinator);
 
+      FlutterError.onError = (details) {
+        unawaited(telemetryCoordinator.recordFlutterFatalError(details));
+        Sentry.captureException(details.exception, stackTrace: details.stack);
+      };
       PlatformDispatcher.instance.onError = (error, stackTrace) {
         unawaited(
           telemetryCoordinator.recordFatal(
@@ -87,10 +88,6 @@ void main() {
 
       final token = await FirebaseMessaging.instance.getToken();
 
-      FlutterError.onError = (FlutterErrorDetails details) {
-        unawaited(telemetryCoordinator.recordFlutterFatalError(details));
-        Sentry.captureException(details.exception, stackTrace: details.stack);
-      };
       await ChannelTalk.boot(
         pluginKey: '0abc4b50-9e66-4b45-b910-eb654a481f08',
         memberHash: token,

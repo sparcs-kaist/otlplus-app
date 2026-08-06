@@ -35,11 +35,7 @@ class AuthModel extends ChangeNotifier {
       _isLogined = false;
       notifyListeners();
     } catch (error, stackTrace) {
-      await _telemetry?.recordNonFatal(
-        error,
-        stackTrace,
-        operation: 'logout',
-      );
+      await _telemetry?.recordNonFatal(error, stackTrace, operation: 'logout');
     }
   }
 }

@@ -141,9 +141,8 @@ class SettingsPage extends StatelessWidget {
                     subtitle: "settings.send_usage_analytics_desc".tr(),
                     trailing: CupertinoSwitch(
                       value: context.watch<SettingsModel>().getSendAnalytics(),
-                      onChanged: (value) => context
-                          .read<SettingsModel>()
-                          .setSendAnalytics(value),
+                      onChanged: (value) =>
+                          context.read<SettingsModel>().setSendAnalytics(value),
                     ),
                   ),
                   _buildListTile(

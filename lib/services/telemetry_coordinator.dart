@@ -147,7 +147,8 @@ class TelemetryCoordinator {
   }
 
   Future<void> _applyState(TelemetryState state) async {
-    final identifier = state.crashlyticsEnabled &&
+    final identifier =
+        state.crashlyticsEnabled &&
             !state.crashlyticsAnonymous &&
             state.userIdentifier != null
         ? state.userIdentifier!

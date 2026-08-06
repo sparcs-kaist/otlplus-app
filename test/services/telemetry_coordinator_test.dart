@@ -164,43 +164,43 @@ void main() {
     expect(crashReporting.collectionStates, <bool>[true]);
     expect(crashReporting.identifiers, <String>['42']);
     expect(analytics.enableCount, 1);
-    expect(
-      crashReporting.operations,
-      <String>['identifier:42', 'enable_crashlytics'],
-    );
+    expect(crashReporting.operations, <String>[
+      'identifier:42',
+      'enable_crashlytics',
+    ]);
   });
 
   test(
     'clears identifiers and disables analytics after consent is withdrawn',
     () async {
-    final analytics = _FakeAnalyticsClient();
-    final crashReporting = _FakeCrashReportingClient();
-    final coordinator = TelemetryCoordinator(
-      analytics: analytics,
-      crashReporting: crashReporting,
-    );
+      final analytics = _FakeAnalyticsClient();
+      final crashReporting = _FakeCrashReportingClient();
+      final coordinator = TelemetryCoordinator(
+        analytics: analytics,
+        crashReporting: crashReporting,
+      );
 
-    await coordinator.synchronize(
-      const TelemetryState(
-        isReady: true,
-        crashlyticsEnabled: false,
-        crashlyticsAnonymous: false,
-        analyticsEnabled: false,
-        userIdentifier: '42',
-      ),
-    );
+      await coordinator.synchronize(
+        const TelemetryState(
+          isReady: true,
+          crashlyticsEnabled: false,
+          crashlyticsAnonymous: false,
+          analyticsEnabled: false,
+          userIdentifier: '42',
+        ),
+      );
 
-    expect(crashReporting.collectionStates, <bool>[false]);
-    expect(crashReporting.identifiers, <String>['']);
-    expect(crashReporting.deleteUnsentReportsCount, 1);
-    expect(analytics.resetCount, 1);
-    expect(analytics.disableCount, 1);
-    expect(crashReporting.operations, <String>[
-      'disable_crashlytics',
-      'identifier:',
-      'delete',
-    ]);
-    expect(analytics.operations, <String>['disable', 'reset']);
+      expect(crashReporting.collectionStates, <bool>[false]);
+      expect(crashReporting.identifiers, <String>['']);
+      expect(crashReporting.deleteUnsentReportsCount, 1);
+      expect(analytics.resetCount, 1);
+      expect(analytics.disableCount, 1);
+      expect(crashReporting.operations, <String>[
+        'disable_crashlytics',
+        'identifier:',
+        'delete',
+      ]);
+      expect(analytics.operations, <String>['disable', 'reset']);
     },
   );
 }
