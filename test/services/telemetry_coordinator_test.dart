@@ -130,6 +130,19 @@ void main() {
     expect(crashReporting.reportedReasons, <String>['uncaught_zone_error']);
   });
 
+  test('forwards Flutter fatal errors to the crash reporter', () async {
+    final analytics = _FakeAnalyticsClient();
+    final crashReporting = _FakeCrashReportingClient();
+    final coordinator = TelemetryCoordinator(
+      analytics: analytics,
+      crashReporting: crashReporting,
+    );
+
+    await coordinator.recordFlutterFatalError(
+      FlutterErrorDetails(exception: StateError('widget failure')),
+    );
+  });
+
   test('synchronizes each distinct ready telemetry state once', () async {
     final analytics = _FakeAnalyticsClient();
     final crashReporting = _FakeCrashReportingClient();
