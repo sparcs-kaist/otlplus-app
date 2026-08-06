@@ -165,6 +165,8 @@
     "send_error_log_desc": "사용자의 제보 없이 자동으로 오류를 수집합니다.",
     "send_anonymously": "익명으로 전송",
     "send_anonymously_desc": "오류 로그에 사용자 ID를 포함하지 않고 익명으로 전송합니다.",
+    "send_usage_analytics": "익명 사용 분석 전송",
+    "send_usage_analytics_desc": "서비스 개선을 위해 개인 식별 정보 없이 기능 사용 통계를 전송합니다.",
     "reset_all": "모든 설정 데이터 초기화",
     "dialog": {
       "reset": "초기화",
