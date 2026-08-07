@@ -39,8 +39,13 @@ runs:
         POSTHOG_HOST=$(doppler secrets get POSTHOG_HOST --plain 2>/dev/null || true)
         echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
 
-        SLACK_WEBHOOK_URL=$(doppler secrets get SLACK_WEBHOOK_URL --plain 2>/dev/null || true)
-        if [ -n "$SLACK_WEBHOOK_URL" ]; then
-          echo "::add-mask::$SLACK_WEBHOOK_URL"
-          echo "SLACK_WEBHOOK_URL=$SLACK_WEBHOOK_URL" >> "$GITHUB_ENV"
+        SLACK_BOT_TOKEN=$(doppler secrets get SLACK_BOT_TOKEN --plain 2>/dev/null || true)
+        if [ -n "$SLACK_BOT_TOKEN" ]; then
+          echo "::add-mask::$SLACK_BOT_TOKEN"
+          echo "SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN" >> "$GITHUB_ENV"
+        fi
+
+        SLACK_CHANNEL_ID=$(doppler secrets get SLACK_CHANNEL_ID --plain 2>/dev/null || true)
+        if [ -n "$SLACK_CHANNEL_ID" ]; then
+          echo "SLACK_CHANNEL_ID=$SLACK_CHANNEL_ID" >> "$GITHUB_ENV"
         fi
