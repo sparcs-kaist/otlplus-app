@@ -1,0 +1,81 @@
+name: Store Review Status
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Store to check"
+        required: true
+        default: "both"
+        type: choice
+        options: [android, ios, both]
+
+permissions:
+  contents: read
+
+env:
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+jobs:
+  android:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' || inputs.platform == 'both' }}
+    runs-on: ubuntu-latest
+    environment: store-review
+    env:
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: android
+      - name: Write Google Play credentials
+        run: |
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > android/fastlane/otlplus-fastlane.json
+      - name: Read production status
+        id: status
+        working-directory: android
+        run: bundle exec fastlane review_status | tee status.txt
+      - name: Notify Slack
+        if: always() && env.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "${{ job.status == 'success' && ':information_source:' || ':x:' }} Google Play status check — ${{ github.repository }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      - name: Clean credentials
+        if: always()
+        run: rm -f android/fastlane/otlplus-fastlane.json
+
+  ios:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'ios' || inputs.platform == 'both' }}
+    runs-on: macos-15
+    environment: store-review
+    env:
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      APP_IDENTIFIER: org.sparcs.otlplus
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: ios
+      - name: Read App Store status
+        working-directory: ios
+        run: bundle exec fastlane review_status | tee status.txt
+      - name: Notify Slack
+        if: always() && env.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "${{ job.status == 'success' && ':information_source:' || ':x:' }} App Store status check — ${{ github.repository }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
