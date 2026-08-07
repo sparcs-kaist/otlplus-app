@@ -84,7 +84,10 @@ void main() {
         sound: true,
       );
 
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await FirebaseMessaging.instance.getToken().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => null,
+      );
 
       await ChannelTalk.boot(
         pluginKey: '0abc4b50-9e66-4b45-b910-eb654a481f08',
@@ -96,7 +99,7 @@ void main() {
           xMargin: 16,
           yMargin: 130,
         ),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       await ChannelTalk.initPushToken(deviceToken: token ?? "");
 
