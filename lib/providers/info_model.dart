@@ -76,8 +76,18 @@ class InfoModel extends ChangeNotifier {
     _currentSchedule = null;
     _years = {};
     _hasData = false;
+    _hasError = false;
     notifyListeners();
     _updateChannelTalkUser(null);
+  }
+
+  /// Discards cached state and fetches the user's info again. Used by retry
+  /// affordances so a partially-loaded session cannot strand the UI.
+  Future<void> reload() {
+    _hasData = false;
+    _hasError = false;
+    notifyListeners();
+    return getInfo();
   }
 
   void _updateChannelTalkUser(User? user) {
