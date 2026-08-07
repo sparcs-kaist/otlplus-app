@@ -33,4 +33,17 @@ platform :android do
       track: "alpha",
     )
   end
+
+  desc "Submit a staged production release for Google Play review"
+  lane :production_review do
+    set_timestamp_version
+    posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
+    sh "flutter build appbundle --dart-define=POSTHOG_API_KEY=#{ENV.fetch('POSTHOG_API_KEY')} --dart-define=POSTHOG_HOST=#{posthog_host}"
+    upload_to_play_store(
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      track: "production",
+      rollout: "0.1",
+      release_status: "inProgress",
+    )
+  end
 end
