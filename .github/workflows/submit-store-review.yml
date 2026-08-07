@@ -33,7 +33,7 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
       POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
@@ -94,6 +94,15 @@ jobs:
 
       - name: Install Flutter dependencies
         run: flutter pub get
+
+      - name: Load PostHog configuration from Doppler
+        uses: dopplerhq/cli-action@v3
+      - name: Export PostHog app token
+        run: |
+          test -n "$DOPPLER_TOKEN"
+          POSTHOG_APP_TOKEN=$(doppler secrets get POSTHOG_APP_TOKEN --plain)
+          test -n "$POSTHOG_APP_TOKEN"
+          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
 
       - name: Set app version from release tag
         run: |
@@ -163,7 +172,7 @@ jobs:
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
       POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
@@ -266,6 +275,15 @@ jobs:
 
       - name: Install Flutter dependencies
         run: flutter pub get
+
+      - name: Load PostHog configuration from Doppler
+        uses: dopplerhq/cli-action@v3
+      - name: Export PostHog app token
+        run: |
+          test -n "$DOPPLER_TOKEN"
+          POSTHOG_APP_TOKEN=$(doppler secrets get POSTHOG_APP_TOKEN --plain)
+          test -n "$POSTHOG_APP_TOKEN"
+          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
 
       - name: Set app version from release tag
         run: |
