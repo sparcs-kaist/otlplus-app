@@ -73,7 +73,7 @@ jobs:
       - name: Create key.properties
         run: |
           cat > android/key.properties << EOF
-          storeFile=app/upload-keystore.jks
+          storeFile=upload-keystore.jks
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyPassword=$ANDROID_KEY_PASSWORD
           keyAlias=$ANDROID_KEY_ALIAS
@@ -108,7 +108,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
         run: |
           GROUPS="${{ github.event_name == 'workflow_dispatch' && inputs.groups || 'testers' }}"
-          firebase appdistribution:distribute-android \
+          firebase appdistribution:distribute \
             build/app/outputs/flutter-apk/app-release.apk \
             --app "$FIREBASE_APP_ID_ANDROID" \
             --groups "$GROUPS" \
@@ -236,7 +236,7 @@ jobs:
             echo "::error::No IPA file found in build/ios/ipa/"
             exit 1
           fi
-          firebase appdistribution:distribute-ios \
+          firebase appdistribution:distribute \
             "$IPA_PATH" \
             --app "$FIREBASE_APP_ID_IOS" \
             --groups "$GROUPS" \
