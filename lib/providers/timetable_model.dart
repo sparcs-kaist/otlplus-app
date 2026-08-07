@@ -41,6 +41,9 @@ class TimetableModel extends ChangeNotifier {
   bool _isLoaded = false;
   bool get isLoaded => _isLoaded;
 
+  bool _loadFailed = false;
+  bool get loadFailed => _loadFailed;
+
   TimetableModel({bool forTest = false}) {
     if (forTest) {
       _user = User(
@@ -113,7 +116,10 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> _loadTimetable() async {
+  Future<bool> _loadTimetable({bool hasRetriedEmpty = false}) async {
+    _loadFailed = false;
+    notifyListeners();
+
     try {
       final response = await DioProvider().dio.get(
         API_TIMETABLE_URL.replaceFirst("{user_id}", _user.id.toString()),
@@ -128,9 +134,13 @@ class TimetableModel extends ChangeNotifier {
       if (rawTimetables.isEmpty) {
         _selectedTimetableIndex = -1;
         _timetables = [];
+        if (hasRetriedEmpty) {
+          _loadFailed = true;
+          notifyListeners();
+          return false;
+        }
         await createTimetable();
-        await _loadTimetable();
-        return true;
+        return _loadTimetable(hasRetriedEmpty: true);
       }
 
       _timetables = rawTimetables
@@ -152,8 +162,14 @@ class TimetableModel extends ChangeNotifier {
       return true;
     } catch (exception) {
       print(exception);
+      _loadFailed = true;
+      notifyListeners();
     }
     return false;
+  }
+
+  Future<void> retryLoad() async {
+    await _loadTimetable();
   }
 
   Future<bool> createTimetable({List<Lecture>? lectures}) async {

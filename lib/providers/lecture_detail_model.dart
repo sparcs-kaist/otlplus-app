@@ -18,24 +18,47 @@ class LectureDetailModel extends ChangeNotifier {
   bool _hasData = false;
   bool get hasData => _hasData;
 
+  bool _loadFailed = false;
+  bool get loadFailed => _loadFailed;
+
+  int? _lectureId;
+  bool _lastIsUpdateEnabled = false;
+
   late List<Review> _reviews;
   List<Review> get reviews => _reviews;
 
   Future<void> loadLecture(int lectureId, bool isUpdateEnabled) async {
+    _lectureId = lectureId;
+    _lastIsUpdateEnabled = isUpdateEnabled;
     _hasData = false;
+    _loadFailed = false;
     notifyListeners();
 
-    final response = await DioProvider().dio.get(
-      API_LECTURE_URL + "/" + lectureId.toString(),
-    );
+    try {
+      final response = await DioProvider().dio.get(
+        API_LECTURE_URL + "/" + lectureId.toString(),
+      );
 
-    _lecture = Lecture.fromJson(response.data);
-    _course = await getLectureCourse();
-    _reviews = await getLectureReviews();
-    _isUpdateEnabled = isUpdateEnabled;
+      _lecture = Lecture.fromJson(response.data);
+      _course = await getLectureCourse();
+      _reviews = await getLectureReviews();
+      _isUpdateEnabled = isUpdateEnabled;
 
-    _hasData = true;
-    notifyListeners();
+      _hasData = true;
+      notifyListeners();
+    } catch (exception) {
+      print(exception);
+      _hasData = false;
+      _loadFailed = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> retryLoad() async {
+    final lectureId = _lectureId;
+    if (lectureId != null) {
+      await loadLecture(lectureId, _lastIsUpdateEnabled);
+    }
   }
 
   Future<List<Review>> getLectureReviews() async {

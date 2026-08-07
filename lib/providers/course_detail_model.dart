@@ -32,6 +32,11 @@ class CourseDetailModel extends ChangeNotifier {
   bool _hasData = false;
   bool get hasData => _hasData;
 
+  bool _loadFailed = false;
+  bool get loadFailed => _loadFailed;
+
+  int? _courseId;
+
   late List<Review>? _reviews;
   List<Review>? get reviews {
     if (_reviews == null) return [];
@@ -46,26 +51,40 @@ class CourseDetailModel extends ChangeNotifier {
   }
 
   Future<void> loadCourse(int courseId) async {
+    _courseId = courseId;
     _hasData = false;
+    _loadFailed = false;
     notifyListeners();
 
-    final response = await DioProvider().dio.get(
-      API_COURSE_URL + "/" + courseId.toString(),
-    );
+    try {
+      final response = await DioProvider().dio.get(
+        API_COURSE_URL + "/" + courseId.toString(),
+      );
 
-    _course = Course.fromJson(response.data);
-    _lectures = await getCourseLectures();
-    _professors =
-        _lectures
-            .map((lecture) => lecture!.professors)
-            .expand((e) => e)
-            .toList()
-          ..sort((a, b) => a.name.compareTo(b.name));
-    _reviews = await getCourseReviews();
-    _selectedFilter = "ALL";
+      _course = Course.fromJson(response.data);
+      _lectures = await getCourseLectures();
+      _professors =
+          _lectures
+              .map((lecture) => lecture!.professors)
+              .expand((e) => e)
+              .toList()
+            ..sort((a, b) => a.name.compareTo(b.name));
+      _reviews = await getCourseReviews();
+      _selectedFilter = "ALL";
 
-    _hasData = true;
-    notifyListeners();
+      _hasData = true;
+      notifyListeners();
+    } catch (exception) {
+      print(exception);
+      _hasData = false;
+      _loadFailed = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> retryLoad() async {
+    final courseId = _courseId;
+    if (courseId != null) await loadCourse(courseId);
   }
 
   Future<void> updateCourseReviews(Review review) async {

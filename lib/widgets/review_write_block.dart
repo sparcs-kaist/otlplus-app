@@ -176,37 +176,51 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
       _isUploading = true;
     });
 
-    Response response;
+    try {
+      Response response;
 
-    if (widget.existingReview == null) {
-      response = await DioProvider().dio.post(
-        API_REVIEW_URL,
-        data: {
-          "lecture": widget.lecture.id,
-          "content": _contentTextController.text,
-          "grade": _scores["성적"],
-          "load": _scores["널널"],
-          "speech": _scores["강의"],
-        },
-      );
-    } else {
-      response = await DioProvider().dio.patch(
-        API_REVIEW_URL + "/" + widget.existingReview!.id.toString(),
-        data: {
-          "content": _contentTextController.text,
-          "grade": _scores["성적"],
-          "load": _scores["널널"],
-          "speech": _scores["강의"],
-        },
-      );
+      if (widget.existingReview == null) {
+        response = await DioProvider().dio.post(
+          API_REVIEW_URL,
+          data: {
+            "lecture": widget.lecture.id,
+            "content": _contentTextController.text,
+            "grade": _scores["성적"],
+            "load": _scores["널널"],
+            "speech": _scores["강의"],
+          },
+        );
+      } else {
+        response = await DioProvider().dio.patch(
+          API_REVIEW_URL + "/" + widget.existingReview!.id.toString(),
+          data: {
+            "content": _contentTextController.text,
+            "grade": _scores["성적"],
+            "load": _scores["널널"],
+            "speech": _scores["강의"],
+          },
+        );
+      }
+
+      final review = Review.fromJson(response.data);
+      widget.onUploaded!(review);
+    } catch (exception) {
+      print(exception);
+      if (mounted) {
+        final isEn = context.locale == const Locale('en');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isEn ? 'Failed to save review.' : '후기를 저장하지 못했습니다.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
     }
-
-    final review = Review.fromJson(response.data);
-    widget.onUploaded!(review);
-
-    setState(() {
-      _isUploading = false;
-    });
   }
 
   Widget _buildScore(String type) {

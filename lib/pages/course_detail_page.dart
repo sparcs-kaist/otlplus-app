@@ -47,6 +47,23 @@ class CourseDetailPage extends StatelessWidget {
           child:
               context.select<CourseDetailModel, bool>((model) => model.hasData)
               ? _buildBody(context)
+              : courseDetailModel.loadFailed
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isEn
+                            ? 'Unable to load course details.'
+                            : '과목 정보를 불러오지 못했습니다.',
+                      ),
+                      TextButton(
+                        onPressed: courseDetailModel.retryLoad,
+                        child: Text(isEn ? 'Retry' : '다시 시도'),
+                      ),
+                    ],
+                  ),
+                )
               : Center(child: const CircularProgressIndicator()),
         ),
       ),
