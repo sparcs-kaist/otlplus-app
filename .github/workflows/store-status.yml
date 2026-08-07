@@ -15,9 +15,6 @@ on:
 permissions:
   contents: read
 
-env:
-  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
 jobs:
   android:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' || inputs.platform == 'both' }}
@@ -25,8 +22,14 @@ jobs:
     environment: store-review
     env:
       GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - name: Load release secrets
+        uses: ./.github/actions/doppler-secrets
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          require-posthog: "false"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -61,8 +64,14 @@ jobs:
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
       APP_IDENTIFIER: org.sparcs.otlplus
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - name: Load release secrets
+        uses: ./.github/actions/doppler-secrets
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          require-posthog: "false"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"

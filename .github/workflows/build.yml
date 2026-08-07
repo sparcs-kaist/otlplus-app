@@ -11,8 +11,6 @@ env:
   FLUTTER_VERSION: "3.32.x"
   JAVA_VERSION: "17"
   XCODE_VERSION: "Xcode_16.4"
-  POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
-  POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
 
 jobs:
   build-android:
@@ -44,10 +42,7 @@ jobs:
           echo "org.gradle.daemon=false" >> android/gradle.properties
           echo "org.gradle.parallel=false" >> android/gradle.properties
       - name: Build APK
-        run: >-
-          flutter build apk --release
-          --dart-define=POSTHOG_API_KEY="$POSTHOG_API_KEY"
-          --dart-define=POSTHOG_HOST="$POSTHOG_HOST"
+        run: flutter build apk --release
 
   build-ios:
     name: Build iOS
@@ -66,14 +61,11 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - uses: actions/cache@v4
         with:
-          path: Pods
+          path: ios/Pods
           key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
           restore-keys: |
             ${{ runner.os }}-pods-
       - name: Install dependencies
         run: flutter pub get
       - name: Build iOS
-        run: >-
-          flutter build ios --release --no-codesign
-          --dart-define=POSTHOG_API_KEY="$POSTHOG_API_KEY"
-          --dart-define=POSTHOG_HOST="$POSTHOG_HOST"
+        run: flutter build ios --release --no-codesign

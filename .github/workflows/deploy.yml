@@ -40,8 +40,6 @@ jobs:
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-      POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -210,14 +208,11 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Load PostHog configuration from Doppler
-        uses: dopplerhq/cli-action@v3
-      - name: Export PostHog app token
-        run: |
-          test -n "$DOPPLER_TOKEN"
-          POSTHOG_APP_TOKEN=$(doppler secrets get POSTHOG_APP_TOKEN --plain)
-          test -n "$POSTHOG_APP_TOKEN"
-          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
+      - name: Load release secrets
+        uses: ./.github/actions/doppler-secrets
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          require-posthog: "true"
 
       - name: Set app version from release tag
         run: |
@@ -229,13 +224,6 @@ jobs:
             echo "Ref '${GITHUB_REF_NAME}' has no semantic version; keeping pubspec version"
           fi
           grep '^version:' pubspec.yaml
-
-      - name: Validate PostHog configuration
-        run: |
-          if [ -z "$POSTHOG_API_KEY" ]; then
-            echo "::error::POSTHOG_API_KEY repository variable is not set"
-            exit 1
-          fi
 
       - name: Setup Android NDK
         run: |
@@ -297,8 +285,6 @@ jobs:
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-      POSTHOG_HOST: ${{ vars.POSTHOG_HOST || 'https://us.i.posthog.com' }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -581,14 +567,11 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Load PostHog configuration from Doppler
-        uses: dopplerhq/cli-action@v3
-      - name: Export PostHog app token
-        run: |
-          test -n "$DOPPLER_TOKEN"
-          POSTHOG_APP_TOKEN=$(doppler secrets get POSTHOG_APP_TOKEN --plain)
-          test -n "$POSTHOG_APP_TOKEN"
-          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
+      - name: Load release secrets
+        uses: ./.github/actions/doppler-secrets
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          require-posthog: "true"
 
       - name: Set app version from release tag
         run: |
@@ -604,13 +587,6 @@ jobs:
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install
-
-      - name: Validate PostHog configuration
-        run: |
-          if [ -z "$POSTHOG_API_KEY" ]; then
-            echo "::error::POSTHOG_API_KEY repository variable is not set"
-            exit 1
-          fi
 
       - name: Debug App Store Connect API key availability
         run: |
