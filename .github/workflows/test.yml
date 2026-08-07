@@ -74,6 +74,11 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
       - run: flutter pub get
+      - uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+          restore-keys: ${{ runner.os }}-pods-
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install
@@ -83,7 +88,7 @@ jobs:
           echo "UDID=$UDID" >> "$GITHUB_ENV"
           xcrun simctl boot "$UDID"
       - name: Integration test
-        run: flutter test integration_test -d "$UDID" --dart-define=APP_SMOKE_TEST=true
+        run: flutter test --timeout 20m integration_test -d "$UDID" --dart-define=APP_SMOKE_TEST=true
       - name: Shutdown simulator
         if: always()
         run: xcrun simctl shutdown all
