@@ -27,7 +27,9 @@ class PostHogConfiguration {
 /// Privacy-safe adapter around the PostHog Flutter SDK.
 ///
 /// PostHog starts disabled and may only be enabled by an explicit analytics
-/// preference. It never sends user identities or exceptions.
+/// preference. It never sends user identities or exceptions. Session replay
+/// is enabled with full masking: all text, images, and platform views
+/// (including login WebViews) are blacked out in recordings.
 class PostHogService implements AnalyticsClient {
   PostHogService({
     PostHogConfiguration configuration =
@@ -65,7 +67,11 @@ class PostHogService implements AnalyticsClient {
       config.captureApplicationLifecycleEvents = true;
       config.preloadFeatureFlags = false;
       config.sendFeatureFlagEvents = false;
-      config.sessionReplay = false;
+      config.sessionReplay = true;
+      config.sessionReplayConfig.maskAllTexts = true;
+      config.sessionReplayConfig.maskAllImages = true;
+      config.sessionReplayConfig.maskAllPlatformViews = true;
+      config.sessionReplayConfig.throttleDelay = const Duration(seconds: 1);
       config.surveys = false;
       config.capturePushNotificationSubscriptions = false;
       config.capturePushNotificationOpened = false;
@@ -98,6 +104,7 @@ class PostHogService implements AnalyticsClient {
     await Posthog().reset();
   }
 
+  @override
   Future<void> capture(String eventName) async {
     if (!_initialized) return;
     await Posthog().capture(eventName: eventName);
