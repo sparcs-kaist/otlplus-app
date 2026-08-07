@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/services/storage_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:webview_cookie_manager/webview_cookie_manager.dart';
@@ -12,6 +13,7 @@ class AuthModel extends ChangeNotifier {
 
   AuthModel(this._storageService, {TelemetryCoordinator? telemetry})
     : _telemetry = telemetry {
+    DioProvider.configureSessionExpiredHandler(logout);
     _checkInitialLoginState();
   }
 
@@ -29,13 +31,13 @@ class AuthModel extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
-      final cookieManager = WebviewCookieManager();
-      await cookieManager.clearCookies();
       await _storageService.deleteTokens();
-      _isLogined = false;
-      notifyListeners();
+      await WebviewCookieManager().clearCookies();
     } catch (error, stackTrace) {
       await _telemetry?.recordNonFatal(error, stackTrace, operation: 'logout');
+    } finally {
+      _isLogined = false;
+      notifyListeners();
     }
   }
 }

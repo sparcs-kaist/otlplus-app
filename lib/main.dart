@@ -3,12 +3,10 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:app_links/app_links.dart';
-import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_update/in_app_update.dart';
-import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/pages/lecture_detail_page.dart';
@@ -122,13 +120,9 @@ void main() {
                 create: (context) => InfoModel(telemetry: telemetryCoordinator),
                 update: (context, authModel, infoModel) {
                   if (authModel.isLogined && infoModel != null) {
-                    infoModel.getInfo().catchError((_) async {
-                      // Add a small delay to prevent rapid state changes
-                      await Future.delayed(Duration(milliseconds: 100));
-                      if (authModel.isLogined) {
-                        await authModel.logout();
-                      }
-                    });
+                    // Failures set InfoModel.hasError for retry UI; session
+                    // expiry is handled by the Dio interceptor.
+                    unawaited(infoModel.getInfo());
                   } else if (!authModel.isLogined && infoModel != null) {
                     infoModel.clearData();
                   }
@@ -187,7 +181,6 @@ class _OTLAppState extends State<OTLApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
   final _storageService = StorageService();
-  final _dio = DioProvider().dio;
   bool _isLoading = true;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
@@ -249,56 +242,37 @@ class _OTLAppState extends State<OTLApp> {
   Future<void> _initializeApp() async {
     final authModel = Provider.of<AuthModel>(context, listen: false);
 
-    if (await _storageService.hasTokens()) {
-      bool refreshed = await _refreshToken();
-      if (refreshed) {
-        authModel.setLoggedIn(true);
-      } else {
-        await _storageService.deleteTokens();
-        authModel.setLoggedIn(false);
-      }
-    } else {
-      authModel.setLoggedIn(false);
-    }
-
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  Future<bool> _refreshToken() async {
-    final currentAccessToken = await _storageService.getAccessToken();
-    final currentRefreshToken = await _storageService.getRefreshToken();
-
-    if (currentAccessToken == null || currentRefreshToken == null) {
-      return false;
-    }
-
     try {
-      final response = await _dio.post(
-        SESSION_REFRESH_URL,
-        data: {'token': currentRefreshToken},
-      );
-
-      if (response.statusCode == 200 && response.data != null) {
-        final newAccessToken = response.data['accessToken'];
-        final newRefreshToken = response.data['refreshToken'];
-
-        if (newAccessToken != null && newRefreshToken != null) {
-          await _storageService.saveTokens(
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-          );
-          return true;
+      await () async {
+        if (await _storageService.hasTokens()) {
+          final result = await DioProvider().refreshSession();
+          if (result == SessionRefreshResult.rejected) {
+            await _storageService.deleteTokens();
+            authModel.setLoggedIn(false);
+          } else {
+            // Refresh succeeded, or the network was unavailable. Keep the
+            // stored session; the 401 interceptor decides once online.
+            authModel.setLoggedIn(true);
+          }
+        } else {
+          authModel.setLoggedIn(false);
         }
+      }().timeout(const Duration(seconds: 15));
+    } catch (error, stackTrace) {
+      unawaited(
+        telemetryCoordinator.recordNonFatal(
+          error,
+          stackTrace,
+          operation: 'app_initialization',
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
-    } on DioException catch (e) {
-      print("Error refreshing token: ${e.response?.statusCode} - ${e.message}");
-    } catch (e) {
-      print("Unexpected error refreshing token: $e");
     }
-    // Token refresh failed
-    return false;
   }
 
   void _initDeepLinks() {
@@ -332,14 +306,6 @@ class _OTLAppState extends State<OTLApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (DioProvider.navigatorContext == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          DioProvider.setNavigatorContext(context);
-        }
-      });
-    }
-
     if (_isLoading) {
       return MaterialApp(
         scaffoldMessengerKey: _scaffoldMessengerKey,

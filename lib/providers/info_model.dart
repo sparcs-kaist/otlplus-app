@@ -55,6 +55,9 @@ class InfoModel extends ChangeNotifier {
   bool _hasData = false;
   bool get hasData => _hasData;
 
+  bool _hasError = false;
+  bool get hasError => _hasError;
+
   User? _user;
   User get user => _user!;
 
@@ -97,24 +100,30 @@ class InfoModel extends ChangeNotifier {
     });
   }
 
+  /// Loads the signed-in user's info. On failure [hasError] is set instead of
+  /// throwing; session-level failures are handled by the Dio interceptor.
   Future<void> getInfo() async {
+    if (_hasData) return;
+    if (_hasError) {
+      _hasError = false;
+      notifyListeners();
+    }
     try {
-      if (!_hasData) {
-        _semesters = await getSemesters();
-        _years = _semesters.map((semester) => semester.year).toSet();
-        _user = await getUser();
-        _currentSchedule = getCurrentSchedule();
-        _hasData = true;
-        _updateChannelTalkUser(_user);
-        notifyListeners();
-      }
+      _semesters = await getSemesters();
+      _years = _semesters.map((semester) => semester.year).toSet();
+      _user = await getUser();
+      _currentSchedule = getCurrentSchedule();
+      _hasData = true;
+      _updateChannelTalkUser(_user);
+      notifyListeners();
     } catch (error, stackTrace) {
       await _telemetry?.recordNonFatal(
         error,
         stackTrace,
         operation: 'load_user_info',
       );
-      Error.throwWithStackTrace(error, stackTrace);
+      _hasError = true;
+      notifyListeners();
     }
   }
 
