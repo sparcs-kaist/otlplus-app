@@ -26,10 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Load release secrets
-        uses: ./.github/actions/doppler-secrets
+        uses: dopplerhq/secrets-fetch-action@v2.0.0
+        id: doppler
         with:
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
-          require-posthog: "false"
+          inject-env-vars: true
+      - name: Map release configuration
+        run: echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -76,10 +79,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Load release secrets
-        uses: ./.github/actions/doppler-secrets
+        uses: dopplerhq/secrets-fetch-action@v2.0.0
+        id: doppler
         with:
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
-          require-posthog: "false"
+          inject-env-vars: true
+      - name: Map release configuration
+        run: echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"

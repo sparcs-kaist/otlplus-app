@@ -209,10 +209,20 @@ jobs:
         run: flutter pub get
 
       - name: Load release secrets
-        uses: ./.github/actions/doppler-secrets
+        uses: dopplerhq/secrets-fetch-action@v2.0.0
+        id: doppler
         with:
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
-          require-posthog: "true"
+          inject-env-vars: true
+
+      - name: Map release configuration
+        run: |
+          if [ -z "${POSTHOG_APP_TOKEN:-}" ]; then
+            echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
+            exit 1
+          fi
+          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
+          echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
 
       - name: Set app version from release tag
         run: |
@@ -569,10 +579,20 @@ jobs:
         run: flutter pub get
 
       - name: Load release secrets
-        uses: ./.github/actions/doppler-secrets
+        uses: dopplerhq/secrets-fetch-action@v2.0.0
+        id: doppler
         with:
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
-          require-posthog: "true"
+          inject-env-vars: true
+
+      - name: Map release configuration
+        run: |
+          if [ -z "${POSTHOG_APP_TOKEN:-}" ]; then
+            echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
+            exit 1
+          fi
+          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
+          echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
 
       - name: Set app version from release tag
         run: |
