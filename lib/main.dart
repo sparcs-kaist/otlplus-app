@@ -66,7 +66,9 @@ void main() {
 
       FlutterError.onError = (details) {
         unawaited(telemetryCoordinator.recordFlutterFatalError(details));
-        Sentry.captureException(details.exception, stackTrace: details.stack);
+        if (telemetryCoordinator.crashReportingEnabled) {
+          Sentry.captureException(details.exception, stackTrace: details.stack);
+        }
       };
       PlatformDispatcher.instance.onError = (error, stackTrace) {
         unawaited(
@@ -176,7 +178,9 @@ void main() {
           reason: 'uncaught_zone_error',
         ),
       );
-      Sentry.captureException(error, stackTrace: stack);
+      if (telemetryCoordinator.crashReportingEnabled) {
+        Sentry.captureException(error, stackTrace: stack);
+      }
     },
   );
 }

@@ -132,6 +132,10 @@ class TelemetryCoordinator {
     return _crashReporting.recordFlutterFatalError(details).catchError((_) {});
   }
 
+  /// Whether the user has consented to crash and error reporting. Callers must
+  /// check this before handing errors to any additional reporting backend.
+  bool get crashReportingEnabled => _crashlyticsEnabled;
+
   Future<void> recordNonFatal(
     Object error,
     StackTrace stackTrace, {
