@@ -103,6 +103,8 @@ class TelemetryCoordinator {
   final CrashReportingClient _crashReporting;
   Future<void> _operations = Future<void>.value();
   TelemetryState? _requestedState;
+  bool _crashlyticsEnabled = false;
+  bool _analyticsEnabled = false;
 
   Future<void> initialize() => _analytics.initialize();
 
@@ -112,7 +114,8 @@ class TelemetryCoordinator {
     _requestedState = state;
     _operations = _operations
         .catchError((_) {})
-        .then((_) => _applyState(state));
+        .then((_) => _applyState(state))
+        .catchError((_) {});
     return _operations;
   }
 
@@ -121,16 +124,12 @@ class TelemetryCoordinator {
     StackTrace stackTrace, {
     required String reason,
   }) {
-    return _crashReporting.recordError(
-      error,
-      stackTrace,
-      fatal: true,
-      reason: reason,
-    );
+    return _recordError(error, stackTrace, fatal: true, reason: reason);
   }
 
   Future<void> recordFlutterFatalError(FlutterErrorDetails details) {
-    return _crashReporting.recordFlutterFatalError(details);
+    if (!_crashlyticsEnabled) return Future<void>.value();
+    return _crashReporting.recordFlutterFatalError(details).catchError((_) {});
   }
 
   Future<void> recordNonFatal(
@@ -138,7 +137,7 @@ class TelemetryCoordinator {
     StackTrace stackTrace, {
     required String operation,
   }) {
-    return _crashReporting.recordError(
+    return _recordError(
       StateError('$operation failed (${error.runtimeType})'),
       stackTrace,
       fatal: false,
@@ -157,14 +156,19 @@ class TelemetryCoordinator {
     if (state.crashlyticsEnabled) {
       await _crashReporting.setUserIdentifier(identifier);
       await _crashReporting.setCollectionEnabled(true);
+      _crashlyticsEnabled = true;
     } else {
+      _crashlyticsEnabled = false;
       await _crashReporting.setCollectionEnabled(false);
       await _crashReporting.setUserIdentifier('');
     }
 
     if (state.analyticsEnabled) {
       await _analytics.enable();
+      if (!_analyticsEnabled) await _analytics.capture('analytics_enabled');
+      _analyticsEnabled = true;
     } else {
+      _analyticsEnabled = false;
       await _analytics.disable();
       await _analytics.reset();
     }
@@ -172,5 +176,17 @@ class TelemetryCoordinator {
     if (!state.crashlyticsEnabled) {
       await _crashReporting.deleteUnsentReports();
     }
+  }
+
+  Future<void> _recordError(
+    Object error,
+    StackTrace stackTrace, {
+    required bool fatal,
+    required String reason,
+  }) {
+    if (!_crashlyticsEnabled) return Future<void>.value();
+    return _crashReporting
+        .recordError(error, stackTrace, fatal: fatal, reason: reason)
+        .catchError((_) {});
   }
 }

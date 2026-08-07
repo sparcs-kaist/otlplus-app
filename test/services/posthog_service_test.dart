@@ -33,7 +33,7 @@ void main() {
 
       await service.initialize();
       await service.enable();
-      await service.capture('test_event', properties: <String, Object>{});
+      await service.capture('test_event');
       await service.reset();
       await service.disable();
     });

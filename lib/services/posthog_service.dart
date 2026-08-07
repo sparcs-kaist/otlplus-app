@@ -1,6 +1,7 @@
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 abstract interface class AnalyticsClient {
+  Future<void> capture(String eventName);
   Future<void> initialize();
   Future<void> enable();
   Future<void> disable();
@@ -57,24 +58,26 @@ class PostHogService implements AnalyticsClient {
   Future<void> initialize() async {
     if (!isConfigured || _initialized) return;
 
-    final config = PostHogConfig(_configuration.apiKey);
-    config.host = _configuration.host;
-    config.optOut = true;
-    config.captureApplicationLifecycleEvents = true;
-    config.preloadFeatureFlags = false;
-    config.sendFeatureFlagEvents = false;
-    config.sessionReplay = false;
-    config.surveys = false;
-    config.capturePushNotificationSubscriptions = false;
-    config.capturePushNotificationOpened = false;
-    config.errorTrackingConfig.captureFlutterErrors = false;
-    config.errorTrackingConfig.capturePlatformDispatcherErrors = false;
-    config.errorTrackingConfig.captureNativeExceptions = false;
-    config.errorTrackingConfig.captureIsolateErrors = false;
-    config.beforeSend = <BeforeSendCallback>[_redactEvent];
+    try {
+      final config = PostHogConfig(_configuration.apiKey);
+      config.host = _configuration.host;
+      config.optOut = true;
+      config.captureApplicationLifecycleEvents = true;
+      config.preloadFeatureFlags = false;
+      config.sendFeatureFlagEvents = false;
+      config.sessionReplay = false;
+      config.surveys = false;
+      config.capturePushNotificationSubscriptions = false;
+      config.capturePushNotificationOpened = false;
+      config.errorTrackingConfig.captureFlutterErrors = false;
+      config.errorTrackingConfig.capturePlatformDispatcherErrors = false;
+      config.errorTrackingConfig.captureNativeExceptions = false;
+      config.errorTrackingConfig.captureIsolateErrors = false;
+      config.beforeSend = <BeforeSendCallback>[_redactEvent];
 
-    await Posthog().setup(config);
-    _initialized = true;
+      await Posthog().setup(config);
+      _initialized = true;
+    } catch (_) {}
   }
 
   @override
@@ -95,12 +98,9 @@ class PostHogService implements AnalyticsClient {
     await Posthog().reset();
   }
 
-  Future<void> capture(
-    String eventName, {
-    Map<String, Object>? properties,
-  }) async {
+  Future<void> capture(String eventName) async {
     if (!_initialized) return;
-    await Posthog().capture(eventName: eventName, properties: properties);
+    await Posthog().capture(eventName: eventName);
   }
 
   PostHogEvent? _redactEvent(PostHogEvent event) {

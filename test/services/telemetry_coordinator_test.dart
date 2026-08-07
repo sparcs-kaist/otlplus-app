@@ -4,11 +4,17 @@ import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 
 class _FakeAnalyticsClient implements AnalyticsClient {
+  final List<String> capturedEvents = <String>[];
   final List<String> operations = <String>[];
   var disableCount = 0;
   var enableCount = 0;
   var initializeCount = 0;
   var resetCount = 0;
+
+  @override
+  Future<void> capture(String eventName) async {
+    capturedEvents.add(eventName);
+  }
 
   @override
   Future<void> disable() async {
@@ -80,6 +86,15 @@ void main() {
       crashReporting: crashReporting,
     );
 
+    await coordinator.synchronize(
+      const TelemetryState(
+        isReady: true,
+        crashlyticsEnabled: true,
+        crashlyticsAnonymous: true,
+        analyticsEnabled: false,
+        userIdentifier: null,
+      ),
+    );
     await coordinator.initialize();
     await coordinator.recordNonFatal(
       Exception('secret response body'),
@@ -113,6 +128,35 @@ void main() {
     expect(analytics.operations, isEmpty);
   });
 
+  test(
+    'does not record errors after crash reporting consent is withdrawn',
+    () async {
+      final analytics = _FakeAnalyticsClient();
+      final crashReporting = _FakeCrashReportingClient();
+      final coordinator = TelemetryCoordinator(
+        analytics: analytics,
+        crashReporting: crashReporting,
+      );
+
+      await coordinator.synchronize(
+        const TelemetryState(
+          isReady: true,
+          crashlyticsEnabled: false,
+          crashlyticsAnonymous: true,
+          analyticsEnabled: false,
+          userIdentifier: null,
+        ),
+      );
+      await coordinator.recordNonFatal(
+        StateError('unexpected state'),
+        StackTrace.current,
+        operation: 'load_courses',
+      );
+
+      expect(crashReporting.reportedReasons, isEmpty);
+    },
+  );
+
   test('reports uncaught errors as fatal with a stable reason', () async {
     final analytics = _FakeAnalyticsClient();
     final crashReporting = _FakeCrashReportingClient();
@@ -121,6 +165,15 @@ void main() {
       crashReporting: crashReporting,
     );
 
+    await coordinator.synchronize(
+      const TelemetryState(
+        isReady: true,
+        crashlyticsEnabled: true,
+        crashlyticsAnonymous: true,
+        analyticsEnabled: false,
+        userIdentifier: null,
+      ),
+    );
     await coordinator.recordFatal(
       StateError('unexpected state'),
       StackTrace.current,
@@ -164,6 +217,7 @@ void main() {
     expect(crashReporting.collectionStates, <bool>[true]);
     expect(crashReporting.identifiers, <String>['42']);
     expect(analytics.enableCount, 1);
+    expect(analytics.capturedEvents, <String>['analytics_enabled']);
     expect(crashReporting.operations, <String>[
       'identifier:42',
       'enable_crashlytics',
