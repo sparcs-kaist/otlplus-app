@@ -1,0 +1,46 @@
+name: Load Doppler secrets
+description: Loads shared release secrets from Doppler into the job environment.
+
+inputs:
+  doppler-token:
+    description: Doppler service token with read access to the release config.
+    required: true
+  require-posthog:
+    description: Fail when POSTHOG_APP_TOKEN is missing.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Doppler CLI
+      uses: dopplerhq/cli-action@v3
+
+    - name: Export secrets
+      shell: bash
+      env:
+        DOPPLER_TOKEN: ${{ inputs.doppler-token }}
+        REQUIRE_POSTHOG: ${{ inputs.require-posthog }}
+      run: |
+        if [ -z "$DOPPLER_TOKEN" ]; then
+          echo "::error::DOPPLER_TOKEN secret is not set"
+          exit 1
+        fi
+
+        POSTHOG_APP_TOKEN=$(doppler secrets get POSTHOG_APP_TOKEN --plain 2>/dev/null || true)
+        if [ -n "$POSTHOG_APP_TOKEN" ]; then
+          echo "::add-mask::$POSTHOG_APP_TOKEN"
+          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
+        elif [ "$REQUIRE_POSTHOG" = "true" ]; then
+          echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
+          exit 1
+        fi
+
+        POSTHOG_HOST=$(doppler secrets get POSTHOG_HOST --plain 2>/dev/null || true)
+        echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
+
+        SLACK_WEBHOOK_URL=$(doppler secrets get SLACK_WEBHOOK_URL --plain 2>/dev/null || true)
+        if [ -n "$SLACK_WEBHOOK_URL" ]; then
+          echo "::add-mask::$SLACK_WEBHOOK_URL"
+          echo "SLACK_WEBHOOK_URL=$SLACK_WEBHOOK_URL" >> "$GITHUB_ENV"
+        fi
