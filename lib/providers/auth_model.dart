@@ -14,12 +14,6 @@ class AuthModel extends ChangeNotifier {
   AuthModel(this._storageService, {TelemetryCoordinator? telemetry})
     : _telemetry = telemetry {
     DioProvider.configureSessionExpiredHandler(logout);
-    _checkInitialLoginState();
-  }
-
-  Future<void> _checkInitialLoginState() async {
-    _isLogined = await _storageService.hasTokens();
-    notifyListeners();
   }
 
   void setLoggedIn(bool loggedIn) {
