@@ -42,20 +42,25 @@ final telemetryCoordinator = TelemetryCoordinator(
   analytics: PostHogService(),
   crashReporting: const FirebaseCrashReportingClient(),
 );
+const _isSmokeTest = bool.fromEnvironment('APP_SMOKE_TEST');
 
 void main() {
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      await SentryFlutter.init((options) {
-        options.dsn =
-            'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
-      });
+      if (!_isSmokeTest) {
+        await SentryFlutter.init((options) {
+          options.dsn =
+              'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
+        });
+      }
       await EasyLocalization.ensureInitialized();
 
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      if (!_isSmokeTest) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
       await telemetryCoordinator.initialize();
       DioProvider.configureTelemetry(telemetryCoordinator);
 
@@ -74,36 +79,37 @@ void main() {
         return true;
       };
 
-      await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: true,
-        sound: true,
-      );
+      if (!_isSmokeTest) {
+        await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: true,
+          sound: true,
+        );
 
-      final token = await FirebaseMessaging.instance.getToken().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => null,
-      );
+        final token = await FirebaseMessaging.instance.getToken().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => null,
+        );
 
-      await ChannelTalk.boot(
-        pluginKey: '0abc4b50-9e66-4b45-b910-eb654a481f08',
-        memberHash: token,
-        language: Language.korean,
-        appearance: Appearance.light,
-        channelButtonOption: ChannelButtonOption(
-          position: ChannelButtonPosition.right,
-          xMargin: 16,
-          yMargin: 130,
-        ),
-      ).timeout(const Duration(seconds: 10));
+        await ChannelTalk.boot(
+          pluginKey: '0abc4b50-9e66-4b45-b910-eb654a481f08',
+          memberHash: token,
+          language: Language.korean,
+          appearance: Appearance.light,
+          channelButtonOption: ChannelButtonOption(
+            position: ChannelButtonPosition.right,
+            xMargin: 16,
+            yMargin: 130,
+          ),
+        ).timeout(const Duration(seconds: 10));
 
-      await ChannelTalk.initPushToken(deviceToken: token ?? "");
-
-      await ChannelTalk.showChannelButton();
+        await ChannelTalk.initPushToken(deviceToken: token ?? "");
+        await ChannelTalk.showChannelButton();
+      }
 
       runApp(
         EasyLocalization(
