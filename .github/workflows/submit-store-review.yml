@@ -16,9 +16,9 @@ on:
           - ios
 
 env:
-  FLUTTER_VERSION: "3.32.x"
+  FLUTTER_VERSION: "3.44.x"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "Xcode_16.2"
+  XCODE_VERSION: "Xcode_16.4"
 
 jobs:
   submit-android:

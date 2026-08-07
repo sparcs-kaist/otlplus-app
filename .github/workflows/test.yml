@@ -15,7 +15,7 @@ on:
         options: [android, ios, both]
 
 env:
-  FLUTTER_VERSION: "3.32.x"
+  FLUTTER_VERSION: "3.44.x"
   JAVA_VERSION: "17"
   ANDROID_API_LEVEL: "34"
   XCODE_VERSION: "Xcode_16.4"
