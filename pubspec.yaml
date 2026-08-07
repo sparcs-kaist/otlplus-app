@@ -14,7 +14,7 @@ dependencies:
   dio: "^5.7.0"
   dotted_border: "^2.1.0"
   flutter_web_browser: "^0.17.3"
-  webview_flutter: "^4.13.1"
+  webview_flutter: "^4.14.1"
   webview_cookie_manager:
     git:
       url: https://github.com/fryette/webview_cookie_manager.git
