@@ -120,12 +120,13 @@ jobs:
           rm -f "$RUNNER_TEMP/firebase-service-account.json"
 
       - name: Notify Slack
-        if: always() && env.SLACK_WEBHOOK_URL != ''
+        if: always() && env.SLACK_BOT_TOKEN != ''
         uses: slackapi/slack-github-action@v2
         with:
-          webhook: ${{ env.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ env.SLACK_BOT_TOKEN }}
           payload: |
+            channel: ${{ env.SLACK_CHANNEL_ID }}
             text: "${{ job.status == 'success' && ':white_check_mark:' || ':x:' }} ${{ github.workflow }} — Android — ${{ github.ref_name }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   distribute-ios:
@@ -265,10 +266,11 @@ jobs:
           fi
 
       - name: Notify Slack
-        if: always() && env.SLACK_WEBHOOK_URL != ''
+        if: always() && env.SLACK_BOT_TOKEN != ''
         uses: slackapi/slack-github-action@v2
         with:
-          webhook: ${{ env.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ env.SLACK_BOT_TOKEN }}
           payload: |
+            channel: ${{ env.SLACK_CHANNEL_ID }}
             text: "${{ job.status == 'success' && ':white_check_mark:' || ':x:' }} ${{ github.workflow }} — iOS — ${{ github.ref_name }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

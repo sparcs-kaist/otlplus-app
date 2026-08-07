@@ -43,14 +43,22 @@ jobs:
         id: status
         working-directory: android
         run: bundle exec fastlane review_status | tee status.txt
+      - name: Extract review state
+        if: always()
+        id: state
+        working-directory: android
+        run: |
+          STATE=$(grep -E '^state=' status.txt 2>/dev/null | head -1 | cut -d= -f2- || true)
+          echo "state=${STATE:-unknown}" >> "$GITHUB_OUTPUT"
       - name: Notify Slack
-        if: always() && env.SLACK_WEBHOOK_URL != ''
+        if: always() && env.SLACK_BOT_TOKEN != ''
         uses: slackapi/slack-github-action@v2
         with:
-          webhook: ${{ env.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ env.SLACK_BOT_TOKEN }}
           payload: |
-            text: "${{ job.status == 'success' && ':information_source:' || ':x:' }} Google Play status check — ${{ github.repository }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            channel: ${{ env.SLACK_CHANNEL_ID }}
+            text: "${{ job.status == 'success' && ':information_source:' || ':x:' }} Google Play status check — ${{ github.repository }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} — state: ${{ steps.state.outputs.state }}"
       - name: Clean credentials
         if: always()
         run: rm -f android/fastlane/otlplus-fastlane.json
@@ -78,13 +86,22 @@ jobs:
           bundler-cache: true
           working-directory: ios
       - name: Read App Store status
+        id: status
         working-directory: ios
         run: bundle exec fastlane review_status | tee status.txt
+      - name: Extract review state
+        if: always()
+        id: state
+        working-directory: ios
+        run: |
+          STATE=$(grep -E '^state=' status.txt 2>/dev/null | head -1 | cut -d= -f2- || true)
+          echo "state=${STATE:-unknown}" >> "$GITHUB_OUTPUT"
       - name: Notify Slack
-        if: always() && env.SLACK_WEBHOOK_URL != ''
+        if: always() && env.SLACK_BOT_TOKEN != ''
         uses: slackapi/slack-github-action@v2
         with:
-          webhook: ${{ env.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ env.SLACK_BOT_TOKEN }}
           payload: |
-            text: "${{ job.status == 'success' && ':information_source:' || ':x:' }} App Store status check — ${{ github.repository }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            channel: ${{ env.SLACK_CHANNEL_ID }}
+            text: "${{ job.status == 'success' && ':information_source:' || ':x:' }} App Store status check — ${{ github.repository }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} — state: ${{ steps.state.outputs.state }}"
