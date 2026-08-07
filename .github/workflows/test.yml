@@ -74,10 +74,12 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
       - run: flutter pub get
-      # Caching ios/Pods drops FirebaseCrashlytics/upload-symbols and fails the build.
+      # Generates ios/Flutter/Generated.xcconfig so the Podfile resolves plugin pods.
+      - name: Configure iOS build
+        run: flutter build ios --config-only --simulator --debug --dart-define=APP_SMOKE_TEST=true
       - name: Install CocoaPods dependencies
         working-directory: ios
-        run: pod install
+        run: pod install --repo-update
       - name: Boot simulator
         run: |
           UDID=$(xcrun xctrace list devices 2>&1 | awk '/${{ env.IOS_DEVICE }}/ {print $NF; exit}' | tr -d '()')
