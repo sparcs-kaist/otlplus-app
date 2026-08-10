@@ -165,6 +165,8 @@
     "send_error_log_desc": "Automatically collect logs without user reporting",
     "send_anonymously": "Send anonymously",
     "send_anonymously_desc": "Not including user ID in error logs",
+    "send_usage_analytics": "Send anonymous usage analytics",
+    "send_usage_analytics_desc": "Send feature-usage statistics and fully-masked screen flows without personal identifiers to improve the service.",
     "reset_all": "Reset all settings",
     "dialog": {
       "reset": "Reset",

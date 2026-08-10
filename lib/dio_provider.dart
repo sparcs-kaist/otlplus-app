@@ -1,9 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/services/storage_service.dart';
-import 'package:provider/provider.dart';
-import 'package:otlplus/providers/auth_model.dart';
-import 'package:flutter/material.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
+
+/// Outcome of a session refresh attempt.
+enum SessionRefreshResult {
+  /// New tokens were issued and stored.
+  success,
+
+  /// The server rejected the session; stored credentials are invalid.
+  rejected,
+
+  /// The refresh endpoint could not be reached; credentials may still be
+  /// valid, so the session must not be terminated.
+  unavailable,
+}
 
 class DioProvider {
   static DioProvider? _instance;
@@ -14,13 +25,19 @@ class DioProvider {
 
   final StorageService _storageService = StorageService();
 
-  bool _isRefreshingToken = false;
+  Future<SessionRefreshResult>? _refreshInFlight;
 
-  static BuildContext? _navigatorContext;
-  static BuildContext? get navigatorContext => _navigatorContext;
+  static TelemetryCoordinator? _telemetry;
+  static Future<void> Function()? _onSessionExpired;
 
-  static void setNavigatorContext(BuildContext context) {
-    _navigatorContext = context;
+  static void configureTelemetry(TelemetryCoordinator telemetry) {
+    _telemetry = telemetry;
+  }
+
+  /// Registers the callback invoked when the server definitively rejects the
+  /// stored session. Replaces the previous navigator-context lookup.
+  static void configureSessionExpiredHandler(Future<void> Function() handler) {
+    _onSessionExpired = handler;
   }
 
   DioProvider._internal() {
@@ -44,41 +61,33 @@ class DioProvider {
           }
           return handler.next(options);
         },
-        // 기존 구현에서는 401 상태가 오면 바로 로그아웃을 호출하여
-        // 토큰이 만료된 경우에도 자동 로그인 상태가 해제되는 문제가 있었다.
         onError: (DioException e, handler) async {
-          if (e.response?.statusCode == 401) {
-            if (!_isRefreshingToken) {
-              _isRefreshingToken = true;
-              final refreshed = await _refreshToken();
-              _isRefreshingToken = false;
-              if (refreshed) {
-                try {
-                  final response = await _dio.fetch(e.requestOptions);
-                  return handler.resolve(response);
-                } catch (err) {
-                  // If retry fails, fall through to logout
-                }
-              }
-            }
-
-            if (_navigatorContext != null) {
+          final statusCode = e.response?.statusCode;
+          if (e.type != DioExceptionType.cancel &&
+              (statusCode == null || statusCode >= 500)) {
+            await _telemetry?.recordNonFatal(
+              e,
+              StackTrace.current,
+              operation: 'http_request',
+            );
+          }
+          if (statusCode == 401 &&
+              e.requestOptions.extra['sessionRetried'] != true) {
+            final result = await refreshSession();
+            if (result == SessionRefreshResult.success) {
               try {
-                Provider.of<AuthModel>(
-                  _navigatorContext!,
-                  listen: false,
-                ).logout();
-              } catch (err) {
-                print("Error accessing AuthModel for logout: $err");
-                await _storageService.deleteTokens();
+                e.requestOptions.extra['sessionRetried'] = true;
+                final response = await _dio.fetch(e.requestOptions);
+                return handler.resolve(response);
+              } on DioException catch (retryError) {
+                return handler.next(retryError);
               }
-            } else {
-              print(
-                "Navigator context not set in DioProvider. Cannot trigger logout via AuthModel.",
-              );
-              await _storageService.deleteTokens();
             }
-            return handler.next(e);
+            if (result == SessionRefreshResult.rejected) {
+              await _expireSession();
+            }
+            // On [SessionRefreshResult.unavailable] the session is kept: the
+            // failure was transient and the next request retries naturally.
           }
           return handler.next(e);
         },
@@ -86,13 +95,54 @@ class DioProvider {
     );
   }
 
-  Future<bool> _refreshToken() async {
-    final refreshToken = await _storageService.getRefreshToken();
+  /// Refreshes the stored session, sharing one in-flight attempt between the
+  /// cold-start path and any number of concurrent 401 responses.
+  Future<SessionRefreshResult> refreshSession() {
+    return _refreshInFlight ??= _refreshToken().whenComplete(() {
+      _refreshInFlight = null;
+    });
+  }
+
+  Future<void> _expireSession() async {
+    final handler = _onSessionExpired;
+    if (handler != null) {
+      try {
+        await handler();
+        return;
+      } catch (error, stackTrace) {
+        await _telemetry?.recordNonFatal(
+          error,
+          stackTrace,
+          operation: 'automatic_logout',
+        );
+      }
+    }
+    await _storageService.deleteTokens();
+  }
+
+  Future<SessionRefreshResult> _refreshToken() async {
+    final String? refreshToken;
+    try {
+      refreshToken = await _storageService.getRefreshToken();
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'refresh_session',
+      );
+      return SessionRefreshResult.unavailable;
+    }
     if (refreshToken == null) {
-      return false;
+      return SessionRefreshResult.rejected;
     }
 
-    final refreshDio = Dio(BaseOptions(baseUrl: _dio.options.baseUrl));
+    final refreshDio = Dio(
+      BaseOptions(
+        baseUrl: _dio.options.baseUrl,
+        connectTimeout: Duration(seconds: 10),
+        receiveTimeout: Duration(seconds: 10),
+      ),
+    );
     try {
       final response = await refreshDio.post(
         SESSION_REFRESH_URL,
@@ -108,12 +158,28 @@ class DioProvider {
             accessToken: newAccessToken,
             refreshToken: newRefreshToken,
           );
-          return true;
+          return SessionRefreshResult.success;
         }
       }
-    } catch (e) {
-      print('Error refreshing token in DioProvider: $e');
+      return SessionRefreshResult.rejected;
+    } on DioException catch (error, stackTrace) {
+      final status = error.response?.statusCode;
+      if (status != null && status >= 400 && status < 500) {
+        return SessionRefreshResult.rejected;
+      }
+      await _telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'refresh_session',
+      );
+      return SessionRefreshResult.unavailable;
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'refresh_session',
+      );
+      return SessionRefreshResult.unavailable;
     }
-    return false;
   }
 }

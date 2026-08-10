@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final _kSendCrashlytics = 'sendCrashlytics';
 final _kSendCrashlyticsAnonymously = 'sendCrashlyticsAnonymously';
+final _kSendAnalytics = 'sendAnalytics';
 final _kShowsChannelTalkButton = 'showsChannelTalkButton';
 final _kSendAlarm = 'sendAlarm';
 final _kPromotionAlarm = 'promotionAlarm';
@@ -14,6 +15,8 @@ final _kSubjectSuggestionAlarm = 'subjectSuggestionAlarm';
 class SettingsModel extends ChangeNotifier {
   bool _sendCrashlytics = true;
   bool _sendCrashlyticsAnonymously = false;
+  bool _sendAnalytics = false;
+  bool _isLoaded = false;
   bool _showsChannelTalkButton = true;
   bool _sendAlarm = false;
   bool _promotionAlarm = false;
@@ -37,6 +40,16 @@ class SettingsModel extends ChangeNotifier {
       (instance) => instance.setBool(_kSendCrashlyticsAnonymously, newValue),
     );
   }
+
+  bool getSendAnalytics() => _sendAnalytics;
+  Future<void> setSendAnalytics(bool newValue) async {
+    final instance = await SharedPreferences.getInstance();
+    await instance.setBool(_kSendAnalytics, newValue);
+    _sendAnalytics = newValue;
+    notifyListeners();
+  }
+
+  bool get isLoaded => _isLoaded;
 
   bool getShowsChannelTalkButton() => _showsChannelTalkButton;
   void setShowsChannelTalkButton(bool newValue) {
@@ -121,11 +134,13 @@ class SettingsModel extends ChangeNotifier {
     if (forTest) {
       _sendCrashlytics = true;
       _sendCrashlyticsAnonymously = false;
+      _sendAnalytics = false;
       _showsChannelTalkButton = true;
       _sendAlarm = false;
       _promotionAlarm = false;
       _informationAlarm = false;
       _subjectSuggestionAlarm = false;
+      _isLoaded = true;
     } else {
       _loadPreferences();
     }
@@ -137,6 +152,9 @@ class SettingsModel extends ChangeNotifier {
       getAllValues(instance);
     } catch (e) {
       print("Error loading preferences: $e");
+    } finally {
+      _isLoaded = true;
+      notifyListeners();
     }
   }
 
@@ -144,6 +162,7 @@ class SettingsModel extends ChangeNotifier {
     final newSendCrashlytics = instance.getBool(_kSendCrashlytics) ?? true;
     final newSendCrashlyticsAnonymously =
         instance.getBool(_kSendCrashlyticsAnonymously) ?? false;
+    final newSendAnalytics = instance.getBool(_kSendAnalytics) ?? false;
     final newShowsChannelTalkButton =
         instance.getBool(_kShowsChannelTalkButton) ?? true;
     final newSendAlarm = instance.getBool(_kSendAlarm) ?? false;
@@ -154,6 +173,7 @@ class SettingsModel extends ChangeNotifier {
 
     if (_sendCrashlytics != newSendCrashlytics ||
         _sendCrashlyticsAnonymously != newSendCrashlyticsAnonymously ||
+        _sendAnalytics != newSendAnalytics ||
         _showsChannelTalkButton != newShowsChannelTalkButton ||
         _sendAlarm != newSendAlarm ||
         _promotionAlarm != newPromotionAlarm ||
@@ -161,6 +181,7 @@ class SettingsModel extends ChangeNotifier {
         _subjectSuggestionAlarm != newSubjectSuggestionAlarm) {
       _sendCrashlytics = newSendCrashlytics;
       _sendCrashlyticsAnonymously = newSendCrashlyticsAnonymously;
+      _sendAnalytics = newSendAnalytics;
       _showsChannelTalkButton = newShowsChannelTalkButton;
       _sendAlarm = newSendAlarm;
       _promotionAlarm = newPromotionAlarm;

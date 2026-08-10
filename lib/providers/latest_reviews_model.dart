@@ -44,6 +44,7 @@ class LatestReviewsModel extends ChangeNotifier {
     } catch (exception) {
       print(exception);
       _isLoading = false;
+      notifyListeners();
     }
   }
 }

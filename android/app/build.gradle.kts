@@ -45,7 +45,7 @@ android {
 
     defaultConfig {
         applicationId = "org.sparcs.otlplus"
-        minSdk = flutter.minSdkVersion
+        minSdk = maxOf(flutter.minSdkVersion, 23)
         targetSdk = rootProject.extra.get("targetSdkVersion")?.toString()?.toIntOrNull()
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName

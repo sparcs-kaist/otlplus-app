@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/services/storage_service.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:webview_cookie_manager/webview_cookie_manager.dart';
 
 class AuthModel extends ChangeNotifier {
@@ -7,14 +9,11 @@ class AuthModel extends ChangeNotifier {
   bool get isLogined => _isLogined;
 
   final StorageService _storageService;
+  final TelemetryCoordinator? _telemetry;
 
-  AuthModel(this._storageService) {
-    _checkInitialLoginState();
-  }
-
-  Future<void> _checkInitialLoginState() async {
-    _isLogined = await _storageService.hasTokens();
-    notifyListeners();
+  AuthModel(this._storageService, {TelemetryCoordinator? telemetry})
+    : _telemetry = telemetry {
+    DioProvider.configureSessionExpiredHandler(logout);
   }
 
   void setLoggedIn(bool loggedIn) {
@@ -26,13 +25,13 @@ class AuthModel extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
-      final cookieManager = WebviewCookieManager();
-      await cookieManager.clearCookies();
       await _storageService.deleteTokens();
+      await WebviewCookieManager().clearCookies();
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(error, stackTrace, operation: 'logout');
+    } finally {
       _isLogined = false;
       notifyListeners();
-    } catch (exception) {
-      print("Error during logout: $exception");
     }
   }
 }

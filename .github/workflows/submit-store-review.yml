@@ -1,0 +1,333 @@
+name: Submit Store Review
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Store review submission target"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+
+env:
+  FLUTTER_VERSION: "3.44.x"
+  JAVA_VERSION: "17"
+  XCODE_VERSION: "Xcode_16.4"
+
+jobs:
+  submit-android:
+    if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'android')) }}
+    environment: store-review
+    name: Submit Android for Google Play review
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Set up Ruby for Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+          working-directory: android
+
+      - name: Install Ruby dependencies
+        working-directory: android
+        run: |
+          gem install bundler
+          bundle config set --local deployment false
+          bundle install --jobs 4 --retry 3
+
+      - name: Create Google Play service account JSON
+        run: |
+          if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret is not set"
+            exit 1
+          fi
+          echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > android/fastlane/otlplus-fastlane.json
+
+      - name: Decode and create keystore
+        run: |
+          if [ -z "$ANDROID_KEYSTORE" ]; then
+            echo "::error::ANDROID_KEYSTORE secret is not set"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE" | base64 -d > android/fastlane/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          echo "storeFile=../fastlane/upload-keystore.jks" > android/key.properties
+          echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" >> android/key.properties
+          echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
+          echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
+
+      - name: Create Sentry environment file
+        run: echo "auth_token=$SENTRY_AUTH_TOKEN" > sentry.properties
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Load release secrets
+        uses: dopplerhq/secrets-fetch-action@v2.0.0
+        id: doppler
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          inject-env-vars: true
+
+      - name: Map release configuration
+        run: |
+          if [ -z "${POSTHOG_APP_TOKEN:-}" ]; then
+            echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
+            exit 1
+          fi
+          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
+          echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
+
+      - name: Set app version from release tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${VERSION%%-*}"
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            ruby -i -pe "\$_ = \"version: ${VERSION}+1\n\" if \$_.start_with?('version:')" pubspec.yaml
+          else
+            echo "Ref '${GITHUB_REF_NAME}' has no semantic version; keeping pubspec version"
+          fi
+          grep '^version:' pubspec.yaml
+
+      - name: Setup Android NDK
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install "ndk;27.0.12077973" || true
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+          echo "ndk.dir=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> android/local.properties
+
+      - name: Set Gradle JVM options for CI
+        run: |
+          echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" >> android/gradle.properties
+          echo "org.gradle.daemon=false" >> android/gradle.properties
+          echo "org.gradle.parallel=false" >> android/gradle.properties
+
+      - name: Submit to Google Play review
+        working-directory: android
+        run: bundle exec fastlane production_review
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f android/fastlane/otlplus-fastlane.json
+          rm -f android/fastlane/upload-keystore.jks
+          rm -f android/key.properties
+
+      - name: Notify Slack
+        if: always() && env.SLACK_BOT_TOKEN != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          method: chat.postMessage
+          token: ${{ env.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ env.SLACK_CHANNEL_ID }}
+            text: "${{ job.status == 'success' && ':white_check_mark:' || ':x:' }} ${{ github.workflow }} — Android — ${{ github.ref_name }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  submit-ios:
+    if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'ios')) }}
+    environment: store-review
+    name: Submit iOS for App Store review
+    runs-on: macos-15
+    env:
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      IOS_CERTIFICATES_P12: ${{ secrets.IOS_CERTIFICATES_P12 }}
+      IOS_CERTIFICATES_PASSWORD: ${{ secrets.IOS_CERTIFICATES_PASSWORD }}
+      IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+      IOS_PROVISIONING_PROFILE_WIDGET: ${{ secrets.IOS_PROVISIONING_PROFILE_WIDGET }}
+      IOS_PROVISIONING_PROFILE_INTENTS: ${{ secrets.IOS_PROVISIONING_PROFILE_INTENTS }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s '/Applications/${{ env.XCODE_VERSION }}.app/Contents/Developer'
+
+      - name: Install iOS SDK Platform
+        run: |
+          xcodebuild -showsdks
+          xcodebuild -downloadPlatform iOS -quiet || true
+          sleep 10
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -showdestinations 2>/dev/null | head -20 || true
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Set up Ruby for Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+          working-directory: ios
+
+      - name: Install Ruby dependencies
+        working-directory: ios
+        run: |
+          gem install bundler
+          bundle config set --local deployment false
+          bundle install --jobs 4 --retry 3
+
+      - name: Create Fastlane environment file
+        run: |
+          if [ -z "$APPLE_ID" ] || [ -z "$APPLE_PASSWORD" ] || [ -z "$APPLE_TEAM_ID" ]; then
+            echo "::error::APPLE_ID, APPLE_PASSWORD, and APPLE_TEAM_ID secrets are required"
+            exit 1
+          fi
+          echo "FASTLANE_USER=$APPLE_ID" > ios/fastlane/.env.default
+          echo "FASTLANE_PASSWORD=$APPLE_PASSWORD" >> ios/fastlane/.env.default
+          echo "FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD=$APPLE_PASSWORD" >> ios/fastlane/.env.default
+          echo "FASTLANE_TEAM_ID=$APPLE_TEAM_ID" >> ios/fastlane/.env.default
+
+      - name: Create Sentry environment file
+        run: echo "auth_token=$SENTRY_AUTH_TOKEN" > sentry.properties
+
+      - name: Import iOS certificates and provisioning profiles
+        run: |
+          security create-keychain -p "temp_password" build.keychain
+          security default-keychain -s build.keychain
+          security set-keychain-settings -t 3600 -l build.keychain
+          security unlock-keychain -p "temp_password" build.keychain
+          echo "$IOS_CERTIFICATES_P12" | base64 -d > certificates.p12
+          security import certificates.p12 -k build.keychain -P "$IOS_CERTIFICATES_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "temp_password" build.keychain
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$IOS_PROVISIONING_PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          echo "$IOS_PROVISIONING_PROFILE_WIDGET" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile_widget.mobileprovision
+          echo "$IOS_PROVISIONING_PROFILE_INTENTS" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile_intents.mobileprovision
+          security find-identity -v -p codesigning build.keychain
+
+      - name: Extract provisioning profile metadata
+        run: |
+          set -euo pipefail
+          PP_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          extract_field() {
+            security cms -D -i "$1" 2>/dev/null | plutil -extract "$2" raw - 2>/dev/null || true
+          }
+          install_by_uuid() {
+            uuid=$(extract_field "$1" UUID)
+            if [ -n "$uuid" ]; then
+              cp "$1" "$PP_DIR/$uuid.mobileprovision"
+            fi
+            echo "$uuid"
+          }
+          MAIN_PROFILE="$PP_DIR/profile.mobileprovision"
+          WIDGET_PROFILE="$PP_DIR/profile_widget.mobileprovision"
+          INTENTS_PROFILE="$PP_DIR/profile_intents.mobileprovision"
+          MAIN_NAME=$(extract_field "$MAIN_PROFILE" Name)
+          WIDGET_NAME=$(extract_field "$WIDGET_PROFILE" Name)
+          INTENTS_NAME=$(extract_field "$INTENTS_PROFILE" Name)
+          MAIN_UUID=$(install_by_uuid "$MAIN_PROFILE")
+          WIDGET_UUID=$(install_by_uuid "$WIDGET_PROFILE")
+          INTENTS_UUID=$(install_by_uuid "$INTENTS_PROFILE")
+          if [ -z "$MAIN_NAME" ] || [ -z "$WIDGET_NAME" ] || [ -z "$INTENTS_NAME" ] || [ -z "$MAIN_UUID" ] || [ -z "$WIDGET_UUID" ] || [ -z "$INTENTS_UUID" ]; then
+            echo "::error::iOS provisioning profile metadata is incomplete"
+            exit 1
+          fi
+          {
+            echo "IOS_PROFILE_NAME=$MAIN_NAME"
+            echo "IOS_WIDGET_PROFILE_NAME=$WIDGET_NAME"
+            echo "IOS_INTENTS_PROFILE_NAME=$INTENTS_NAME"
+            echo "IOS_PROFILE_UUID=$MAIN_UUID"
+            echo "IOS_WIDGET_PROFILE_UUID=$WIDGET_UUID"
+            echo "IOS_INTENTS_PROFILE_UUID=$INTENTS_UUID"
+          } >> "$GITHUB_ENV"
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Load release secrets
+        uses: dopplerhq/secrets-fetch-action@v2.0.0
+        id: doppler
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          inject-env-vars: true
+
+      - name: Map release configuration
+        run: |
+          if [ -z "${POSTHOG_APP_TOKEN:-}" ]; then
+            echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
+            exit 1
+          fi
+          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
+          echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
+
+      - name: Set app version from release tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${VERSION%%-*}"
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            ruby -i -pe "\$_ = \"version: ${VERSION}+1\n\" if \$_.start_with?('version:')" pubspec.yaml
+          else
+            echo "Ref '${GITHUB_REF_NAME}' has no semantic version; keeping pubspec version"
+          fi
+          grep '^version:' pubspec.yaml
+
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install
+
+      - name: Validate App Store Connect API key
+        run: |
+          if [ -z "$APP_STORE_CONNECT_KEY_ID" ] || [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] || [ -z "$APP_STORE_CONNECT_API_KEY" ]; then
+            echo "::error::App Store Connect API key secrets are required for review submission"
+            exit 1
+          fi
+
+      - name: Submit to App Store review
+        working-directory: ios
+        run: bundle exec fastlane submit_review
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f ios/fastlane/.env.default
+          rm -f certificates.p12
+          security delete-keychain build.keychain || true
+
+      - name: Notify Slack
+        if: always() && env.SLACK_BOT_TOKEN != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          method: chat.postMessage
+          token: ${{ env.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ env.SLACK_CHANNEL_ID }}
+            text: "${{ job.status == 'success' && ':white_check_mark:' || ':x:' }} ${{ github.workflow }} — iOS — ${{ github.ref_name }} — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

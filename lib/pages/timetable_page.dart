@@ -33,8 +33,24 @@ class _TimetablePageState extends State<TimetablePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (context.select<TimetableModel, bool>((model) => model.isLoaded))
-      return _buildBody(context);
+    final timetableModel = context.watch<TimetableModel>();
+
+    if (timetableModel.isLoaded) return _buildBody(context);
+    if (timetableModel.loadFailed) {
+      final isEn = context.locale == const Locale('en');
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(isEn ? 'Unable to load timetable.' : '시간표를 불러오지 못했습니다.'),
+            TextButton(
+              onPressed: timetableModel.retryLoad,
+              child: Text(isEn ? 'Retry' : '다시 시도'),
+            ),
+          ],
+        ),
+      );
+    }
     return Center(child: const CircularProgressIndicator());
   }
 

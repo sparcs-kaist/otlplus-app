@@ -43,6 +43,7 @@ class LikedReviewModel extends ChangeNotifier {
     } catch (exception) {
       print(exception);
       _isLoading = false;
+      notifyListeners();
     }
   }
 }

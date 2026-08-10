@@ -123,6 +123,10 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleTokenRedirect(Uri uri) async {
     if (_isDisposed || !mounted) return;
 
+    setState(() {
+      _isLoadingPage = false;
+    });
+
     final accessToken = uri.queryParameters['accessToken'];
     final refreshToken = uri.queryParameters['refreshToken'];
 

@@ -104,11 +104,38 @@ class _MainPageState extends State<MainPage> {
     final infoModel = context.watch<InfoModel>();
 
     if (!infoModel.hasData) {
+      if (infoModel.hasError) {
+        final isEn = context.locale == const Locale('en');
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(isEn ? 'Unable to load your info.' : '내 정보를 불러오지 못했습니다.'),
+              TextButton(
+                onPressed: () => context.read<InfoModel>().getInfo(),
+                child: Text(isEn ? 'Retry' : '다시 시도'),
+              ),
+            ],
+          ),
+        );
+      }
       return const Center(child: CircularProgressIndicator());
     }
 
     if (infoModel.semesters.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      final isEn = context.locale == const Locale('en');
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(isEn ? 'Unable to load semesters.' : '학기 정보를 불러오지 못했습니다.'),
+            TextButton(
+              onPressed: () => context.read<InfoModel>().reload(),
+              child: Text(isEn ? 'Retry' : '다시 시도'),
+            ),
+          ],
+        ),
+      );
     }
 
     final semester = infoModel.semesters.firstWhere(

@@ -26,10 +26,42 @@ platform :android do
   desc "Deploy a alpha version to the Google Play"
   lane :alpha do
     set_timestamp_version
-    sh "flutter build appbundle"
+    posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
+    sh "flutter build appbundle --dart-define=POSTHOG_API_KEY=#{ENV.fetch('POSTHOG_API_KEY')} --dart-define=POSTHOG_HOST=#{posthog_host}"
     upload_to_play_store(
       aab: "../build/app/outputs/bundle/release/app-release.aab",
       track: "alpha",
     )
+  end
+
+  desc "Submit a staged production release for Google Play review"
+  lane :production_review do
+    set_timestamp_version
+    posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
+    sh "flutter build appbundle --dart-define=POSTHOG_API_KEY=#{ENV.fetch('POSTHOG_API_KEY')} --dart-define=POSTHOG_HOST=#{posthog_host}"
+    upload_to_play_store(
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      track: "production",
+      rollout: "0.1",
+      release_status: "inProgress",
+    )
+  end
+
+  desc "Report the current Google Play production release state"
+  lane :review_status do
+    Supply.config = Supply::Options.available_options.each_with_object({}) do |option, values|
+      values[option.key] = option.default_value
+    end
+    Supply.config[:package_name] = "org.sparcs.otlplus"
+    Supply.config[:track] = "production"
+    Supply.config[:json_key] = "fastlane/otlplus-fastlane.json"
+
+    metadata = Supply::Reader.new.track_meta
+    release = metadata&.releases&.max_by { |item| item.version_codes&.max.to_i }
+    state = release&.status || "unknown"
+    version_codes = release&.version_codes&.join(",") || "none"
+    puts "store=android"
+    puts "state=#{state}"
+    puts "version_codes=#{version_codes}"
   end
 end

@@ -5,9 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 env:
-  FLUTTER_VERSION: "3.32.x"
+  FLUTTER_VERSION: "3.44.x"
 
 jobs:
   lint:
