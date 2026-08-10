@@ -23,7 +23,7 @@ env:
 jobs:
   submit-android:
     if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'android')) }}
-    environment: store-review
+    environment: Release
     name: Submit Android for Google Play review
     runs-on: ubuntu-latest
     env:
@@ -33,7 +33,7 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -97,7 +97,7 @@ jobs:
         uses: dopplerhq/secrets-fetch-action@v2.0.0
         id: doppler
         with:
-          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          doppler-token: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
           inject-env-vars: true
 
       - name: Map release configuration
@@ -155,7 +155,7 @@ jobs:
 
   submit-ios:
     if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'ios')) }}
-    environment: store-review
+    environment: Release
     name: Submit iOS for App Store review
     runs-on: macos-15
     env:
@@ -171,7 +171,7 @@ jobs:
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -277,7 +277,7 @@ jobs:
         uses: dopplerhq/secrets-fetch-action@v2.0.0
         id: doppler
         with:
-          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          doppler-token: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
           inject-env-vars: true
 
       - name: Map release configuration
