@@ -22,22 +22,23 @@ Future<void> writeFile(ShareType type, Uint8List? bytes) async {
       "OTL-${DateTime.now().millisecondsSinceEpoch}.${type == ShareType.image ? 'png' : 'ics'}";
 
   if (Platform.isAndroid) {
-    if (await Permission.storage.request().isGranted) {
-      switch (type) {
-        case ShareType.image:
-          _channel.invokeMethod("writeImageAsBytes", <String, dynamic>{
-            "fileName": fileName,
-            "bytes": bytes,
-          });
-          break;
-        case ShareType.ical:
-          final directory = await getExternalStorageDirectory();
-          final path =
-              "${directory?.path ?? '/storage/emulated/0/Android/data/org.sparcs.otlplus/files'}/$fileName";
-          File(path).writeAsBytesSync(bytes as List<int>);
-          OpenAppFile.open(path);
-          break;
+    if (type == ShareType.image) {
+      final int? sdkInt = await _channel.invokeMethod<int>('getAndroidVersion');
+      if (sdkInt != null && sdkInt <= 28) {
+        if (!(await Permission.storage.request().isGranted)) {
+          return;
+        }
       }
+      _channel.invokeMethod("writeImageAsBytes", <String, dynamic>{
+        "fileName": fileName,
+        "bytes": bytes,
+      });
+    } else if (type == ShareType.ical) {
+      final directory = await getExternalStorageDirectory();
+      final path =
+          "${directory?.path ?? '/storage/emulated/0/Android/data/org.sparcs.otlplus/files'}/$fileName";
+      File(path).writeAsBytesSync(bytes as List<int>);
+      OpenAppFile.open(path);
     }
   } else {
     final directory = await getApplicationDocumentsDirectory();

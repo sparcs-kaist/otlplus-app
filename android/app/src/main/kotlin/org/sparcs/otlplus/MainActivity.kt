@@ -49,6 +49,8 @@ class MainActivity : FlutterActivity() {
                 } else {
                     result.error("ERROR", "Invalid paramters.", null)
                 }
+            } else if (call.method == "getAndroidVersion") {
+                result.success(Build.VERSION.SDK_INT)
             } else {
                 result.notImplemented()
             }
