@@ -13,6 +13,27 @@ final _kInformationAlarm = 'informationAlarm';
 final _kSubjectSuggestionAlarm = 'subjectSuggestionAlarm';
 
 class SettingsModel extends ChangeNotifier {
+  SettingsModel({
+    bool forTest = false,
+    void Function(bool enabled)? onCrashReportingChanged,
+  }) : _onCrashReportingChanged = onCrashReportingChanged {
+    if (forTest) {
+      _sendCrashlytics = true;
+      _sendCrashlyticsAnonymously = false;
+      _sendAnalytics = false;
+      _showsChannelTalkButton = true;
+      _sendAlarm = false;
+      _promotionAlarm = false;
+      _informationAlarm = false;
+      _subjectSuggestionAlarm = false;
+      _isLoaded = true;
+      _onCrashReportingChanged?.call(_sendCrashlytics);
+    } else {
+      _loadPreferences();
+    }
+  }
+
+  final void Function(bool enabled)? _onCrashReportingChanged;
   // Remain fail-closed until preferences are loaded successfully.
   bool _sendCrashlytics = false;
   bool _sendCrashlyticsAnonymously = false;
@@ -27,6 +48,7 @@ class SettingsModel extends ChangeNotifier {
   bool getSendCrashlytics() => _sendCrashlytics;
   void setSendCrashlytics(bool newValue) {
     _sendCrashlytics = newValue;
+    _onCrashReportingChanged?.call(newValue);
     notifyListeners();
     SharedPreferences.getInstance().then(
       (instance) => instance.setBool(_kSendCrashlytics, newValue),
@@ -131,22 +153,6 @@ class SettingsModel extends ChangeNotifier {
     }
   }
 
-  SettingsModel({bool forTest = false}) {
-    if (forTest) {
-      _sendCrashlytics = true;
-      _sendCrashlyticsAnonymously = false;
-      _sendAnalytics = false;
-      _showsChannelTalkButton = true;
-      _sendAlarm = false;
-      _promotionAlarm = false;
-      _informationAlarm = false;
-      _subjectSuggestionAlarm = false;
-      _isLoaded = true;
-    } else {
-      _loadPreferences();
-    }
-  }
-
   Future<void> _loadPreferences() async {
     try {
       final instance = await SharedPreferences.getInstance();
@@ -155,6 +161,7 @@ class SettingsModel extends ChangeNotifier {
       print("Error loading preferences: $e");
     } finally {
       _isLoaded = true;
+      _onCrashReportingChanged?.call(_sendCrashlytics);
       notifyListeners();
     }
   }
