@@ -3,17 +3,20 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
+import 'package:otlplus/services/sentry_consent_gate.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:provider/provider.dart';
 
 class TelemetrySynchronizer extends StatefulWidget {
   const TelemetrySynchronizer({
     required this.child,
+    required this.sentryConsentGate,
     required this.telemetry,
     super.key,
   });
 
   final Widget child;
+  final SentryConsentGate sentryConsentGate;
   final TelemetryCoordinator telemetry;
 
   @override
@@ -34,6 +37,10 @@ class _TelemetrySynchronizerState extends State<TelemetrySynchronizer> {
       analyticsEnabled: settings.getSendAnalytics(),
       userIdentifier: info.hasData ? info.user.id.toString() : null,
     );
+
+    if (state.isReady) {
+      widget.sentryConsentGate.setEnabled(state.crashlyticsEnabled);
+    }
 
     if (state.isReady && state != _scheduledState) {
       _scheduledState = state;

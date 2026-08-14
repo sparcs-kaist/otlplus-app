@@ -17,6 +17,7 @@ import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/liked_review_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/services/posthog_service.dart';
+import 'package:otlplus/services/sentry_consent_gate.dart';
 import 'package:otlplus/services/storage_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/widgets/telemetry_synchronizer.dart';
@@ -42,6 +43,7 @@ final telemetryCoordinator = TelemetryCoordinator(
   analytics: PostHogService(),
   crashReporting: const FirebaseCrashReportingClient(),
 );
+final sentryConsentGate = SentryConsentGate();
 const _isSmokeTest = bool.fromEnvironment('APP_SMOKE_TEST');
 
 void main() {
@@ -52,6 +54,12 @@ void main() {
         await SentryFlutter.init((options) {
           options.dsn =
               'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
+          options.beforeSend = (event, hint) =>
+              sentryConsentGate.filterEvent(event);
+          options.beforeSendTransaction = (transaction, hint) =>
+              sentryConsentGate.filterTransaction(transaction);
+          options.beforeBreadcrumb = (breadcrumb, hint) =>
+              sentryConsentGate.filterBreadcrumb(breadcrumb);
         });
       }
       await EasyLocalization.ensureInitialized();
@@ -78,6 +86,9 @@ void main() {
             reason: 'platform_dispatcher_error',
           ),
         );
+        if (telemetryCoordinator.crashReportingEnabled) {
+          Sentry.captureException(error, stackTrace: stackTrace);
+        }
         return true;
       };
 
@@ -163,6 +174,7 @@ void main() {
               ChangeNotifierProvider(create: (_) => SettingsModel()),
             ],
             child: TelemetrySynchronizer(
+              sentryConsentGate: sentryConsentGate,
               telemetry: telemetryCoordinator,
               child: OTLApp(),
             ),
