@@ -158,10 +158,10 @@ class SettingsModel extends ChangeNotifier {
       final instance = await SharedPreferences.getInstance();
       getAllValues(instance);
     } catch (e) {
+      _onCrashReportingChanged?.call(_sendCrashlytics);
       print("Error loading preferences: $e");
     } finally {
       _isLoaded = true;
-      _onCrashReportingChanged?.call(_sendCrashlytics);
       notifyListeners();
     }
   }
@@ -197,6 +197,7 @@ class SettingsModel extends ChangeNotifier {
       _subjectSuggestionAlarm = newSubjectSuggestionAlarm;
       notifyListeners();
     }
+    _onCrashReportingChanged?.call(_sendCrashlytics);
   }
 
   Future<bool> clearAllValues() async {

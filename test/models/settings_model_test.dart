@@ -16,8 +16,14 @@ void main() {
     expect(observedValues, [true]);
 
     model.setSendCrashlytics(false);
+    await Future<void>.delayed(Duration.zero);
 
     expect(observedValues, [true, false]);
-    await Future<void>.delayed(Duration.zero);
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.clear();
+    model.getAllValues(preferences);
+
+    expect(observedValues, [true, false, true]);
   });
 }
