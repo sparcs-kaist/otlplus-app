@@ -51,7 +51,7 @@ void main() {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
       if (!_isSmokeTest) {
-        await SentryFlutter.init(sentryConsentGate.configure);
+        await Sentry.init(sentryConsentGate.configure);
       }
       await EasyLocalization.ensureInitialized();
 
@@ -77,6 +77,9 @@ void main() {
             reason: 'platform_dispatcher_error',
           ),
         );
+        if (sentryConsentGate.isEnabled) {
+          Sentry.captureException(error, stackTrace: stackTrace);
+        }
         return true;
       };
 
@@ -159,10 +162,15 @@ void main() {
               ChangeNotifierProvider(create: (_) => HallOfFameModel()),
               ChangeNotifierProvider(create: (_) => CourseDetailModel()),
               ChangeNotifierProvider(create: (_) => LectureDetailModel()),
-              ChangeNotifierProvider(create: (_) => SettingsModel()),
+              ChangeNotifierProvider(
+                create: (_) => SettingsModel(
+                  onCrashReportingChanged: (enabled) {
+                    unawaited(sentryConsentGate.setEnabled(enabled));
+                  },
+                ),
+              ),
             ],
             child: TelemetrySynchronizer(
-              sentryConsentGate: sentryConsentGate,
               telemetry: telemetryCoordinator,
               child: OTLApp(),
             ),

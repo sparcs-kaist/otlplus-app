@@ -22,7 +22,7 @@ class SentryConsentGate {
   Breadcrumb? filterBreadcrumb(Breadcrumb? breadcrumb) =>
       _isEnabled ? breadcrumb : null;
 
-  void configure(SentryFlutterOptions options) {
+  void configure(SentryOptions options) {
     options
       ..dsn =
           'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2'
@@ -30,19 +30,11 @@ class SentryConsentGate {
       ..beforeSendTransaction = (transaction, hint) =>
           filterTransaction(transaction)
       ..beforeBreadcrumb = (breadcrumb, hint) => filterBreadcrumb(breadcrumb)
-      // Native automatic collection bypasses Dart beforeSend callbacks.
-      ..enableNativeCrashHandling = false
-      ..enableAutoSessionTracking = false
-      ..anrEnabled = false
-      ..enableAutoNativeBreadcrumbs = false
-      ..enableWatchdogTerminationTracking = false
-      ..enableAppHangTracking = false
-      ..enableUserInteractionBreadcrumbs = false
-      ..enableUserInteractionTracing = false
-      ..enableAutoPerformanceTracing = false
-      ..enableFramesTracking = false
-      ..enableNativeTraceSync = false
-      ..enableNdkScopeSync = false
-      ..maxCacheItems = 0;
+      ..captureFailedRequests = false
+      ..recordHttpBreadcrumbs = false
+      ..sendClientReports = false
+      ..enableMetrics = false
+      ..enableLogs = false
+      ..tracePropagationTargets.clear();
   }
 }

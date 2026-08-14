@@ -23,24 +23,17 @@ void main() {
     expect(gate.filterBreadcrumb(breadcrumb), isNull);
   });
 
-  test('disables native collection that bypasses Dart consent hooks', () {
+  test('disables automatic Dart telemetry outside consent hooks', () {
     final gate = SentryConsentGate();
-    final options = SentryFlutterOptions();
+    final options = SentryOptions();
 
     gate.configure(options);
 
-    expect(options.enableNativeCrashHandling, isFalse);
-    expect(options.enableAutoSessionTracking, isFalse);
-    expect(options.anrEnabled, isFalse);
-    expect(options.enableAutoNativeBreadcrumbs, isFalse);
-    expect(options.enableWatchdogTerminationTracking, isFalse);
-    expect(options.enableAppHangTracking, isFalse);
-    expect(options.enableUserInteractionBreadcrumbs, isFalse);
-    expect(options.enableUserInteractionTracing, isFalse);
-    expect(options.enableAutoPerformanceTracing, isFalse);
-    expect(options.enableFramesTracking, isFalse);
-    expect(options.enableNativeTraceSync, isFalse);
-    expect(options.enableNdkScopeSync, isFalse);
-    expect(options.maxCacheItems, 0);
+    expect(options.captureFailedRequests, isFalse);
+    expect(options.recordHttpBreadcrumbs, isFalse);
+    expect(options.sendClientReports, isFalse);
+    expect(options.enableMetrics, isFalse);
+    expect(options.enableLogs, isFalse);
+    expect(options.tracePropagationTargets, isEmpty);
   });
 }
