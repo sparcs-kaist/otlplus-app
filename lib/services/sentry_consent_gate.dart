@@ -23,18 +23,18 @@ class SentryConsentGate {
       _isEnabled ? breadcrumb : null;
 
   void configure(SentryOptions options) {
-    options
-      ..dsn =
-          'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2'
-      ..beforeSend = (event, hint) => filterEvent(event)
-      ..beforeSendTransaction = (transaction, hint) =>
-          filterTransaction(transaction)
-      ..beforeBreadcrumb = (breadcrumb, hint) => filterBreadcrumb(breadcrumb)
-      ..captureFailedRequests = false
-      ..recordHttpBreadcrumbs = false
-      ..sendClientReports = false
-      ..enableMetrics = false
-      ..enableLogs = false
-      ..tracePropagationTargets.clear();
+    options.dsn =
+        'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
+    options.beforeSend = (event, hint) => filterEvent(event);
+    options.beforeSendTransaction = (transaction, hint) =>
+        filterTransaction(transaction);
+    options.beforeBreadcrumb = (breadcrumb, hint) =>
+        filterBreadcrumb(breadcrumb);
+    options.captureFailedRequests = false;
+    options.recordHttpBreadcrumbs = false;
+    options.sendClientReports = false;
+    options.enableMetrics = false;
+    options.enableLogs = false;
+    options.tracePropagationTargets.clear();
   }
 }
