@@ -39,7 +39,9 @@ class _TelemetrySynchronizerState extends State<TelemetrySynchronizer> {
     );
 
     if (state.isReady) {
-      widget.sentryConsentGate.setEnabled(state.crashlyticsEnabled);
+      unawaited(
+        widget.sentryConsentGate.setEnabled(state.crashlyticsEnabled),
+      );
     }
 
     if (state.isReady && state != _scheduledState) {

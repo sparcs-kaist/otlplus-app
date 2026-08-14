@@ -51,16 +51,7 @@ void main() {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
       if (!_isSmokeTest) {
-        await SentryFlutter.init((options) {
-          options.dsn =
-              'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
-          options.beforeSend = (event, hint) =>
-              sentryConsentGate.filterEvent(event);
-          options.beforeSendTransaction = (transaction, hint) =>
-              sentryConsentGate.filterTransaction(transaction);
-          options.beforeBreadcrumb = (breadcrumb, hint) =>
-              sentryConsentGate.filterBreadcrumb(breadcrumb);
-        });
+        await SentryFlutter.init(sentryConsentGate.configure);
       }
       await EasyLocalization.ensureInitialized();
 
@@ -74,7 +65,7 @@ void main() {
 
       FlutterError.onError = (details) {
         unawaited(telemetryCoordinator.recordFlutterFatalError(details));
-        if (telemetryCoordinator.crashReportingEnabled) {
+        if (sentryConsentGate.isEnabled) {
           Sentry.captureException(details.exception, stackTrace: details.stack);
         }
       };
@@ -86,9 +77,6 @@ void main() {
             reason: 'platform_dispatcher_error',
           ),
         );
-        if (telemetryCoordinator.crashReportingEnabled) {
-          Sentry.captureException(error, stackTrace: stackTrace);
-        }
         return true;
       };
 
@@ -190,7 +178,7 @@ void main() {
           reason: 'uncaught_zone_error',
         ),
       );
-      if (telemetryCoordinator.crashReportingEnabled) {
+      if (sentryConsentGate.isEnabled) {
         Sentry.captureException(error, stackTrace: stack);
       }
     },
