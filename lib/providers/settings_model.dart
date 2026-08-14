@@ -13,7 +13,8 @@ final _kInformationAlarm = 'informationAlarm';
 final _kSubjectSuggestionAlarm = 'subjectSuggestionAlarm';
 
 class SettingsModel extends ChangeNotifier {
-  bool _sendCrashlytics = true;
+  // Remain fail-closed until preferences are loaded successfully.
+  bool _sendCrashlytics = false;
   bool _sendCrashlyticsAnonymously = false;
   bool _sendAnalytics = false;
   bool _isLoaded = false;
