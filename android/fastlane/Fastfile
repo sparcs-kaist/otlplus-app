@@ -56,7 +56,8 @@ platform :android do
     end
     Supply.config[:package_name] = CredentialsManager::AppfileConfig.try_fetch_value(:package_name)
     Supply.config[:track] = Supply::Tracks::PRODUCTION
-    Supply.config[:json_key] = CredentialsManager::AppfileConfig.try_fetch_value(:json_key_file)
+    json_key_file = CredentialsManager::AppfileConfig.try_fetch_value(:json_key_file)
+    Supply.config[:json_key] = File.expand_path(json_key_file, File.expand_path("..", __dir__))
 
     client = Supply::Client.make_from_config
     client.begin_edit(package_name: Supply.config[:package_name])
