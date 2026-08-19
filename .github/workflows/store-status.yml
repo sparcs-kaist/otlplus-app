@@ -1,8 +1,6 @@
 name: Store Review Status
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"
   workflow_dispatch:
     inputs:
       platform:
@@ -45,7 +43,9 @@ jobs:
       - name: Read production status
         id: status
         working-directory: android
-        run: bundle exec fastlane review_status | tee status.txt
+        run: |
+          set -o pipefail
+          bundle exec fastlane review_status | tee status.txt
       - name: Extract review state
         if: always()
         id: state
@@ -94,7 +94,9 @@ jobs:
       - name: Read App Store status
         id: status
         working-directory: ios
-        run: bundle exec fastlane review_status | tee status.txt
+        run: |
+          set -o pipefail
+          bundle exec fastlane review_status | tee status.txt
       - name: Extract review state
         if: always()
         id: state

@@ -17,6 +17,7 @@ import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/liked_review_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/services/posthog_service.dart';
+import 'package:otlplus/services/sentry_consent_gate.dart';
 import 'package:otlplus/services/storage_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/widgets/telemetry_synchronizer.dart';
@@ -42,6 +43,7 @@ final telemetryCoordinator = TelemetryCoordinator(
   analytics: PostHogService(),
   crashReporting: const FirebaseCrashReportingClient(),
 );
+final sentryConsentGate = SentryConsentGate();
 const _isSmokeTest = bool.fromEnvironment('APP_SMOKE_TEST');
 
 void main() {
@@ -49,10 +51,10 @@ void main() {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
       if (!_isSmokeTest) {
-        await SentryFlutter.init((options) {
-          options.dsn =
-              'https://dffaeddd63d8b6419fa3a5ca525bc047@sentry.sparcs.org/2';
-        });
+        final crashReportingEnabled =
+            await SettingsModel.loadCrashReportingEnabled();
+        await sentryConsentGate.setEnabled(crashReportingEnabled);
+        await Sentry.init(sentryConsentGate.configure);
       }
       await EasyLocalization.ensureInitialized();
 
@@ -66,7 +68,7 @@ void main() {
 
       FlutterError.onError = (details) {
         unawaited(telemetryCoordinator.recordFlutterFatalError(details));
-        if (telemetryCoordinator.crashReportingEnabled) {
+        if (sentryConsentGate.isEnabled) {
           Sentry.captureException(details.exception, stackTrace: details.stack);
         }
       };
@@ -78,6 +80,9 @@ void main() {
             reason: 'platform_dispatcher_error',
           ),
         );
+        if (sentryConsentGate.isEnabled) {
+          Sentry.captureException(error, stackTrace: stackTrace);
+        }
         return true;
       };
 
@@ -160,7 +165,13 @@ void main() {
               ChangeNotifierProvider(create: (_) => HallOfFameModel()),
               ChangeNotifierProvider(create: (_) => CourseDetailModel()),
               ChangeNotifierProvider(create: (_) => LectureDetailModel()),
-              ChangeNotifierProvider(create: (_) => SettingsModel()),
+              ChangeNotifierProvider(
+                create: (_) => SettingsModel(
+                  onCrashReportingChanged: (enabled) {
+                    unawaited(sentryConsentGate.setEnabled(enabled));
+                  },
+                ),
+              ),
             ],
             child: TelemetrySynchronizer(
               telemetry: telemetryCoordinator,
@@ -178,7 +189,7 @@ void main() {
           reason: 'uncaught_zone_error',
         ),
       );
-      if (telemetryCoordinator.crashReportingEnabled) {
+      if (sentryConsentGate.isEnabled) {
         Sentry.captureException(error, stackTrace: stack);
       }
     },

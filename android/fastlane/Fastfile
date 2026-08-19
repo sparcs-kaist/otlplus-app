@@ -49,15 +49,22 @@ platform :android do
 
   desc "Report the current Google Play production release state"
   lane :review_status do
+    require "supply"
+
     Supply.config = Supply::Options.available_options.each_with_object({}) do |option, values|
       values[option.key] = option.default_value
     end
-    Supply.config[:package_name] = "org.sparcs.otlplus"
-    Supply.config[:track] = "production"
-    Supply.config[:json_key] = "fastlane/otlplus-fastlane.json"
+    Supply.config[:package_name] = CredentialsManager::AppfileConfig.try_fetch_value(:package_name)
+    Supply.config[:track] = Supply::Tracks::PRODUCTION
+    json_key_file = CredentialsManager::AppfileConfig.try_fetch_value(:json_key_file)
+    Supply.config[:json_key] = File.expand_path(json_key_file, File.expand_path("..", __dir__))
 
-    metadata = Supply::Reader.new.track_meta
-    release = metadata&.releases&.max_by { |item| item.version_codes&.max.to_i }
+    client = Supply::Client.make_from_config
+    client.begin_edit(package_name: Supply.config[:package_name])
+    releases = client.track_releases(Supply.config[:track])
+    client.abort_current_edit
+
+    release = releases.max_by { |item| item.version_codes&.max.to_i }
     state = release&.status || "unknown"
     version_codes = release&.version_codes&.join(",") || "none"
     puts "store=android"

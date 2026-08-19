@@ -161,11 +161,10 @@ platform :ios do
 
   desc "Report the current App Store review state"
   lane :review_status do
-    api_key = app_store_connect_api_key_from_env
-    UI.user_error!("App Store Connect API key is required") unless api_key
+    UI.user_error!("App Store Connect API key is required") unless app_store_connect_api_key_from_env
 
-    Spaceship::ConnectAPI.token = api_key
-    app = Spaceship::ConnectAPI::App.find(ENV.fetch("APP_IDENTIFIER", "org.sparcs.otlplus"))
+    app_identifier = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+    app = Spaceship::ConnectAPI::App.find(app_identifier)
     version = app.get_latest_app_store_version(platform: Spaceship::ConnectAPI::Platform::IOS)
     state = version&.app_version_state || "unknown"
     version_string = version&.version_string || "unknown"
