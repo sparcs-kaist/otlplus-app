@@ -1,8 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/pages/course_search_page.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -47,7 +46,7 @@ class _DictionaryPageState extends State<DictionaryPage> {
                     height: 24.0,
                     width: 24.0,
                     colorFilter: ColorFilter.mode(
-                      OTLColor.pinksMain,
+                      context.colors.highlightDefault,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -58,18 +57,18 @@ class _DictionaryPageState extends State<DictionaryPage> {
                 ],
               ),
             ),
-            color: OTLColor.grayF,
+            color: context.colors.backgroundSectionDefault,
           ),
         ),
       ),
       body: ColoredBox(
-        color: OTLColor.grayF,
+        color: context.colors.backgroundSectionDefault,
         child: Builder(
           builder: (context) {
             if (searchModel.isSearching) {
               return const Center(child: CircularProgressIndicator());
             } else if (searchModel.courses == null) {
-              return Center(child: _buildCopyRight());
+              return Center(child: _buildCopyRight(context));
             } else if (searchModel.courses!.isEmpty) {
               return Center(
                 child: Column(
@@ -77,7 +76,9 @@ class _DictionaryPageState extends State<DictionaryPage> {
                   children: [
                     Text(
                       "common.no_result".tr(),
-                      style: bodyRegular.copyWith(color: OTLColor.grayA),
+                      style: context.texts.normal.copyWith(
+                        color: context.colors.textDisable,
+                      ),
                     ),
                   ],
                 ),
@@ -109,10 +110,10 @@ class _DictionaryPageState extends State<DictionaryPage> {
   }
 }
 
-Widget _buildCopyRight() {
+Widget _buildCopyRight(BuildContext context) {
   return Text.rich(
     TextSpan(
-      style: labelRegular.copyWith(color: OTLColor.grayA),
+      style: context.texts.small.copyWith(color: context.colors.textDisable),
       children: [
         TextSpan(text: 'otlplus@sparcs.org'),
         TextSpan(text: '\n'),

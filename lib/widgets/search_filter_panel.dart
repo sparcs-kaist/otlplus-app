@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'package:easy_localization/easy_localization.dart' as _;
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/constants/color.dart'; // legacy: OTLColor.pinksSub only
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/filter.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/utils/get_text_height.dart';
@@ -25,7 +25,7 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: OTLColor.grayF,
+        color: context.colors.backgroundSectionDefault,
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: GestureDetector(
@@ -101,7 +101,7 @@ class _SelectorState extends State<Selector> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(widget.title, style: titleBold),
+                    Text(widget.title, style: context.texts.bigBold),
                     SizedBox(width: 8),
                     Visibility(
                       visible: widget.isMultiSelect,
@@ -124,7 +124,7 @@ class _SelectorState extends State<Selector> {
                                   ),
                                   TextSpan(text: "common.num_selected".tr()),
                                 ],
-                          style: bodyRegular,
+                          style: context.texts.normal,
                         ),
                       ),
                     ),
@@ -145,8 +145,8 @@ class _SelectorState extends State<Selector> {
                       });
                     },
                     text: "common.reset".tr(),
-                    textStyle: bodyRegular.copyWith(
-                      color: OTLColor.pinksMain,
+                    textStyle: context.texts.normal.copyWith(
+                      color: context.colors.highlightDefault,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -257,7 +257,10 @@ class _RadioSelectButtonState extends State<RadioSelectButton> {
       borderRadius: BorderRadius.circular(16.0),
       child: BackgroundButton(
         onTap: () => widget.setOption(!widget.option.selected),
-        color: widget.option.selected ? OTLColor.pinksSub : OTLColor.grayE,
+        color: widget.option.selected
+            ? OTLColor
+                  .pinksSub // legacy: no direct web token
+            : context.colors.lineDefault,
         child: SizedBox(
           height: 32.0,
           child: Padding(
@@ -267,15 +270,23 @@ class _RadioSelectButtonState extends State<RadioSelectButton> {
               children: [
                 Text(
                   widget.option.label.tr(),
-                  style: labelRegular.copyWith(
+                  style: context.texts.small.copyWith(
                     color: widget.option.selected
-                        ? OTLColor.gray0
-                        : OTLColor.grayA,
+                        ? context.colors.textDark
+                        : context.colors.textDisable,
                   ),
                 ),
                 widget.option.selected
-                    ? Icon(Icons.check, size: 16.0, color: OTLColor.gray0)
-                    : Icon(Icons.add, size: 16.0, color: OTLColor.grayA),
+                    ? Icon(
+                        Icons.check,
+                        size: 16.0,
+                        color: context.colors.textDark,
+                      )
+                    : Icon(
+                        Icons.add,
+                        size: 16.0,
+                        color: context.colors.textDisable,
+                      ),
               ],
             ),
           ),
@@ -303,7 +314,6 @@ class SilderSelection extends StatefulWidget {
 class _SilderSelectionState extends State<SilderSelection> {
   double _value = 0;
 
-  TextStyle labelTextStyle = TextStyle(fontSize: 12);
   @override
   void initState() {
     super.initState();
@@ -316,6 +326,7 @@ class _SilderSelectionState extends State<SilderSelection> {
 
   @override
   Widget build(BuildContext context) {
+    final labelTextStyle = TextStyle(fontSize: 12);
     final divisions = widget.selectList.length - 1;
     return Padding(
       padding: EdgeInsets.only(left: 2, right: 10),
@@ -349,8 +360,10 @@ class _SilderSelectionState extends State<SilderSelection> {
                     thumbShape: CustomSliderThumbShape(
                       outerThumbRadius: 10,
                       innerThumbRadius: 7,
-                      outerThumbColor: OTLColor.pinksSub,
-                      innerThumbColor: OTLColor.grayF,
+                      outerThumbColor:
+                          OTLColor.pinksSub, // legacy: no direct web token
+                      innerThumbColor: context.colors.backgroundSectionDefault,
+                      shadowColor: context.colors.textDark,
                     ),
                     trackHeight: 5.0,
                     trackShape: RoundRectangularSliderTrackShape(),
@@ -362,8 +375,9 @@ class _SilderSelectionState extends State<SilderSelection> {
                     min: 0.0,
                     max: divisions.toDouble(),
                     divisions: divisions,
-                    activeColor: OTLColor.pinksSub,
-                    inactiveColor: OTLColor.grayE,
+                    activeColor:
+                        OTLColor.pinksSub, // legacy: no direct web token
+                    inactiveColor: context.colors.lineDefault,
                     onChanged: (double value) {
                       setState(() {
                         _value = value;
@@ -519,8 +533,9 @@ class CustomSliderThumbShape extends SliderComponentShape {
   const CustomSliderThumbShape({
     this.outerThumbRadius = 10.0,
     this.innerThumbRadius = 10.0,
-    this.outerThumbColor = OTLColor.grayF,
-    this.innerThumbColor = OTLColor.grayF,
+    required this.outerThumbColor,
+    required this.innerThumbColor,
+    this.shadowColor = Colors.black,
     this.elevation = 0.0,
     this.pressedElevation = 0.0,
   });
@@ -528,6 +543,7 @@ class CustomSliderThumbShape extends SliderComponentShape {
   final double innerThumbRadius;
   final Color outerThumbColor;
   final Color innerThumbColor;
+  final Color shadowColor;
   final double elevation;
   final double pressedElevation;
 
@@ -575,7 +591,7 @@ class CustomSliderThumbShape extends SliderComponentShape {
     bool paintShadows = true;
 
     if (paintShadows) {
-      canvas.drawShadow(path, OTLColor.gray0, evaluatedElevation, true);
+      canvas.drawShadow(path, shadowColor, evaluatedElevation, true);
     }
 
     canvas

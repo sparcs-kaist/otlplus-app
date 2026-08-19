@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/widgets/lecture_group_block_row.dart';
 
@@ -21,7 +20,7 @@ class LectureGroupBlock extends StatelessWidget {
         padding: const EdgeInsets.only(top: 8.0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4.0),
-          color: OTLColor.grayE,
+          color: context.colors.lineDefault,
         ),
         child: Text("There is no lecture."),
       );
@@ -29,7 +28,7 @@ class LectureGroupBlock extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(8.0)),
-        color: OTLColor.grayE,
+        color: context.colors.lineDefault,
       ),
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
@@ -48,15 +47,17 @@ class LectureGroupBlock extends StatelessWidget {
                       isEn
                           ? lectures.first.commonTitleEn
                           : lectures.first.commonTitle,
-                      style: bodyBold,
+                      style: context.texts.normalBold,
                     ),
                     const SizedBox(width: 4),
-                    Text(lectures.first.oldCode, style: bodyRegular),
+                    Text(lectures.first.oldCode, style: context.texts.normal),
                   ],
                 ),
                 Text.rich(
                   TextSpan(
-                    style: labelRegular.copyWith(color: OTLColor.grayA),
+                    style: context.texts.small.copyWith(
+                      color: context.colors.textDisable,
+                    ),
                     children: <TextSpan>[
                       TextSpan(text: lectures.first.departmentCode),
                       const TextSpan(text: " / "),
@@ -75,7 +76,7 @@ class LectureGroupBlock extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 4.0),
             child: SizedBox(
               height: 1,
-              child: ColoredBox(color: OTLColor.grayA),
+              child: ColoredBox(color: context.colors.textDisable),
             ),
           ),
           ...lectures.map(
