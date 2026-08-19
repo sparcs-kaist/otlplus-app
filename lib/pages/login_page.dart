@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/providers/auth_model.dart';
 import 'package:otlplus/services/storage_service.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
@@ -171,16 +171,120 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final texts = context.texts;
+
     return OTLScaffold(
-      child: Stack(
-        children: [
-          if (_isWebViewInitialized && !_isDisposed)
-            WebViewWidget(key: _webViewKey, controller: _controller),
-          if (_isLoadingPage && !_isDisposed)
-            const Center(
-              child: CircularProgressIndicator(color: OTLColor.pinksMain),
+      backgroundColor: colors.backgroundPageDefault,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colors.gradientSunset[0],
+              colors.backgroundPageDefault,
+              colors.gradientPeach[1],
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.backgroundSectionTransparent,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: colors.lineDivider),
+                  ),
+                  child: Text(
+                    'OTL+',
+                    style: texts.smallBold.copyWith(
+                      color: colors.highlightDark,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'OTL login',
+                  style: texts.biggerBold.copyWith(color: colors.textDark),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Continue with the KAIST OTL account portal.',
+                  style: texts.normal.copyWith(color: colors.textLight),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: colors.backgroundSectionDefault,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: colors.lineDivider),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.highlightDark.withValues(alpha: 0.08),
+                          blurRadius: 32,
+                          offset: const Offset(0, 20),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Stack(
+                        children: [
+                          if (_isWebViewInitialized && !_isDisposed)
+                            Positioned.fill(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: colors.backgroundSectionDefault,
+                                ),
+                                child: WebViewWidget(
+                                  key: _webViewKey,
+                                  controller: _controller,
+                                ),
+                              ),
+                            ),
+                          if (_isLoadingPage && !_isDisposed)
+                            Positioned.fill(
+                              child: ColoredBox(
+                                color: colors.backgroundSectionTransparent,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircularProgressIndicator(
+                                        color: colors.highlightDefault,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Loading sign-in…',
+                                        style: texts.normalMedium.copyWith(
+                                          color: colors.textDefault,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }

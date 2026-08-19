@@ -1,3 +1,6 @@
+/// LEGACY token set. New code MUST use AppTextTheme via context.texts.
+/// See lib/theme/app_text_theme.dart and lib/theme/context_ext.dart.
+/// Kept for backwards compatibility with un-redesigned surfaces.
 import 'package:flutter/material.dart';
 
 const regularBase = TextStyle(

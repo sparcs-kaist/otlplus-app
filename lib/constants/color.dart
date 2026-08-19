@@ -1,3 +1,6 @@
+/// LEGACY token set. New code MUST use AppColorScheme via context.colors.
+/// See lib/theme/app_color_scheme.dart and lib/theme/context_ext.dart.
+/// Kept for backwards compatibility with un-redesigned surfaces.
 import 'package:flutter/material.dart';
 
 class OTLColor {
