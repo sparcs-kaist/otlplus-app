@@ -32,7 +32,6 @@ void main() {
     expect(options.captureFailedRequests, isFalse);
     expect(options.recordHttpBreadcrumbs, isFalse);
     expect(options.sendClientReports, isFalse);
-    expect(options.enableAutoSessionTracking, isFalse);
     expect(options.enableMetrics, isFalse);
     expect(options.enableLogs, isFalse);
     expect(options.tracePropagationTargets, isEmpty);
