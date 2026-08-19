@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:otlplus/models/custom_block.dart';
 import 'package:otlplus/pages/lecture_detail_page.dart';
 import 'package:otlplus/pages/lecture_search_page.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/providers/lecture_search_model.dart';
+import 'package:otlplus/widgets/custom_block_dialog.dart';
+import 'package:otlplus/widgets/custom_block_tile.dart';
 import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/widgets/lecture_search.dart';
 import 'package:otlplus/widgets/map_view.dart';
@@ -58,6 +61,9 @@ class _TimetablePageState extends State<TimetablePage> {
     final lectures = context.select<TimetableModel, List<Lecture>>(
       (model) => model.currentTimetable.lectures,
     );
+    final customBlocks = context.select<TimetableModel, List<CustomBlock>>(
+      (model) => model.currentTimetable.customBlocks,
+    );
     final mode = context.select<TimetableModel, int>(
       (model) => model.selectedMode,
     );
@@ -108,27 +114,56 @@ class _TimetablePageState extends State<TimetablePage> {
                           ),
                         ),
                         if (mode == 0)
-                          GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTap: () {
-                              OTLNavigator.push(
-                                context,
-                                LectureSearchPage(openKeyboard: false),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                12,
-                                18,
-                                16,
-                                18,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (context.read<TimetableModel>().selectedIndex != 0)
+                                GestureDetector(
+                                  behavior: HitTestBehavior.translucent,
+                                  onTap: () {
+                                    OTLNavigator.pushDialog(
+                                      context: context,
+                                      builder: (_) =>
+                                          const AddCustomBlockDialog(),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      8,
+                                      18,
+                                      4,
+                                      18,
+                                    ),
+                                    child: Icon(
+                                      Icons.add_box_outlined,
+                                      size: 24,
+                                      color: OTLColor.pinksMain,
+                                    ),
+                                  ),
+                                ),
+                              GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTap: () {
+                                  OTLNavigator.push(
+                                    context,
+                                    LectureSearchPage(openKeyboard: false),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    4,
+                                    18,
+                                    16,
+                                    18,
+                                  ),
+                                  child: Icon(
+                                    Icons.search,
+                                    size: 24,
+                                    color: OTLColor.pinksMain,
+                                  ),
+                                ),
                               ),
-                              child: Icon(
-                                Icons.search,
-                                size: 24,
-                                color: OTLColor.pinksMain,
-                              ),
-                            ),
+                            ],
                           )
                         else
                           const SizedBox(width: 16),
@@ -143,6 +178,7 @@ class _TimetablePageState extends State<TimetablePage> {
                           return _buildTimetableMode(
                             context,
                             lectures,
+                            customBlocks,
                             mode == 1,
                           );
                         default:
@@ -174,6 +210,7 @@ class _TimetablePageState extends State<TimetablePage> {
   Widget _buildTimetableMode(
     BuildContext context,
     List<Lecture> lectures,
+    List<CustomBlock> customBlocks,
     bool isExamTime,
   ) {
     return Column(
@@ -185,7 +222,7 @@ class _TimetablePageState extends State<TimetablePage> {
               child: Container(
                 color: OTLColor.grayF,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildTimetable(context, lectures, isExamTime),
+                child: _buildTimetable(context, lectures, customBlocks, isExamTime),
               ),
             ),
           ),
@@ -198,6 +235,7 @@ class _TimetablePageState extends State<TimetablePage> {
   Timetable _buildTimetable(
     BuildContext context,
     List<Lecture> lectures,
+    List<CustomBlock> customBlocks,
     bool isExamTime,
   ) {
     bool isFirst = true;
@@ -207,7 +245,22 @@ class _TimetablePageState extends State<TimetablePage> {
 
     return Timetable(
       lectures: (tempLecture == null) ? lectures : [...lectures, tempLecture],
+      customBlocks: isExamTime ? null : customBlocks,
       isExamTime: isExamTime,
+      customBlockBuilder: (block, blockHeight) {
+        return CustomBlockTile(
+          block: block,
+          height: blockHeight,
+          onLongPress: context.read<TimetableModel>().selectedIndex == 0
+              ? null
+              : () {
+                  OTLNavigator.pushDialog(
+                    context: context,
+                    builder: (_) => DeleteCustomBlockDialog(block: block),
+                  );
+                },
+        );
+      },
       builder: (lecture, classTimeIndex, blockHeight) {
         final isSelected = tempLecture == lecture;
         Key? key;

@@ -2,8 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/models/classtime.dart';
+import 'package:otlplus/models/custom_block.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/time.dart';
+import 'package:otlplus/widgets/custom_block_tile.dart';
 import 'package:otlplus/widgets/timetable_block.dart';
 
 const DAYSOFWEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -12,8 +14,10 @@ class Timetable extends StatelessWidget {
   double get _dividerHeight => dividerPadding.vertical + 1;
 
   final _lectures = List.generate(7, (i) => Map<Time, Lecture>());
+  final _customBlocks = List.generate(7, (i) => <CustomBlock>[]);
 
   final TimetableBlock Function(Lecture, int, double) builder;
+  final Widget Function(CustomBlock, double)? customBlockBuilder;
   final double fontSize;
   final EdgeInsetsGeometry dividerPadding;
   final int daysCount;
@@ -21,6 +25,8 @@ class Timetable extends StatelessWidget {
   Timetable({
     required List<Lecture> lectures,
     required this.builder,
+    this.customBlockBuilder,
+    List<CustomBlock>? customBlocks,
     bool isExamTime = false,
     this.fontSize = 10.0,
     this.dividerPadding = const EdgeInsets.fromLTRB(0, 6, 0, 7),
@@ -38,6 +44,14 @@ class Timetable extends StatelessWidget {
           (classtime) => _lectures[classtime.day][classtime] = lecture,
         ),
       );
+    }
+
+    if (customBlocks != null && !isExamTime) {
+      for (final block in customBlocks) {
+        if (block.day >= 0 && block.day < 7) {
+          _customBlocks[block.day].add(block);
+        }
+      }
     }
   }
 
@@ -144,6 +158,28 @@ class Timetable extends StatelessWidget {
     );
   }
 
+  Widget _buildCustomBlock({required CustomBlock block}) {
+    final begin = block.begin / 30 - 18;
+    final end = block.end / 30 - 18;
+    final top = _dividerHeight * (2 * begin + 0.5) + 1 - begin;
+    final bottom = _dividerHeight * (2 * end + 0.5) + 1 - end - 3;
+
+    return Positioned(
+      top: top,
+      left: 0,
+      right: 0,
+      height: bottom - top,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: dividerPadding.horizontal / 3,
+        ),
+        child: customBlockBuilder != null
+            ? customBlockBuilder!(block, bottom - top)
+            : CustomBlockTile(block: block, height: bottom - top),
+      ),
+    );
+  }
+
   Widget _buildColumn(int i) {
     return Expanded(
       child: Padding(
@@ -163,6 +199,9 @@ class Timetable extends StatelessWidget {
                 _buildCells(),
                 ..._lectures[i].entries.map(
                   (e) => _buildLectureBlock(lecture: e.value, time: e.key),
+                ),
+                ..._customBlocks[i].map(
+                  (block) => _buildCustomBlock(block: block),
                 ),
               ],
             ),

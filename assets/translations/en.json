@@ -80,7 +80,10 @@
       "ask_delete_lecture": "Do you want to delete lecture '{lecture}'?",
       "ask_delete_lecture_with_tab": "Do you want to delete lecture '{lecture}' from {timetable}?",
       "ask_delete_tab": "Do you really want to delete {timetable}?",
-      "disabled_delete_last_tab": "You can't delete the last timetable."
+      "disabled_delete_last_tab": "You can't delete the last timetable.",
+      "add_custom_block": "Add Custom Block",
+      "delete_custom_block": "Delete Custom Block",
+      "ask_delete_custom_block": "Do you want to delete '{block}'?"
     },
     "tab_menu": {
       "copy": "Copy Timetable",
@@ -109,6 +112,13 @@
       "fri": "Fri",
       "sat": "Sat",
       "sun": "Sun"
+    },
+    "custom_block": {
+      "block_name": "Block Name",
+      "place": "Place",
+      "day": "Day",
+      "start_time": "Start Time",
+      "end_time": "End Time"
     }
   },
   "dictionary": {
