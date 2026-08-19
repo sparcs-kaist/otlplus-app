@@ -23,7 +23,7 @@ on:
 env:
   FLUTTER_VERSION: "3.44.x"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "Xcode_16.4"
+  XCODE_VERSION: "Xcode_26.3"
 
 jobs:
   distribute-android:

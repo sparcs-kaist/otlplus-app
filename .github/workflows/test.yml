@@ -18,7 +18,7 @@ env:
   FLUTTER_VERSION: "3.44.x"
   JAVA_VERSION: "17"
   ANDROID_API_LEVEL: "34"
-  XCODE_VERSION: "Xcode_16.4"
+  XCODE_VERSION: "Xcode_26.3"
   IOS_DEVICE: "iPhone 16 Pro"
 
 jobs:
