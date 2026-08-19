@@ -18,7 +18,9 @@ openssl pkcs12 \
 
 openssl pkcs12 \
   -export \
-  -legacy \
   -in "$temporary_pem" \
   -out "$output_path" \
+  -keypbe PBE-SHA1-3DES \
+  -certpbe PBE-SHA1-3DES \
+  -macalg sha1 \
   -passout env:IOS_CERTIFICATES_PASSWORD
