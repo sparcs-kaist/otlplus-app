@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/classtime.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/time.dart';
@@ -46,7 +46,7 @@ class Timetable extends StatelessWidget {
     return Row(
       children: List.generate(
         daysCount + 1,
-        (i) => (i == 0) ? _buildHeaders() : _buildColumn(i - 1),
+        (i) => (i == 0) ? _buildHeaders() : _buildColumn(context, i - 1),
       ),
     );
   }
@@ -113,9 +113,12 @@ class Timetable extends StatelessWidget {
     );
   }
 
-  Widget _buildCell(int i) {
+  Widget _buildCell(BuildContext context, int i) {
     if (i % 100 == 0)
-      return Container(color: OTLColor.gray0.withValues(alpha: .25), height: 1);
+      return Container(
+        color: context.colors.textDark.withValues(alpha: .25),
+        height: 1,
+      );
     if (i % 50 == 0)
       return Row(
         children: List.generate(
@@ -124,7 +127,7 @@ class Timetable extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 1.0),
               child: Container(
-                color: OTLColor.gray0.withValues(alpha: .25),
+                color: context.colors.textDark.withValues(alpha: .25),
                 height: 1,
               ),
             ),
@@ -134,17 +137,19 @@ class Timetable extends StatelessWidget {
     return SizedBox();
   }
 
-  Widget _buildCells() {
+  Widget _buildCells(BuildContext context) {
     return Column(
       children: List.generate(
         ((2400 - 900) / 25 + 1).toInt(),
-        (i) =>
-            Padding(padding: dividerPadding, child: _buildCell(i * 25 + 900)),
+        (i) => Padding(
+          padding: dividerPadding,
+          child: _buildCell(context, i * 25 + 900),
+        ),
       ),
     );
   }
 
-  Widget _buildColumn(int i) {
+  Widget _buildColumn(BuildContext context, int i) {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.only(left: 3),
@@ -160,7 +165,7 @@ class Timetable extends StatelessWidget {
             ),
             Stack(
               children: <Widget>[
-                _buildCells(),
+                _buildCells(context),
                 ..._lectures[i].entries.map(
                   (e) => _buildLectureBlock(lecture: e.value, time: e.key),
                 ),

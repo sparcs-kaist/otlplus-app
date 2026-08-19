@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/extensions/semester.dart';
 import 'package:otlplus/pages/course_search_page.dart';
 import 'package:otlplus/pages/lecture_detail_page.dart';
@@ -17,7 +17,6 @@ import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/timetable.dart';
 import 'package:otlplus/models/user.dart';
@@ -159,7 +158,7 @@ class _MainPageState extends State<MainPage> {
             ),
             icon: 'assets/icons/person.svg',
             iconSize: 24,
-            color: OTLColor.pinksMain,
+            color: context.colors.highlightDefault,
             tapEffect: ButtonTapEffect.darken,
             padding: EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
           ),
@@ -171,7 +170,7 @@ class _MainPageState extends State<MainPage> {
             ),
             icon: 'assets/icons/gear.svg',
             iconSize: 24,
-            color: OTLColor.pinksMain,
+            color: context.colors.highlightDefault,
             tapEffect: ButtonTapEffect.darken,
             padding: EdgeInsets.fromLTRB(8.0, 16.0, 16.0, 16.0),
           ),
@@ -209,7 +208,7 @@ class _MainPageState extends State<MainPage> {
                             );
                           },
                           tapEffect: ButtonTapEffect.darken,
-                          color: OTLColor.grayF,
+                          color: context.colors.backgroundSectionDefault,
                           child: Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: 12.0,
@@ -223,7 +222,7 @@ class _MainPageState extends State<MainPage> {
                                   height: 24.0,
                                   width: 24.0,
                                   colorFilter: ColorFilter.mode(
-                                    OTLColor.pinksMain,
+                                    context.colors.highlightDefault,
                                     BlendMode.srcIn,
                                   ),
                                 ),
@@ -231,8 +230,8 @@ class _MainPageState extends State<MainPage> {
                                 Expanded(
                                   child: Text(
                                     "common.search_hint".tr(),
-                                    style: bodyRegular.copyWith(
-                                      color: OTLColor.grayA,
+                                    style: context.texts.normal.copyWith(
+                                      color: context.colors.textPlaceholder,
                                       height: 1.24,
                                     ),
                                   ),
@@ -251,7 +250,7 @@ class _MainPageState extends State<MainPage> {
                       top: Radius.circular(16.0),
                     ),
                     child: Container(
-                      color: OTLColor.grayF,
+                      color: context.colors.backgroundSectionDefault,
                       constraints: const BoxConstraints.expand(),
                       child: CustomScrollView(
                         reverse: true,
@@ -259,7 +258,7 @@ class _MainPageState extends State<MainPage> {
                           SliverFillRemaining(
                             hasScrollBody: false,
                             child: ColoredBox(
-                              color: OTLColor.grayF,
+                              color: context.colors.backgroundSectionDefault,
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16.0,
@@ -301,42 +300,6 @@ class _MainPageState extends State<MainPage> {
                           ),
                         ],
                       ),
-
-                      // SingleChildScrollView(
-                      //   child: ColoredBox(
-                      //     color: Colors.white,
-                      //     child: Padding(
-                      //       padding: const EdgeInsets.symmetric(
-                      //         horizontal: 16.0,
-                      //         vertical: 16.0,
-                      //       ),
-                      //       child: Column(
-                      //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      //         children: [
-                      //           Column(
-                      //             children: <Widget>[
-                      //               _buildTimetable(infoModel.user, semester, now),
-                      //               const SizedBox(height: 24.0),
-                      //               _buildDivider(),
-                      //               const SizedBox(height: 24.0),
-                      //               _buildSchedule(now, infoModel.currentSchedule),
-                      //               const SizedBox(height: 24.0),
-                      //               _buildDivider(),
-                      //             ],
-                      //           ),
-                      //           Column(
-                      //             children: <Widget>[
-                      //               _buildLogo(),
-                      //               const SizedBox(height: 4.0),
-                      //               _buildCopyRight(),
-                      //               _buildTextButtons(context),
-                      //             ],
-                      //           )
-                      //         ],
-                      //       ),
-                      //     ),
-                      //   ),
-                      // ),
                     ),
                   ),
                 ),
@@ -349,7 +312,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildDivider() {
-    return Divider(color: OTLColor.gray0.withValues(alpha: .25));
+    return Divider(color: context.colors.textDark.withValues(alpha: .25));
   }
 
   Widget _buildTextButtons(BuildContext context) {
@@ -365,7 +328,9 @@ class _MainPageState extends State<MainPage> {
             );
           },
           text: 'title.privacy'.tr(),
-          textStyle: labelRegular.copyWith(color: OTLColor.gray75),
+          textStyle: context.texts.small.copyWith(
+            color: context.colors.textLighter,
+          ),
           padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
           tapEffect: ButtonTapEffect.lighten,
         ),
@@ -378,7 +343,9 @@ class _MainPageState extends State<MainPage> {
             );
           },
           text: 'title.credit'.tr(),
-          textStyle: labelRegular.copyWith(color: OTLColor.gray75),
+          textStyle: context.texts.small.copyWith(
+            color: context.colors.textLighter,
+          ),
           padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
           tapEffect: ButtonTapEffect.lighten,
         ),
@@ -393,7 +360,7 @@ class _MainPageState extends State<MainPage> {
   Widget _buildCopyRight() {
     return Text.rich(
       TextSpan(
-        style: labelRegular.copyWith(color: OTLColor.gray75),
+        style: context.texts.small.copyWith(color: context.colors.textLighter),
         children: [
           TextSpan(text: 'otlplus@sparcs.org'),
           TextSpan(text: '\n'),
@@ -423,18 +390,18 @@ class _MainPageState extends State<MainPage> {
                     currentSchedule["time"].difference(now) as Duration,
                   ),
                 ),
-          style: titleRegular,
+          style: context.texts.big,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4.0),
         (currentSchedule == null)
-            ? Text('-', style: bodyBold)
+            ? Text('-', style: context.texts.normalBold)
             : Wrap(
                 alignment: WrapAlignment.center,
                 children: [
                   Text(
                     '${(currentSchedule["semester"] as Semester).title} ${(currentSchedule["name"] as String).tr()}',
-                    style: bodyBold,
+                    style: context.texts.normalBold,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(width: 4),
@@ -442,7 +409,7 @@ class _MainPageState extends State<MainPage> {
                     DateFormat(
                       "yyyy.MM.dd",
                     ).format(currentSchedule["time"].toLocal()),
-                    style: bodyRegular,
+                    style: context.texts.normal,
                     textAlign: TextAlign.center,
                   ),
                 ],

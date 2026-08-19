@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/classtime.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/time.dart';
@@ -39,7 +39,7 @@ class TodayTimetable extends StatelessWidget {
         Scrollable.ensureVisible(_timebarKey.currentContext!);
     });
 
-    return Column(children: <Widget>[_buildHeaders(), _buildRow()]);
+    return Column(children: <Widget>[_buildHeaders(), _buildRow(context)]);
   }
 
   Widget _buildHeader(int i) {
@@ -102,9 +102,12 @@ class TodayTimetable extends StatelessWidget {
     );
   }
 
-  Widget _buildCell(int i) {
+  Widget _buildCell(BuildContext context, int i) {
     if (i % 100 == 0)
-      return Container(color: OTLColor.gray0.withValues(alpha: .25), width: 1);
+      return Container(
+        color: context.colors.textDark.withValues(alpha: .25),
+        width: 1,
+      );
     if (i % 50 == 0)
       return Column(
         children: List.generate(
@@ -113,7 +116,7 @@ class TodayTimetable extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 1.0),
               child: Container(
-                color: OTLColor.gray0.withValues(alpha: .25),
+                color: context.colors.textDark.withValues(alpha: .25),
                 width: 1,
               ),
             ),
@@ -123,21 +126,23 @@ class TodayTimetable extends StatelessWidget {
     return SizedBox(width: 2);
   }
 
-  Widget _buildCells() {
+  Widget _buildCells(BuildContext context) {
     return Row(
       children: List.generate(
         ((2400 - 800) / 25 + 1).toInt(),
-        (i) =>
-            Padding(padding: dividerPadding, child: _buildCell(i * 25 + 800)),
+        (i) => Padding(
+          padding: dividerPadding,
+          child: _buildCell(context, i * 25 + 800),
+        ),
       ),
     );
   }
 
-  Widget _buildRow() {
+  Widget _buildRow(BuildContext context) {
     return Expanded(
       child: Stack(
         children: <Widget>[
-          _buildCells(),
+          _buildCells(context),
           ..._lectures.entries.map(
             (e) => _buildLectureBlock(lecture: e.value, time: e.key),
           ),
@@ -149,7 +154,10 @@ class TodayTimetable extends StatelessWidget {
                 1,
             bottom: 0,
             width: 1,
-            child: Container(key: _timebarKey, color: OTLColor.pinksMain),
+            child: Container(
+              key: _timebarKey,
+              color: context.colors.highlightDefault,
+            ),
           ),
         ],
       ),

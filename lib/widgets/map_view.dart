@@ -1,8 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/classtime.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/utils/get_text_height.dart';
@@ -33,6 +32,44 @@ const POSITION_OF_LOCATIONS = {
   'W8': {'left': 0.308, 'top': 0.592},
   'W16': {'left': 0.394, 'top': 0.859},
 };
+
+Color _blockColor(BuildContext context, int i) {
+  final c = context.colors;
+  switch (i % 16) {
+    case 0:
+      return c.tileTimetableRed1;
+    case 1:
+      return c.tileTimetableRed2;
+    case 2:
+      return c.tileTimetableOrange1;
+    case 3:
+      return c.tileTimetableOrange2;
+    case 4:
+      return c.tileTimetableYellow1;
+    case 5:
+      return c.tileTimetableYellow2;
+    case 6:
+      return c.tileTimetableGreen1;
+    case 7:
+      return c.tileTimetableGreen2;
+    case 8:
+      return c.tileTimetableGreen3;
+    case 9:
+      return c.tileTimetableBlue1;
+    case 10:
+      return c.tileTimetableBlue2;
+    case 11:
+      return c.tileTimetablePurple1;
+    case 12:
+      return c.tileTimetablePurple2;
+    case 13:
+      return c.tileTimetablePurple2;
+    case 14:
+      return c.tileTimetablePink1;
+    default:
+      return c.tileTimetablePink2;
+  }
+}
 
 class MapView extends StatefulWidget {
   final Map<String, List<Map<Lecture, Classtime>>> _lectures = {};
@@ -103,7 +140,7 @@ class _MapViewState extends State<MapView> {
             widget: Container(
               height: _height + 12,
               padding: EdgeInsets.fromLTRB(50, 0, 50, 12),
-              color: OTLColor.grayF,
+              color: context.colors.backgroundSectionDefault,
               child: Stack(
                 clipBehavior: Clip.none,
                 alignment: Alignment.bottomLeft,
@@ -130,7 +167,7 @@ class _MapViewState extends State<MapView> {
   Widget _buildMapPin(BuildContext context, String buildingCode) {
     List<BoxShadow> boxShadow = [
       BoxShadow(
-        color: OTLColor.gray0.withValues(alpha: .25),
+        color: context.colors.textDark.withValues(alpha: .25),
         blurRadius: 4,
         offset: Offset(0, 4),
       ),
@@ -147,7 +184,7 @@ class _MapViewState extends State<MapView> {
             height: 23,
             padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 6),
             decoration: BoxDecoration(
-              color: OTLColor.grayF,
+              color: context.colors.backgroundSectionDefault,
               borderRadius: BorderRadius.circular(1),
               boxShadow: boxShadow,
             ),
@@ -157,7 +194,7 @@ class _MapViewState extends State<MapView> {
                 if (buildingCode != '기타')
                   Padding(
                     padding: const EdgeInsets.only(right: 4),
-                    child: Text(buildingCode, style: labelBold),
+                    child: Text(buildingCode, style: context.texts.smallBold),
                   ),
                 ...List.generate(
                   widget.lectures[buildingCode]!.length,
@@ -168,12 +205,10 @@ class _MapViewState extends State<MapView> {
                       height: 11,
                       decoration: BoxDecoration(
                         color: _darken(
-                          OTLColor.blockColors[widget
-                                  .lectures[buildingCode]![i]
-                                  .keys
-                                  .first
-                                  .course %
-                              16],
+                          _blockColor(
+                            context,
+                            widget.lectures[buildingCode]![i].keys.first.course,
+                          ),
                         ),
                         shape: BoxShape.circle,
                       ),
@@ -210,7 +245,7 @@ class _MapViewState extends State<MapView> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Container(
         decoration: BoxDecoration(
-          color: OTLColor.grayE,
+          color: context.colors.lineDefault,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Material(
@@ -228,11 +263,14 @@ class _MapViewState extends State<MapView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_codeToName(buildingCode), style: bodyBold),
+                  Text(
+                    _codeToName(buildingCode),
+                    style: context.texts.normalBold,
+                  ),
                   Divider(
                     height: 15,
                     thickness: 1,
-                    color: OTLColor.gray0.withValues(alpha: .25),
+                    color: context.colors.textDark.withValues(alpha: .25),
                   ),
                   const SizedBox(height: 1),
                   ...List.generate(
@@ -267,7 +305,7 @@ class _MapViewState extends State<MapView> {
             width: 11,
             height: 11,
             decoration: BoxDecoration(
-              color: _darken(OTLColor.blockColors[lecture.course % 16]),
+              color: _darken(_blockColor(context, lecture.course)),
               shape: BoxShape.circle,
             ),
           ),
@@ -278,7 +316,7 @@ class _MapViewState extends State<MapView> {
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: Text(
               _isKo ? lecture.title : lecture.titleEn,
-              style: bodyRegular,
+              style: context.texts.normal,
             ),
           ),
         ),
@@ -296,10 +334,10 @@ class _MapViewState extends State<MapView> {
                     (getTextSize(
                           context,
                           text: location,
-                          style: labelRegular,
+                          style: context.texts.small,
                           maxWidth: 143,
                         ).height ~/
-                        singleHeight(context, labelRegular)) >
+                        singleHeight(context, context.texts.small)) >
                     1;
 
                 return Container(
@@ -307,10 +345,10 @@ class _MapViewState extends State<MapView> {
                   padding: const EdgeInsets.fromLTRB(6, 2, 6, 4),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: OTLColor.blockColors[lecture.course % 16],
+                    color: _blockColor(context, lecture.course),
                     borderRadius: BorderRadius.circular(isMultiLine ? 13 : 100),
                   ),
-                  child: Text(location, style: labelRegular),
+                  child: Text(location, style: context.texts.small),
                 );
               },
             ),

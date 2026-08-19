@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/theme/context_ext.dart';
 
 class TimetableModeControl extends StatefulWidget {
   const TimetableModeControl({
@@ -29,7 +29,7 @@ class _TimetableModeControlState extends State<TimetableModeControl> {
       height: 40,
       padding: const EdgeInsets.fromLTRB(4, 4, 16, 4),
       decoration: BoxDecoration(
-        color: OTLColor.grayF,
+        color: context.colors.backgroundSectionDefault,
         borderRadius: BorderRadius.horizontal(left: Radius.circular(20)),
       ),
       child: Stack(
@@ -42,7 +42,7 @@ class _TimetableModeControlState extends State<TimetableModeControl> {
               width: 48,
               height: 32,
               decoration: BoxDecoration(
-                color: OTLColor.pinksMain,
+                color: context.colors.highlightDefault,
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
@@ -61,8 +61,8 @@ class _TimetableModeControlState extends State<TimetableModeControl> {
                   child: Icon(
                     _iconList[index],
                     color: (index == widget.dropdownIndex)
-                        ? OTLColor.grayF
-                        : OTLColor.pinksMain,
+                        ? context.colors.textBright
+                        : context.colors.highlightDefault,
                   ),
                 ),
               );
