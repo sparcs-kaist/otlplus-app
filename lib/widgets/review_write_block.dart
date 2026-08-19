@@ -2,8 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/lecture.dart';
@@ -58,7 +57,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
       margin: const EdgeInsets.only(bottom: 8.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4.0),
-        color: OTLColor.grayE,
+        color: context.colors.lineDefault,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
@@ -70,13 +69,13 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
                 padding: const EdgeInsets.only(bottom: 4.0),
                 child: Text.rich(
                   TextSpan(
-                    style: bodyRegular,
+                    style: context.texts.normal,
                     children: <TextSpan>[
                       TextSpan(
                         text: isEn
                             ? widget.lecture.titleEn
                             : widget.lecture.title,
-                        style: bodyBold,
+                        style: context.texts.normalBold,
                       ),
                       const TextSpan(text: " "),
                       TextSpan(
@@ -109,7 +108,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
             Padding(
               padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
               child: DottedBorder(
-                color: OTLColor.grayA,
+                color: context.colors.textDisable,
                 child: SizedBox(
                   height: 140,
                   child: Padding(
@@ -120,13 +119,15 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
                     child: TextField(
                       controller: _contentTextController,
                       maxLines: null,
-                      style: bodyRegular,
+                      style: context.texts.normal,
                       onChanged: (value) {
                         setState(() {});
                       },
                       decoration: InputDecoration(
                         hintText: "common.review_hint".tr(),
-                        hintStyle: bodyRegular.copyWith(color: OTLColor.grayA),
+                        hintStyle: context.texts.normal.copyWith(
+                          color: context.colors.textPlaceholder,
+                        ),
                       ),
                     ),
                   ),
@@ -140,12 +141,14 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
               alignment: Alignment.bottomRight,
               child: IconTextButton(
                 padding: EdgeInsets.zero,
-                color: _canUpload() ? OTLColor.pinksMain : OTLColor.grayA,
+                color: _canUpload()
+                    ? context.colors.highlightDefault
+                    : context.colors.textDisable,
                 text: (widget.existingReview == null)
                     ? "common.upload".tr()
                     : "common.edit".tr(),
                 onTap: _canUpload() ? _uploadReview : null,
-                textStyle: labelRegular,
+                textStyle: context.texts.small,
               ),
             ),
           ],
@@ -242,7 +245,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         children: <Widget>[
-          Text(title, style: bodyRegular),
+          Text(title, style: context.texts.normal),
           const SizedBox(width: 4.0),
           _buildOption(type, 5),
           _buildOption(type, 4),
@@ -259,7 +262,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
       padding: const EdgeInsets.only(left: 4.0),
       child: ClipOval(
         child: BackgroundButton(
-          color: (_scores[type] == score) ? OTLColor.gray75 : OTLColor.grayD,
+          color: (_scores[type] == score)
+              ? context.colors.textLighter
+              : context.colors.lineBlock,
           onTap: () {
             setState(() {
               _scores[type] = (_scores[type] == score) ? 0 : score;
@@ -271,10 +276,8 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
             child: Center(
               child: Text(
                 ["?", "F", "D", "C", "B", "A"][score],
-                style: labelBold.copyWith(
-                  color: _scores[type] == score
-                      ? OTLColor.grayF
-                      : OTLColor.grayF,
+                style: context.texts.smallBold.copyWith(
+                  color: context.colors.textBright,
                 ),
               ),
             ),

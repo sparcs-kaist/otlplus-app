@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/info_model.dart';
@@ -41,7 +40,7 @@ class _HallOfFameControlState extends State<HallOfFameControl> {
         height: 34,
         padding: EdgeInsets.fromLTRB(16, 0, 8, 0),
         decoration: BoxDecoration(
-          color: OTLColor.grayF,
+          color: context.colors.backgroundSectionDefault,
           borderRadius: BorderRadius.circular(100),
         ),
         child: Row(
@@ -50,12 +49,14 @@ class _HallOfFameControlState extends State<HallOfFameControl> {
               _currentSemester == null
                   ? "common.all".tr()
                   : "${_currentSemester?.year} ${_currentSemester?.semester == 1 ? 'semester.spring'.tr() : 'semester.fall'.tr()}",
-              style: bodyBold.copyWith(color: OTLColor.pinksMain),
+              style: context.texts.normalBold.copyWith(
+                color: context.colors.highlightDefault,
+              ),
             ),
             const SizedBox(width: 2.0),
             Icon(
               _isOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-              color: OTLColor.pinksMain,
+              color: context.colors.highlightDefault,
             ),
           ],
         ),
