@@ -15,6 +15,76 @@
 
 default_platform(:ios)
 
+module AppStoreContentFrequency
+  NONE = "NONE".freeze
+end
+
+APP_STORE_AGE_RATING_ATTRIBUTES = {
+  "advertising" => false,
+  "ageAssurance" => false,
+  "gunsOrOtherWeapons" => AppStoreContentFrequency::NONE,
+  "healthOrWellnessTopics" => false,
+  "lootBox" => false,
+  "messagingAndChat" => true,
+  "parentalControls" => false,
+  "socialMedia" => true,
+  "socialMediaAgeRestricted" => false,
+  "userGeneratedContent" => true,
+}.freeze
+
+APP_STORE_DEFAULT_METADATA_LOCALE = "en-US".freeze
+APP_STORE_METADATA_LOCALE_DIRECTORIES = {
+  "en-US" => "en-US",
+  "ko" => "ko",
+  "ko-KR" => "ko",
+}.freeze
+APP_STORE_METADATA_DIRECTORY = File.expand_path("metadata", __dir__).freeze
+
+def app_store_release_notes(locale:)
+  metadata_locale = APP_STORE_METADATA_LOCALE_DIRECTORIES.fetch(
+    locale,
+    APP_STORE_DEFAULT_METADATA_LOCALE,
+  )
+  release_notes_path = File.join(
+    APP_STORE_METADATA_DIRECTORY,
+    metadata_locale,
+    "release_notes.txt",
+  )
+  UI.user_error!("Missing App Store release notes for locale #{locale}") unless File.exist?(release_notes_path)
+
+  release_notes = File.read(release_notes_path).strip
+  UI.user_error!("App Store release notes are empty for locale #{locale}") if release_notes.empty?
+
+  release_notes
+end
+
+def update_app_store_review_metadata
+  app_identifier = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+  app = Spaceship::ConnectAPI::App.find(app_identifier)
+  UI.user_error!("Could not find App Store Connect app #{app_identifier}") unless app
+
+  app_info = app.fetch_edit_app_info || app.fetch_latest_app_info
+  UI.user_error!("Could not find editable App Store app information") unless app_info
+
+  age_rating_declaration = app_info.fetch_age_rating_declaration
+  UI.user_error!("Could not find App Store age rating declaration") unless age_rating_declaration
+  age_rating_declaration.update(attributes: APP_STORE_AGE_RATING_ATTRIBUTES)
+
+  version = app.get_edit_app_store_version(platform: Spaceship::ConnectAPI::Platform::IOS)
+  UI.user_error!("Could not find editable iOS App Store version") unless version
+
+  localizations = version.get_app_store_version_localizations
+  UI.user_error!("Could not find iOS App Store version localizations") if localizations.empty?
+
+  localizations.each do |localization|
+    localization.update(
+      attributes: {
+        whats_new: app_store_release_notes(locale: localization.locale),
+      },
+    )
+  end
+end
+
 def apply_release_profile(target:, profile_path:, team_id:)
   unless File.exist?(profile_path)
     UI.user_error!("Missing provisioning profile for #{target}: #{profile_path}")
@@ -143,9 +213,10 @@ platform :ios do
 
   desc "Submit a signed build to App Store review"
   lane :submit_review do
-    build_release_ipa
     api_key = app_store_connect_api_key_from_env
     UI.user_error!("App Store Connect API key is required for review submission") unless api_key
+    update_app_store_review_metadata
+    build_release_ipa
 
     deliver(
       api_key: api_key,
