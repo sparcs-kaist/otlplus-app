@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_browser/flutter_web_browser.dart';
-import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/extensions/semester.dart';
 import 'package:otlplus/models/review.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
@@ -11,13 +10,13 @@ import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/extensions/lecture.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/lecture_detail_model.dart';
 import 'package:otlplus/providers/timetable_model.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/widgets/custom_header_delegate.dart';
 import 'package:otlplus/widgets/review_block.dart';
 import 'package:otlplus/widgets/review_write_block.dart';
@@ -60,7 +59,7 @@ class LectureDetailPage extends StatelessWidget {
                     ? lectureDetailModel.lecture.titleEn
                     : lectureDetailModel.lecture.title)
               : '',
-          style: titleBold,
+          style: context.texts.bigBold,
         ),
         body: Card(
           shape: const RoundedRectangleBorder(),
@@ -208,7 +207,9 @@ class LectureDetailPage extends StatelessWidget {
               }
             },
             text: "dictionary.dictionary".tr(),
-            textStyle: bodyRegular.copyWith(color: OTLColor.pinksMain),
+            textStyle: context.texts.normal.copyWith(
+              color: context.colors.highlightDefault,
+            ),
           ),
         ),
         IconTextButton(
@@ -217,7 +218,7 @@ class LectureDetailPage extends StatelessWidget {
             customTabsOptions: CustomTabsOptions(
               colorScheme: CustomTabsColorScheme.light,
               defaultColorSchemeParams: CustomTabsColorSchemeParams(
-                toolbarColor: OTLColor.pinksLight,
+                toolbarColor: context.colors.backgroundPageDefault,
               ),
               shareState: CustomTabsShareState.on,
               instantAppsEnabled: true,
@@ -231,7 +232,9 @@ class LectureDetailPage extends StatelessWidget {
             ),
           ),
           text: "dictionary.syllabus".tr(),
-          textStyle: bodyRegular.copyWith(color: OTLColor.pinksMain),
+          textStyle: context.texts.normal.copyWith(
+            color: context.colors.highlightDefault,
+          ),
         ),
       ],
     );
@@ -244,17 +247,17 @@ class LectureDetailPage extends StatelessWidget {
         SliverList(
           delegate: SliverChildListDelegate([
             _buildAttributes(context, lecture),
-            _buildScores(lecture),
+            _buildScores(context, lecture),
             const SizedBox(height: 16.0),
           ]),
         ),
-        _buildReviewHeader(),
+        _buildReviewHeader(context),
         _buildReviews(context, lecture),
       ],
     );
   }
 
-  SliverPersistentHeader _buildReviewHeader() {
+  SliverPersistentHeader _buildReviewHeader(BuildContext context) {
     final headerKey = GlobalKey();
     return SliverPersistentHeader(
       pinned: true,
@@ -282,7 +285,7 @@ class LectureDetailPage extends StatelessWidget {
           },
           key: headerKey,
           text: "dictionary.reviews".tr(),
-          textStyle: bodyBold,
+          textStyle: context.texts.normalBold,
           icon: (shrinkOffset > 0)
               ? Icons.keyboard_arrow_up
               : Icons.keyboard_arrow_down,
@@ -320,7 +323,9 @@ class LectureDetailPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Text(
                     "common.no_result".tr(),
-                    style: labelRegular.copyWith(color: OTLColor.grayA),
+                    style: context.texts.small.copyWith(
+                      color: context.colors.textDisable,
+                    ),
                   ),
                 ),
               ),
@@ -335,7 +340,7 @@ class LectureDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildScores(Lecture lecture) {
+  Widget _buildScores(BuildContext context, Lecture lecture) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Table(
@@ -343,16 +348,19 @@ class LectureDetailPage extends StatelessWidget {
           TableRow(
             children: <Widget>[
               _buildStatus(
+                context,
                 "dictionary.language".tr(),
                 lecture.isEnglish ? "Eng" : "한",
               ),
               _buildStatus(
+                context,
                 (lecture.credit > 0) ? "dictionary.credit".tr() : "AU",
                 (lecture.credit > 0)
                     ? lecture.credit.toString()
                     : lecture.creditAu.toString(),
               ),
               _buildStatus(
+                context,
                 "dictionary.competition".tr(),
                 (lecture.limit == 0)
                     ? "0.0:1"
@@ -362,9 +370,9 @@ class LectureDetailPage extends StatelessWidget {
           ),
           TableRow(
             children: <Widget>[
-              _buildStatus("review.grade".tr(), lecture.gradeLetter),
-              _buildStatus("review.load".tr(), lecture.loadLetter),
-              _buildStatus("review.speech".tr(), lecture.speechLetter),
+              _buildStatus(context, "review.grade".tr(), lecture.gradeLetter),
+              _buildStatus(context, "review.load".tr(), lecture.loadLetter),
+              _buildStatus(context, "review.speech".tr(), lecture.speechLetter),
             ],
           ),
         ],
@@ -372,15 +380,15 @@ class LectureDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAttribute(String title, String content) {
+  Widget _buildAttribute(BuildContext context, String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: bodyBold),
+          Text(title, style: context.texts.normalBold),
           const SizedBox(width: 4.0),
-          Expanded(child: Text(content, style: bodyRegular)),
+          Expanded(child: Text(content, style: context.texts.normal)),
         ],
       ),
     );
@@ -391,20 +399,24 @@ class LectureDetailPage extends StatelessWidget {
 
     return Column(
       children: [
-        _buildAttribute("dictionary.code".tr(), lecture.oldCode),
+        _buildAttribute(context, "dictionary.code".tr(), lecture.oldCode),
         _buildAttribute(
+          context,
           "dictionary.type".tr(),
           isEn ? lecture.typeEn : lecture.type,
         ),
         _buildAttribute(
+          context,
           "dictionary.department".tr(),
           isEn ? lecture.departmentNameEn : lecture.departmentName,
         ),
         _buildAttribute(
+          context,
           "dictionary.professors".tr(),
           isEn ? lecture.professorsStrShortEn : lecture.professorsStrShort,
         ),
         _buildAttribute(
+          context,
           "dictionary.classroom".tr(),
           lecture.classtimes
               .map(
@@ -414,8 +426,13 @@ class LectureDetailPage extends StatelessWidget {
               .toSet()
               .join(", "),
         ),
-        _buildAttribute("dictionary.limit".tr(), lecture.limit.toString()),
         _buildAttribute(
+          context,
+          "dictionary.limit".tr(),
+          lecture.limit.toString(),
+        ),
+        _buildAttribute(
+          context,
           "dictionary.exam".tr(),
           (lecture.examtimes.length == 0)
               ? "common.no_info".tr()
@@ -428,13 +445,13 @@ class LectureDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatus(String title, String content) {
+  Widget _buildStatus(BuildContext context, String title, String content) {
     return Padding(
       padding: const EdgeInsets.all(4.0),
       child: Column(
         children: <Widget>[
-          Text(content, style: titleRegular),
-          Text(title, style: labelRegular),
+          Text(content, style: context.texts.big),
+          Text(title, style: context.texts.small),
         ],
       ),
     );

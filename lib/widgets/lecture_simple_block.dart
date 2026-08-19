@@ -1,9 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
+import 'package:otlplus/theme/context_ext.dart';
 
 class LectureSimpleBlock extends StatelessWidget {
   final Lecture lecture;
@@ -24,7 +23,7 @@ class LectureSimpleBlock extends StatelessWidget {
       margin: const EdgeInsets.all(3.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4.0),
-        color: OTLColor.grayE,
+        color: context.colors.lineDefault,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4.0),
@@ -38,15 +37,15 @@ class LectureSimpleBlock extends StatelessWidget {
             child: Center(
               child: Text.rich(
                 TextSpan(
-                  style: bodyRegular.copyWith(
+                  style: context.texts.normal.copyWith(
                     color: hasReview
-                        ? OTLColor.gray0.withValues(alpha: .4)
-                        : OTLColor.gray0,
+                        ? context.colors.textDark.withValues(alpha: .4)
+                        : context.colors.textDark,
                   ),
                   children: <TextSpan>[
                     TextSpan(
                       text: isEn ? lecture.titleEn : lecture.title,
-                      style: bodyBold,
+                      style: context.texts.normalBold,
                     ),
                     const TextSpan(text: "\n"),
                     TextSpan(text: lecture.oldCode),

@@ -1,11 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/models/review.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/extensions/course.dart';
 import 'package:otlplus/extensions/lecture.dart';
 import 'package:otlplus/models/course.dart';
@@ -13,6 +12,7 @@ import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/professor.dart';
 import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/theme/context_ext.dart';
 import 'package:otlplus/widgets/custom_header_delegate.dart';
 import 'package:otlplus/widgets/lecture_group_simple_block.dart';
 import 'package:otlplus/widgets/review_block.dart';
@@ -38,7 +38,7 @@ class CourseDetailPage extends StatelessWidget {
                     ? courseDetailModel.course.titleEn
                     : courseDetailModel.course.title)
               : '',
-          style: titleBold,
+          style: context.texts.bigBold,
         ),
         body: Card(
           shape: const RoundedRectangleBorder(
@@ -89,27 +89,30 @@ class CourseDetailPage extends StatelessWidget {
           delegate: SliverChildListDelegate([
             _buildAttribute(context, course),
             _buildScores(context, course),
-            _buildDivider(),
+            _buildDivider(context),
             _buildProfessors(context, course),
-            _buildDivider(),
+            _buildDivider(context),
             const SizedBox(height: 8.0),
-            Text("dictionary.course_history".tr(), style: bodyBold),
+            Text(
+              "dictionary.course_history".tr(),
+              style: context.texts.normalBold,
+            ),
             _buildHistory(context),
-            _buildDivider(),
+            _buildDivider(context),
             const SizedBox(height: 8.0),
           ]),
         ),
-        _buildReviewHeader(),
+        _buildReviewHeader(context),
         _buildReviews(context, course),
       ],
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(color: OTLColor.gray0.withValues(alpha: .25));
+  Widget _buildDivider(BuildContext context) {
+    return Divider(color: context.colors.textDark.withValues(alpha: .25));
   }
 
-  SliverPersistentHeader _buildReviewHeader() {
+  SliverPersistentHeader _buildReviewHeader(BuildContext context) {
     final headerKey = GlobalKey();
     return SliverPersistentHeader(
       pinned: true,
@@ -137,7 +140,7 @@ class CourseDetailPage extends StatelessWidget {
           },
           key: headerKey,
           text: "dictionary.reviews".tr(),
-          textStyle: bodyBold,
+          textStyle: context.texts.normalBold,
           icon: (shrinkOffset > 0)
               ? Icons.keyboard_arrow_up
               : Icons.keyboard_arrow_down,
@@ -154,15 +157,15 @@ class CourseDetailPage extends StatelessWidget {
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
 
     return ChoiceChip(
-      selectedColor: OTLColor.pinksSub,
-      backgroundColor: OTLColor.grayE,
+      selectedColor: OTLColor.pinksSub, // legacy: pinksSub
+      backgroundColor: context.colors.lineDefault,
       label: Text(
         professor == null
             ? "common.all".tr()
             : (isEn
                   ? (professor.nameEn == '' ? professor.name : professor.nameEn)
                   : professor.name),
-        style: labelRegular,
+        style: context.texts.small,
       ),
       selected: (professor == null
           ? selectedFilter == "ALL"
@@ -182,7 +185,7 @@ class CourseDetailPage extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        Text("dictionary.professors".tr(), style: bodyBold),
+        Text("dictionary.professors".tr(), style: context.texts.normalBold),
         const SizedBox(width: 8.0),
         Expanded(
           child: SingleChildScrollView(
@@ -227,14 +230,17 @@ class CourseDetailPage extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         _buildStatus(
+          context,
           "review.grade".tr(),
           (lecture == null) ? course.gradeLetter : lecture.gradeLetter,
         ),
         _buildStatus(
+          context,
           "review.load".tr(),
           (lecture == null) ? course.loadLetter : lecture.loadLetter,
         ),
         _buildStatus(
+          context,
           "review.speech".tr(),
           (lecture == null) ? course.speechLetter : lecture.speechLetter,
         ),
@@ -250,21 +256,21 @@ class CourseDetailPage extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text("dictionary.code".tr(), style: bodyBold),
+            Text("dictionary.code".tr(), style: context.texts.normalBold),
             const SizedBox(width: 8.0),
-            Expanded(child: Text(course.oldCode, style: bodyRegular)),
+            Expanded(child: Text(course.oldCode, style: context.texts.normal)),
           ],
         ),
         const SizedBox(height: 4.0),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text("dictionary.type".tr(), style: bodyBold),
+            Text("dictionary.type".tr(), style: context.texts.normalBold),
             const SizedBox(width: 8.0),
             Expanded(
               child: Text(
                 "${isEn ? course.department?.nameEn : course.department?.name}, ${isEn ? course.typeEn : course.type}",
-                style: bodyRegular,
+                style: context.texts.normal,
               ),
             ),
           ],
@@ -273,9 +279,12 @@ class CourseDetailPage extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text("dictionary.description".tr(), style: bodyBold),
+            Text(
+              "dictionary.description".tr(),
+              style: context.texts.normalBold,
+            ),
             const SizedBox(width: 8.0),
-            Expanded(child: Text(course.summary, style: bodyRegular)),
+            Expanded(child: Text(course.summary, style: context.texts.normal)),
           ],
         ),
         const SizedBox(height: 4.0),
@@ -284,15 +293,15 @@ class CourseDetailPage extends StatelessWidget {
   }
 
   Widget _buildHistory(BuildContext context) {
-    final _scrollController = ScrollController();
+    final scrollCtrl = ScrollController();
     final years = context.select<InfoModel, Set<int>>((model) => model.years);
     final courseDetailModel = context.watch<CourseDetailModel>();
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
 
     return Scrollbar(
-      controller: _scrollController,
+      controller: scrollCtrl,
       child: SingleChildScrollView(
-        controller: _scrollController,
+        controller: scrollCtrl,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         reverse: true,
@@ -316,7 +325,7 @@ class CourseDetailPage extends StatelessWidget {
                         child: Text(
                           year.toString(),
                           textAlign: TextAlign.center,
-                          style: bodyBold,
+                          style: context.texts.normalBold,
                         ),
                       ),
                     )
@@ -364,7 +373,9 @@ class CourseDetailPage extends StatelessWidget {
               child: Text(
                 "dictionary.not_offered".tr(),
                 textAlign: TextAlign.center,
-                style: bodyRegular.copyWith(color: OTLColor.grayA),
+                style: context.texts.normal.copyWith(
+                  color: context.colors.textDisable,
+                ),
               ),
             );
           return LectureGroupSimpleBlock(
@@ -422,7 +433,9 @@ class CourseDetailPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Text(
                     "common.no_result".tr(),
-                    style: labelRegular.copyWith(color: OTLColor.grayA),
+                    style: context.texts.small.copyWith(
+                      color: context.colors.textDisable,
+                    ),
                   ),
                 ),
               ),
@@ -437,7 +450,9 @@ class CourseDetailPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
                         "common.no_result".tr(),
-                        style: labelRegular.copyWith(color: OTLColor.grayA),
+                        style: context.texts.small.copyWith(
+                          color: context.colors.textDisable,
+                        ),
                       ),
                     ),
                   ),
@@ -448,13 +463,13 @@ class CourseDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatus(String title, String content) {
+  Widget _buildStatus(BuildContext context, String title, String content) {
     return Padding(
       padding: const EdgeInsets.all(4.0),
       child: Column(
         children: <Widget>[
-          Text(content, style: titleRegular),
-          Text(title, style: labelRegular),
+          Text(content, style: context.texts.big),
+          Text(title, style: context.texts.small),
         ],
       ),
     );
