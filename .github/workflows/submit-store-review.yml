@@ -226,7 +226,8 @@ jobs:
           security set-keychain-settings -t 3600 -l build.keychain
           security unlock-keychain -p "temp_password" build.keychain
           echo "$IOS_CERTIFICATES_P12" | base64 -d > certificates.p12
-          security import certificates.p12 -k build.keychain -P "$IOS_CERTIFICATES_PASSWORD" -T /usr/bin/codesign
+          bash .github/scripts/repack-ios-certificate.sh certificates.p12 compatible-certificates.p12
+          security import compatible-certificates.p12 -k build.keychain -P "$IOS_CERTIFICATES_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "temp_password" build.keychain
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$IOS_PROVISIONING_PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
@@ -320,6 +321,7 @@ jobs:
         run: |
           rm -f ios/fastlane/.env.default
           rm -f certificates.p12
+          rm -f compatible-certificates.p12
           security delete-keychain build.keychain || true
 
       - name: Notify Slack

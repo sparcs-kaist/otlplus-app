@@ -440,8 +440,9 @@ jobs:
             exit 1
           fi
           
-          # 인증서 키체인에 가져오기
-          security import certificates.p12 -k build.keychain -P "$IOS_CERTIFICATES_PASSWORD" -T /usr/bin/codesign
+          # Repack with algorithms accepted by macOS Security.framework.
+          bash .github/scripts/repack-ios-certificate.sh certificates.p12 compatible-certificates.p12
+          security import compatible-certificates.p12 -k build.keychain -P "$IOS_CERTIFICATES_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "temp_password" build.keychain
           
           # 프로비저닝 프로파일 검증 및 설치
@@ -631,6 +632,7 @@ jobs:
         run: |
           rm -f ios/fastlane/.env.default
           rm -f certificates.p12
+          rm -f compatible-certificates.p12
           security delete-keychain build.keychain || true
 
       - name: Notify Slack
