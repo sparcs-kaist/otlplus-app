@@ -3,6 +3,11 @@ name: Release Drafter
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
 
 jobs:
   update-release-draft:
@@ -11,4 +16,4 @@ jobs:
     steps:
       - uses: release-drafter/release-drafter@v5
         env:
-          GITHUB_TOKEN: ${{ secrets.TAG_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
