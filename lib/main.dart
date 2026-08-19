@@ -51,6 +51,9 @@ void main() {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
       if (!_isSmokeTest) {
+        final crashReportingEnabled =
+            await SettingsModel.loadCrashReportingEnabled();
+        await sentryConsentGate.setEnabled(crashReportingEnabled);
         await Sentry.init(sentryConsentGate.configure);
       }
       await EasyLocalization.ensureInitialized();

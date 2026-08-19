@@ -13,6 +13,16 @@ final _kInformationAlarm = 'informationAlarm';
 final _kSubjectSuggestionAlarm = 'subjectSuggestionAlarm';
 
 class SettingsModel extends ChangeNotifier {
+  static Future<bool> loadCrashReportingEnabled() async {
+    try {
+      final instance = await SharedPreferences.getInstance();
+      return instance.getBool(_kSendCrashlytics) ?? true;
+    } catch (error) {
+      debugPrint('Error loading crash reporting preference: $error');
+      return false;
+    }
+  }
+
   SettingsModel({
     bool forTest = false,
     void Function(bool enabled)? onCrashReportingChanged,

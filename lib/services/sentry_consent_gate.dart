@@ -33,6 +33,7 @@ class SentryConsentGate {
     options.captureFailedRequests = false;
     options.recordHttpBreadcrumbs = false;
     options.sendClientReports = false;
+    options.enableAutoSessionTracking = false;
     options.enableMetrics = false;
     options.enableLogs = false;
     options.tracePropagationTargets.clear();
