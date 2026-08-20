@@ -20,15 +20,13 @@ import 'package:provider/provider.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/timetable.dart';
-import 'package:otlplus/models/user.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/providers/timetable_model.dart';
 import 'package:otlplus/widgets/timetable_block.dart';
 import 'package:otlplus/widgets/today_timetable.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_widgetkit/flutter_widgetkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../models/lecture.dart';
 
 class MainPage extends StatefulWidget {
   static String route = 'main_page';
@@ -102,6 +100,7 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final infoModel = context.watch<InfoModel>();
+    final timetableModel = context.watch<TimetableModel?>();
 
     if (!infoModel.hasData) {
       if (infoModel.hasError) {
@@ -138,11 +137,6 @@ class _MainPageState extends State<MainPage> {
       );
     }
 
-    final semester = infoModel.semesters.firstWhere(
-      (semester) =>
-          semester.beginning.isBefore(now) && semester.end.isAfter(now),
-      orElse: () => infoModel.semesters.last,
-    );
     return OTLLayout(
       extendBodyBehindAppBar: true,
       leading: Padding(
@@ -269,11 +263,7 @@ class _MainPageState extends State<MainPage> {
                                   children: <Widget>[
                                     Column(
                                       children: <Widget>[
-                                        _buildTimetable(
-                                          infoModel.user,
-                                          semester,
-                                          now,
-                                        ),
+                                        _buildTimetable(timetableModel, now),
                                         const SizedBox(height: 24.0),
                                         _buildDivider(),
                                         const SizedBox(height: 24.0),
@@ -451,16 +441,22 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildTimetable(User user, Semester semester, DateTime now) {
-    List<Lecture> myLecturesList = user.myTimetableLectures
-        .where(
-          (lecture) =>
-              lecture.year == semester.year &&
-              lecture.semester == semester.semester,
-        )
-        .toList();
-    Timetable timetable = Timetable(id: 0, lectures: myLecturesList);
-    return Container(
+  Widget _buildTimetable(TimetableModel? timetableModel, DateTime now) {
+    if (timetableModel == null || timetableModel.loadFailed) {
+      return SizedBox(
+        height: 76,
+        child: Center(child: Text('common.no_info'.tr(), style: bodyRegular)),
+      );
+    }
+    if (!timetableModel.isLoaded || timetableModel.timetables.isEmpty) {
+      return const SizedBox(
+        height: 76,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final Timetable timetable = timetableModel.timetables.first;
+    return SizedBox(
       height: 76,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
