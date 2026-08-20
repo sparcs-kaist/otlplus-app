@@ -96,6 +96,87 @@ class NestedLecture {
     }
   }
 
+  /// Parses a v2 review Basic lecture shape and any optional richer fields.
+  factory NestedLecture.fromV2Json(Map<String, dynamic> json) {
+    final lectureId = _nestedLectureRequiredInt(
+      json['lectureId'] ?? json['id'],
+      'NestedLecture.lectureId',
+    );
+    final courseId = _nestedLectureRequiredInt(
+      json['courseId'] ?? json['course'],
+      'NestedLecture.courseId',
+    );
+    final courseName = _nestedLectureRequiredString(
+      json['courseName'] ?? json['name'] ?? json['title'],
+      'NestedLecture.courseName',
+    );
+    final professors = json['professors'] is List
+        ? (json['professors'] as List)
+              .whereType<Map>()
+              .map(
+                (value) => Professor.fromV2Json(
+                  Map<String, dynamic>.from(value),
+                ),
+              )
+              .toList(growable: false)
+        : const <Professor>[];
+    final departmentJson = json['department'];
+    final departmentMap = departmentJson is Map
+        ? Map<String, dynamic>.from(departmentJson)
+        : const <String, dynamic>{};
+    final departmentId = departmentJson is int
+        ? departmentJson
+        : _nestedLectureInt(departmentMap['id']);
+    final departmentName = _nestedLectureString(
+      json['departmentName'] ?? departmentMap['name'],
+    );
+    final type = _nestedLectureString(json['type']);
+    final code = _nestedLectureString(json['code']);
+
+    return NestedLecture(
+      id: lectureId,
+      title: courseName,
+      titleEn: _nestedLectureString(json['courseNameEn'], fallback: courseName),
+      course: courseId,
+      oldCode: _nestedLectureString(json['oldCode'] ?? code),
+      classNo: _nestedLectureString(json['classNo']),
+      year: _nestedLectureRequiredInt(json['year'], 'NestedLecture.year'),
+      semester: _nestedLectureRequiredInt(
+        json['semester'],
+        'NestedLecture.semester',
+      ),
+      code: code,
+      department: departmentId,
+      departmentCode: _nestedLectureString(
+        json['departmentCode'] ?? departmentMap['code'],
+      ),
+      departmentName: departmentName,
+      departmentNameEn: _nestedLectureString(
+        json['departmentNameEn'] ?? departmentMap['nameEn'],
+        fallback: departmentName,
+      ),
+      type: type,
+      typeEn: _nestedLectureString(json['typeEn'], fallback: type),
+      limit: _nestedLectureInt(json['limitPeople'] ?? json['limit']),
+      numPeople: _nestedLectureInt(json['numPeople']),
+      isEnglish: _nestedLectureBool(json['isEnglish']),
+      credit: _nestedLectureInt(json['credit']),
+      creditAu: _nestedLectureInt(json['creditAU'] ?? json['creditAu']),
+      commonTitle: courseName,
+      commonTitleEn: _nestedLectureString(
+        json['courseNameEn'],
+        fallback: courseName,
+      ),
+      classTitle: _nestedLectureString(json['subtitle']),
+      classTitleEn: _nestedLectureString(
+        json['subtitleEn'],
+        fallback: _nestedLectureString(json['subtitle']),
+      ),
+      reviewTotalWeight: _nestedLectureDouble(json['reviewTotalWeight']),
+      professors: professors,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['id'] = this.id;
@@ -127,3 +208,27 @@ class NestedLecture {
     return data;
   }
 }
+
+String _nestedLectureRequiredString(Object? value, String field) {
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('$field must be a non-empty string');
+  }
+  return value;
+}
+
+int _nestedLectureRequiredInt(Object? value, String field) {
+  if (value is! int || value <= 0) {
+    throw FormatException('$field must be a positive integer');
+  }
+  return value;
+}
+
+String _nestedLectureString(Object? value, {String fallback = ''}) {
+  return value is String && value.trim().isNotEmpty ? value : fallback;
+}
+
+int _nestedLectureInt(Object? value) => value is num ? value.toInt() : 0;
+
+bool _nestedLectureBool(Object? value) => value is bool ? value : false;
+
+double _nestedLectureDouble(Object? value) => value is num ? value.toDouble() : 0;

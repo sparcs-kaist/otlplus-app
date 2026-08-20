@@ -23,6 +23,18 @@ class Professor {
       professorId = json['professor_id'],
       reviewTotalWeight = json['review_total_weight'];
 
+  /// Parses the v2 Basic professor shape (`id` and `name`).
+  factory Professor.fromV2Json(Map<String, dynamic> json) {
+    final id = _professorRequiredInt(json['id'], 'Professor.id');
+    final name = _professorRequiredString(json['name'], 'Professor.name');
+    return Professor(
+      name: name,
+      nameEn: _professorString(json['nameEn']) ?? name,
+      professorId: id,
+      reviewTotalWeight: _professorDouble(json['reviewTotalWeight']),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['name'] = this.name;
@@ -32,3 +44,23 @@ class Professor {
     return data;
   }
 }
+
+String _professorRequiredString(Object? value, String field) {
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('$field must be a non-empty string');
+  }
+  return value;
+}
+
+int _professorRequiredInt(Object? value, String field) {
+  if (value is! int || value <= 0) {
+    throw FormatException('$field must be a positive integer');
+  }
+  return value;
+}
+
+String? _professorString(Object? value) {
+  return value is String && value.trim().isNotEmpty ? value : null;
+}
+
+double _professorDouble(Object? value) => value is num ? value.toDouble() : 0;
