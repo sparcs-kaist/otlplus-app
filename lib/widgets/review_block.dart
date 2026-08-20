@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/text_styles.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
+import 'package:otlplus/constants/url.dart' show CONTACT;
 import 'package:otlplus/extensions/review.dart';
 import 'package:otlplus/extensions/semester.dart';
 import 'package:otlplus/models/review.dart';
 import 'package:otlplus/models/semester.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/widgets/expandable_text.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mailto/mailto.dart';
 
@@ -28,6 +29,7 @@ class ReviewBlock extends StatefulWidget {
 class _ReviewBlockState extends State<ReviewBlock> {
   late int _like;
   late bool _liked;
+  bool _isLikeUpdating = false;
 
   @override
   void initState() {
@@ -171,28 +173,45 @@ class _ReviewBlockState extends State<ReviewBlock> {
     );
   }
 
-  Future<void> _uploadLike() async {
-    setState(() {
-      _like++;
-      _liked = true;
-    });
-
-    await DioProvider().dio.post(
-      API_REVIEW_LIKE_URL.replaceFirst("{id}", widget.review.id.toString()),
-      data: {},
-    );
+  Future<void> _uploadLike() {
+    return _updateLike(ReviewLikeAction.like);
   }
 
-  Future<void> _uploadCancel() async {
+  Future<void> _uploadCancel() {
+    return _updateLike(ReviewLikeAction.unlike);
+  }
+
+  Future<void> _updateLike(ReviewLikeAction action) async {
+    if (_isLikeUpdating) return;
+
+    final wasLiked = _liked;
+    final previousLikeCount = _like;
     setState(() {
-      _like--;
-      _liked = false;
+      _isLikeUpdating = true;
+      _liked = action == ReviewLikeAction.like;
+      _like += _liked ? 1 : -1;
     });
 
-    await DioProvider().dio.delete(
-      API_REVIEW_LIKE_URL.replaceFirst("{id}", widget.review.id.toString()),
-      data: {},
-    );
+    try {
+      await context.read<ReviewRepository>().updateLiked(
+        reviewId: widget.review.id,
+        action: action,
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _liked = wasLiked;
+          _like = previousLikeCount;
+        });
+      }
+      rethrow;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLikeUpdating = false;
+        });
+      }
+    }
   }
 
   void _report() {
