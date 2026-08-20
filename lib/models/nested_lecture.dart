@@ -114,9 +114,8 @@ class NestedLecture {
         ? (json['professors'] as List)
               .whereType<Map>()
               .map(
-                (value) => Professor.fromV2Json(
-                  Map<String, dynamic>.from(value),
-                ),
+                (value) =>
+                    Professor.fromV2Json(Map<String, dynamic>.from(value)),
               )
               .toList(growable: false)
         : const <Professor>[];
@@ -231,4 +230,5 @@ int _nestedLectureInt(Object? value) => value is num ? value.toInt() : 0;
 
 bool _nestedLectureBool(Object? value) => value is bool ? value : false;
 
-double _nestedLectureDouble(Object? value) => value is num ? value.toDouble() : 0;
+double _nestedLectureDouble(Object? value) =>
+    value is num ? value.toDouble() : 0;

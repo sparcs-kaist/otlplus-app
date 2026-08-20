@@ -70,10 +70,7 @@ void main() {
       () => Professor.fromV2Json({'id': 1, 'name': ' '}),
       throwsFormatException,
     );
-    expect(
-      () => NestedCourse.fromV2Json({'id': 1}),
-      throwsFormatException,
-    );
+    expect(() => NestedCourse.fromV2Json({'id': 1}), throwsFormatException);
     expect(
       () => NestedLecture.fromV2Json({
         'lectureId': 20,
