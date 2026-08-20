@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
@@ -24,7 +26,7 @@ class _PopUpState extends State<PopUp> {
       contentPadding: EdgeInsets.all(0.0),
       actionsPadding: EdgeInsets.only(top: 8.0),
       elevation: 0.0,
-      content: _build23fRecruiting(),
+      content: _build23fRecruiting(context),
       actions: [
         Container(
           decoration: BoxDecoration(
@@ -72,43 +74,66 @@ class _PopUpState extends State<PopUp> {
   }
 }
 
-Widget _build23fRecruiting() {
+Widget _build23fRecruiting(BuildContext context) {
   return SingleChildScrollView(
-    child: Container(
-      child: Stack(
-        alignment: AlignmentDirectional.center,
-        children: [
-          Image.asset(
-            'assets/popups/23f-recruiting.png',
-            height: 328.0,
-            width: 285.0,
-          ),
-          Column(
-            children: [
-              const SizedBox(height: 262.0),
-              FilledButton(
-                style: ButtonStyle(
-                  backgroundColor: WidgetStatePropertyAll(Color(0xFFEBA12A)),
-                ),
-                onPressed: () =>
-                    launchUrl(Uri.parse('https://apply.sparcs.org/')),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '지원하러 가기',
-                      style: bodyBold.copyWith(color: OTLColor.gray0),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(width: 8.0),
-                    Icon(Icons.arrow_forward, color: OTLColor.gray0),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+    child: _buildImagePopup(
+      context: context,
+      imageAsset: 'assets/popups/23f-recruiting.png',
+      button: FilledButton(
+        style: ButtonStyle(
+          backgroundColor: WidgetStatePropertyAll(Color(0xFFEBA12A)),
+        ),
+        onPressed: () => launchUrl(Uri.parse('https://apply.sparcs.org/')),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '지원하러 가기',
+              style: bodyBold.copyWith(color: OTLColor.gray0),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(width: 8.0),
+            Icon(Icons.arrow_forward, color: OTLColor.gray0),
+          ],
+        ),
       ),
+    ),
+  );
+}
+
+Widget _buildImagePopup({
+  required BuildContext context,
+  required String imageAsset,
+  required Widget button,
+}) {
+  const imageWidth = 285.0;
+  const imageHeight = 328.0;
+  const buttonTop = 262.0;
+  const dialogHorizontalInset = 40.0;
+  final mediaQuery = MediaQuery.of(context);
+  final availableWidth = math.max(
+    0.0,
+    mediaQuery.size.width -
+        mediaQuery.padding.horizontal -
+        dialogHorizontalInset * 2,
+  );
+  final width = math.min(imageWidth, availableWidth);
+  final scale = width / imageWidth;
+
+  return SizedBox(
+    width: width,
+    height: imageHeight * scale,
+    child: Stack(
+      alignment: AlignmentDirectional.center,
+      children: [
+        Positioned.fill(child: Image.asset(imageAsset, fit: BoxFit.fill)),
+        Positioned(
+          top: buttonTop * scale,
+          left: 0,
+          right: 0,
+          child: Center(child: button),
+        ),
+      ],
     ),
   );
 }
@@ -118,38 +143,25 @@ Widget _buildAppEvent(BuildContext context) {
   final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
 
   return SingleChildScrollView(
-    child: Container(
-      child: Stack(
-        alignment: AlignmentDirectional.center,
-        children: [
-          Image.asset(
-            isEn
-                ? 'assets/popups/app-event-image-en.png'
-                : 'assets/popups/app-event-image.png',
-            height: 328.0,
-            width: 285.0,
+    child: _buildImagePopup(
+      context: context,
+      imageAsset: isEn
+          ? 'assets/popups/app-event-image-en.png'
+          : 'assets/popups/app-event-image.png',
+      button: FilledButton(
+        onPressed: () => launchUrl(
+          Uri.parse(
+            'https://docs.google.com/forms/d/e/1FAIpQLSfZbU_TFUPN53De_ihtS4ZK5Tb_nRDazRS7EYQgp3QWAYvyhQ/viewform',
           ),
-          Column(
-            children: [
-              const SizedBox(height: 262.0),
-              FilledButton(
-                onPressed: () => launchUrl(
-                  Uri.parse(
-                    'https://docs.google.com/forms/d/e/1FAIpQLSfZbU_TFUPN53De_ihtS4ZK5Tb_nRDazRS7EYQgp3QWAYvyhQ/viewform',
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('popup.join_the_event'.tr(), style: bodyBold),
-                    const SizedBox(width: 8.0),
-                    Icon(Icons.arrow_forward),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('popup.join_the_event'.tr(), style: bodyBold),
+            const SizedBox(width: 8.0),
+            Icon(Icons.arrow_forward),
+          ],
+        ),
       ),
     ),
   );
