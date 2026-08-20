@@ -1,99 +1,83 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:otlplus/constants/enums.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/review.dart';
 import 'package:otlplus/models/semester.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 
 class HallOfFameModel extends ChangeNotifier {
-  int _page = 0;
-  int get page => _page;
+  HallOfFameModel(this._repository);
+
+  static const int _pageSize = 10;
+
+  final ReviewRepository _repository;
+  final List<Review> _hallOfFame = <Review>[];
 
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-  ScrollController _scrollController = ScrollController();
-  ScrollController get scrollController => _scrollController;
-
+  bool _hasMore = true;
+  bool _hasLoaded = false;
+  Object? _error;
   Semester? _semester;
-  Semester? get semeseter => _semester;
+  ReviewTab _selectedMode = ReviewTab.hallOfFame;
+
+  List<Review> get hallOfFame => List<Review>.unmodifiable(_hallOfFame);
+  bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
+  Object? get error => _error;
+  Semester? get semester => _semester;
+  ReviewTab get selectedMode => _selectedMode;
+
   void setSemester(Semester? semester) {
+    if (semester != null && (semester.semester < 1 || semester.semester > 4)) {
+      throw ArgumentError.value(
+        semester.semester,
+        'semester',
+        'must be between 1 and 4',
+      );
+    }
+    if (_semester == semester) return;
     _semester = semester;
     notifyListeners();
-
-    // 1. Animate Immediately But Error Prone
-    // _scrollController.animateTo(
-    //   0,
-    //   duration: Duration(milliseconds: 500),
-    //   curve: Curves.easeInOut,
-    // );
   }
 
-  ReviewTab _selectedMode = ReviewTab.hallOfFame;
-  ReviewTab get selectedMode => _selectedMode;
   void setMode(ReviewTab mode) {
+    if (_selectedMode == mode) return;
     _selectedMode = mode;
     notifyListeners();
-    scrollController.animateTo(
-      0,
-      duration: Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
   }
 
-  List<Review> _hallOfFame = <Review>[];
-  List<Review> get hallOfFame {
-    if (_hallOfFame.length == 0 && !_isLoading) loadHallOfFame();
-    return _hallOfFame;
+  Future<void> load() async {
+    if (_hasLoaded || _isLoading) return;
+    await _fetch(reset: true);
   }
 
-  Future<void> clear() async {
-    _hallOfFame.clear();
-    _page = 0;
-    await loadHallOfFame();
+  Future<void> refresh() => _fetch(reset: true);
 
-    // 2. Animate Slowly But Safe
-    _scrollController.animateTo(
-      0,
-      duration: Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
+  Future<void> loadMore() async {
+    if (_isLoading || !_hasMore) return;
+    await _fetch(reset: false);
   }
 
-  Future<void> loadHallOfFame() async {
+  Future<void> _fetch({required bool reset}) async {
+    if (_isLoading) return;
+
     _isLoading = true;
+    _error = null;
+    notifyListeners();
 
     try {
-      Response response;
-      if (_semester == null) {
-        response = await DioProvider().dio.get(
-          API_REVIEW_URL,
-          queryParameters: {
-            "order": "-like",
-            "offset": _page * 10,
-            "limit": 10,
-          },
-        );
-      } else {
-        response = await DioProvider().dio.get(
-          API_REVIEW_URL,
-          queryParameters: {
-            "lecture_year": _semester?.year,
-            "lecture_semester": _semester?.semester,
-            "order": "-like",
-            "offset": _page * 10,
-            "limit": 10,
-          },
-        );
-      }
-      final rawReviews = response.data as List;
-      _hallOfFame.addAll(rawReviews.map((review) => Review.fromJson(review)));
-      _page++;
-      _isLoading = false;
-      notifyListeners();
-    } catch (exception) {
-      print(exception);
+      final result = await _repository.fetchHallOfFame(
+        year: _semester?.year,
+        semester: _semester?.semester,
+        offset: reset ? 0 : _hallOfFame.length,
+        limit: _pageSize,
+      );
+      if (reset) _hallOfFame.clear();
+      _hallOfFame.addAll(result.reviews);
+      _hasLoaded = true;
+      _hasMore = _hallOfFame.length < result.totalCount;
+    } catch (error) {
+      _error = error;
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
