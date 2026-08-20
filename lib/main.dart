@@ -16,6 +16,7 @@ import 'package:otlplus/providers/course_search_model.dart';
 import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/liked_review_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/sentry_consent_gate.dart';
 import 'package:otlplus/services/storage_service.dart';
@@ -123,60 +124,78 @@ void main() {
           supportedLocales: [Locale('en'), Locale('ko')],
           path: 'assets/translations',
           fallbackLocale: Locale('en'),
-          child: MultiProvider(
-            providers: [
-              Provider(create: (_) => StorageService()),
-              ChangeNotifierProvider(
-                create: (context) => AuthModel(
-                  context.read<StorageService>(),
+          child: Builder(
+            builder: (context) {
+              final locale = context.locale.languageCode;
+              DioProvider.configureLocaleSupplier(() => locale);
+              return MultiProvider(
+                providers: [
+                  Provider(create: (_) => StorageService()),
+                  Provider(create: (_) => ReviewRepository(DioProvider().dio)),
+                  ChangeNotifierProvider(
+                    create: (context) => AuthModel(
+                      context.read<StorageService>(),
+                      telemetry: telemetryCoordinator,
+                    ),
+                  ),
+                  ChangeNotifierProxyProvider<AuthModel, InfoModel>(
+                    create: (context) =>
+                        InfoModel(telemetry: telemetryCoordinator),
+                    update: (context, authModel, infoModel) {
+                      if (authModel.isLogined && infoModel != null) {
+                        // Failures set InfoModel.hasError for retry UI; session
+                        // expiry is handled by the Dio interceptor.
+                        unawaited(infoModel.getInfo());
+                      } else if (!authModel.isLogined && infoModel != null) {
+                        infoModel.clearData();
+                      }
+                      return infoModel ??
+                          InfoModel(telemetry: telemetryCoordinator);
+                    },
+                  ),
+                  ChangeNotifierProxyProvider<InfoModel, TimetableModel>(
+                    create: (context) => TimetableModel(),
+                    update: (context, infoModel, timetableModel) {
+                      if (infoModel.hasData && timetableModel != null) {
+                        timetableModel.loadSemesters(
+                          user: infoModel.user,
+                          semesters: infoModel.semesters,
+                        );
+                      } else if (!infoModel.hasData &&
+                          timetableModel != null) {}
+                      return timetableModel ?? TimetableModel();
+                    },
+                  ),
+                  ChangeNotifierProvider(create: (_) => LectureSearchModel()),
+                  ChangeNotifierProvider(create: (_) => CourseSearchModel()),
+                  ChangeNotifierProvider(
+                    create: (context) =>
+                        LatestReviewsModel(context.read<ReviewRepository>()),
+                  ),
+                  ChangeNotifierProvider(
+                    create: (context) =>
+                        LikedReviewModel(context.read<ReviewRepository>()),
+                  ),
+                  ChangeNotifierProvider(
+                    create: (context) =>
+                        HallOfFameModel(context.read<ReviewRepository>()),
+                  ),
+                  ChangeNotifierProvider(create: (_) => CourseDetailModel()),
+                  ChangeNotifierProvider(create: (_) => LectureDetailModel()),
+                  ChangeNotifierProvider(
+                    create: (_) => SettingsModel(
+                      onCrashReportingChanged: (enabled) {
+                        unawaited(sentryConsentGate.setEnabled(enabled));
+                      },
+                    ),
+                  ),
+                ],
+                child: TelemetrySynchronizer(
                   telemetry: telemetryCoordinator,
+                  child: OTLApp(),
                 ),
-              ),
-              ChangeNotifierProxyProvider<AuthModel, InfoModel>(
-                create: (context) => InfoModel(telemetry: telemetryCoordinator),
-                update: (context, authModel, infoModel) {
-                  if (authModel.isLogined && infoModel != null) {
-                    // Failures set InfoModel.hasError for retry UI; session
-                    // expiry is handled by the Dio interceptor.
-                    unawaited(infoModel.getInfo());
-                  } else if (!authModel.isLogined && infoModel != null) {
-                    infoModel.clearData();
-                  }
-                  return infoModel ??
-                      InfoModel(telemetry: telemetryCoordinator);
-                },
-              ),
-              ChangeNotifierProxyProvider<InfoModel, TimetableModel>(
-                create: (context) => TimetableModel(),
-                update: (context, infoModel, timetableModel) {
-                  if (infoModel.hasData && timetableModel != null) {
-                    timetableModel.loadSemesters(
-                      user: infoModel.user,
-                      semesters: infoModel.semesters,
-                    );
-                  } else if (!infoModel.hasData && timetableModel != null) {}
-                  return timetableModel ?? TimetableModel();
-                },
-              ),
-              ChangeNotifierProvider(create: (_) => LectureSearchModel()),
-              ChangeNotifierProvider(create: (_) => CourseSearchModel()),
-              ChangeNotifierProvider(create: (_) => LatestReviewsModel()),
-              ChangeNotifierProvider(create: (_) => LikedReviewModel()),
-              ChangeNotifierProvider(create: (_) => HallOfFameModel()),
-              ChangeNotifierProvider(create: (_) => CourseDetailModel()),
-              ChangeNotifierProvider(create: (_) => LectureDetailModel()),
-              ChangeNotifierProvider(
-                create: (_) => SettingsModel(
-                  onCrashReportingChanged: (enabled) {
-                    unawaited(sentryConsentGate.setEnabled(enabled));
-                  },
-                ),
-              ),
-            ],
-            child: TelemetrySynchronizer(
-              telemetry: telemetryCoordinator,
-              child: OTLApp(),
-            ),
+              );
+            },
           ),
         ),
       );
@@ -271,8 +290,7 @@ class _OTLAppState extends State<OTLApp> {
         if (await _storageService.hasTokens()) {
           final result = await DioProvider().refreshSession();
           if (result == SessionRefreshResult.rejected) {
-            await _storageService.deleteTokens();
-            authModel.setLoggedIn(false);
+            authModel.setLoggedIn(await _storageService.hasTokens());
           } else {
             // Refresh succeeded, or the network was unavailable. Keep the
             // stored session; the 401 interceptor decides once online.

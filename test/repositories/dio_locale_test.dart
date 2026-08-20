@@ -33,9 +33,14 @@ void main() {
     DioProvider.configureLocaleSupplier(() => locale);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel("plugins.it_nomads.com/flutter_secure_storage"),
-      (call) async => null,
-    );
+          const MethodChannel("plugins.it_nomads.com/flutter_secure_storage"),
+          (call) async => null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel("org.sparcs.otlplus/token_vault"),
+          (call) async => null,
+        );
     provider = DioProvider();
     adapter = CapturingHttpAdapter();
     adapter.register("GET", "/locale", null, statusCode: 204);
@@ -48,9 +53,14 @@ void main() {
     DioProvider.configureLocaleSupplier(() => "en");
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel("plugins.it_nomads.com/flutter_secure_storage"),
-      null,
-    );
+          const MethodChannel("plugins.it_nomads.com/flutter_secure_storage"),
+          null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel("org.sparcs.otlplus/token_vault"),
+          null,
+        );
   });
 
   test("uses the current locale supplier for every request", () async {
