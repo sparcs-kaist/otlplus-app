@@ -295,9 +295,14 @@ class LectureDetailPage extends StatelessWidget {
             lecture: lecture,
             existingReview: existingReview,
             isSimple: true,
-            onUploaded: (review) {
-              context.read<InfoModel>().getInfo();
-              context.read<LectureDetailModel>().updateLectureReviews(review);
+            onUploaded: () async {
+              final infoModel = context.read<InfoModel>();
+              final detailModel = context.read<LectureDetailModel>();
+              final isUpdateEnabled = detailModel.isUpdateEnabled;
+              await Future.wait<void>(<Future<void>>[
+                infoModel.reload(),
+                detailModel.loadLecture(lecture.id, isUpdateEnabled),
+              ]);
             },
           ),
         ...context.select<LectureDetailModel, List<Widget>>((model) {

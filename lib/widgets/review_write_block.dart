@@ -1,20 +1,19 @@
-import 'package:dio/dio.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/review.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
+import 'package:provider/provider.dart';
 
 class ReviewWriteBlock extends StatefulWidget {
   final Lecture lecture;
   final Review? existingReview;
   final bool isSimple;
-  final void Function(Review)? onUploaded;
+  final Future<void> Function()? onUploaded;
 
   ReviewWriteBlock({
     required this.lecture,
@@ -177,33 +176,30 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
     });
 
     try {
-      Response response;
+      final repository = context.read<ReviewRepository>();
+      final grade = _scores["성적"]!;
+      final load = _scores["널널"]!;
+      final speech = _scores["강의"]!;
 
       if (widget.existingReview == null) {
-        response = await DioProvider().dio.post(
-          API_REVIEW_URL,
-          data: {
-            "lecture": widget.lecture.id,
-            "content": _contentTextController.text,
-            "grade": _scores["성적"],
-            "load": _scores["널널"],
-            "speech": _scores["강의"],
-          },
+        await repository.create(
+          lectureId: widget.lecture.id,
+          content: _contentTextController.text,
+          grade: grade,
+          load: load,
+          speech: speech,
         );
       } else {
-        response = await DioProvider().dio.patch(
-          API_REVIEW_URL + "/" + widget.existingReview!.id.toString(),
-          data: {
-            "content": _contentTextController.text,
-            "grade": _scores["성적"],
-            "load": _scores["널널"],
-            "speech": _scores["강의"],
-          },
+        await repository.update(
+          reviewId: widget.existingReview!.id,
+          content: _contentTextController.text,
+          grade: grade,
+          load: load,
+          speech: speech,
         );
       }
 
-      final review = Review.fromJson(response.data);
-      widget.onUploaded!(review);
+      await widget.onUploaded?.call();
     } catch (exception) {
       print(exception);
       if (mounted) {
