@@ -54,6 +54,35 @@ class Semester {
       ),
       gradePosting = DateTime.tryParse(json['gradePosting'] ?? "");
 
+  factory Semester.fromV2Json(Map<String, dynamic> json) {
+    return Semester(
+      year: json["year"] as int,
+      semester: json["semester"] as int,
+      beginning: DateTime.parse(json["beginning"] as String),
+      end: DateTime.parse(json["end"] as String),
+      courseDesciptionSubmission: _tryParseDate(
+        json["courseDesciptionSubmission"],
+      ),
+      courseRegistrationPeriodStart: _tryParseDate(
+        json["courseRegistrationPeriodStart"],
+      ),
+      courseRegistrationPeriodEnd: _tryParseDate(
+        json["courseRegistrationPeriodEnd"],
+      ),
+      courseAddDropPeriodEnd: _tryParseDate(json["courseAddDropPeriodEnd"]),
+      courseDropDeadline: _tryParseDate(json["courseDropDeadline"]),
+      courseEvaluationDeadline: _tryParseDate(
+        json["courseEvaluationDeadline"],
+      ),
+      gradePosting: _tryParseDate(json["gradePosting"]),
+    );
+  }
+
+  static DateTime? _tryParseDate(Object? value) {
+    if (value == null) return null;
+    return DateTime.tryParse(value as String);
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['year'] = this.year;
