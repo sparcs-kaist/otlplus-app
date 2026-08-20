@@ -11,11 +11,7 @@ import Alamofire
 @available(iOS 17.0, *)
 struct WeeklyTableView: View {
     @Binding var loginState: Bool
-    
-    @ObservedObject var viewModel = WatchViewModel()
-    
-    @AppStorage("refreshToken") var refreshToken: String = ""
-    @AppStorage("accessToken") var accessToken: String = ""
+
     @AppStorage("userID") var userID: String = ""
     
     @State private var scrollOffset: CGFloat = CGFloat.zero
@@ -130,8 +126,7 @@ struct WeeklyTableView: View {
         
         if (self.selectedSemester == nil) {
             let API: OTLAPI = OTLAPI.shared
-            API.setTokens(accessToken: accessToken, refreshToken: refreshToken)
-            
+
             API.getActualSemesters(userID: self.userID) { results in
                 switch results {
                 case .success(let data):
@@ -153,8 +148,7 @@ struct WeeklyTableView: View {
         }
         if (self.selectedSemester != nil) {
             let API: OTLAPI = OTLAPI.shared
-            API.setTokens(accessToken: accessToken, refreshToken: refreshToken)
-            
+
             API.getActualTimetable(userID: self.userID, year: self.selectedSemester!.year, semester: self.selectedSemester!.semester) { results in
                 switch results {
                 case .success(let data):
@@ -176,20 +170,27 @@ struct WeeklyTableView: View {
                                 defaults.set(encoded, forKey: "timetable")
                             }
                         case .failure(let error):
-                            if let err = error as? AFError, err.isResponseSerializationError {
-                                self.loginState = false
-                            }
+                            handleRequestFailure(error)
                         }
                     }
                 case .failure(let error):
-                    if let err = error as? AFError, err.isResponseSerializationError {
-                        self.loginState = false
-                    }
+                    handleRequestFailure(error)
                 }
             }
         }
     }
     
+    private func handleRequestFailure(_ error: Error) {
+        if case WatchOTLAPIError.unauthorized = error {
+            WatchViewModel.shared.invalidateSession()
+            loginState = false
+            return
+        }
+        if let error = error as? AFError, error.isResponseSerializationError {
+            loginState = false
+        }
+    }
+
     func getLectureElements(atDay: Days) -> [LectureElement] {
         var table = [LectureElement]()
         for lecture in self.timetable.lectures {
