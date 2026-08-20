@@ -1,1 +1,23 @@
-{"departments":[{"id":623,"name":"PH학과"},{"id":4299,"name":"MSB학과"}]}
+{
+  "departments": [
+    {"id": 9948, "name": "인문사회과학부", "code": "HSS"},
+    {"id": 709, "name": "건설및환경공학과", "code": "CE"},
+    {"id": 9942, "name": "기계공학과", "code": "ME"},
+    {"id": 623, "name": "물리학과", "code": "PH"},
+    {"id": 850, "name": "바이오및뇌공학과", "code": "BiS"},
+    {"id": 1197, "name": "산업및시스템공학과", "code": "IE"},
+    {"id": 625, "name": "산업디자인학과", "code": "ID"},
+    {"id": 733, "name": "생명과학과", "code": "BS"},
+    {"id": 701, "name": "생명화학공학과", "code": "CBE"},
+    {"id": 833, "name": "수리과학과", "code": "MAS"},
+    {"id": 732, "name": "신소재공학과", "code": "MS"},
+    {"id": 639, "name": "원자력및양자공학과", "code": "NQE"},
+    {"id": 15784, "name": "기술경영학부", "code": "TS"},
+    {"id": 9945, "name": "전산학부", "code": "CS"},
+    {"id": 9947, "name": "전기및전자공학부", "code": "EE"},
+    {"id": 9944, "name": "항공우주공학과", "code": "AE"},
+    {"id": 620, "name": "화학과", "code": "CH"},
+    {"id": 7001, "name": "과학기술정책대학원", "code": "STP"},
+    {"id": 7002, "name": "지식서비스공학대학원", "code": "KSE"}
+  ]
+}
