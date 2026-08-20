@@ -8,6 +8,7 @@ class User {
   final String studentId;
   final String firstName;
   final String lastName;
+  final String? degree;
   late List<Department> majors;
   late List<Department> departments;
   late List<Lecture> myTimetableLectures;
@@ -21,6 +22,7 @@ class User {
     required this.studentId,
     required this.firstName,
     required this.lastName,
+    this.degree,
     required this.majors,
     required this.departments,
     required this.myTimetableLectures,
@@ -34,12 +36,41 @@ class User {
 
   int get hashCode => id.hashCode;
 
+  String get displayName => "$firstName $lastName".trim();
+
+  factory User.fromV2Json(Map<String, dynamic> json) {
+    final id = _positiveInt(json["id"] as int, "User.id");
+    final name = _nonEmptyString(json["name"] as String, "User.name");
+    final email = _nonEmptyString(json["mail"] as String, "User.mail");
+    final studentNumber = _positiveInt(
+      json["studentNumber"] as int,
+      "User.studentNumber",
+    );
+    final majors = _departmentsFromV2(json["majorDepartments"]);
+
+    return User(
+      id: id,
+      email: email,
+      studentId: studentNumber.toString(),
+      firstName: name,
+      lastName: "",
+      degree: json["degree"] as String?,
+      majors: majors,
+      departments: List<Department>.of(majors),
+      favoriteDepartments: _departmentsFromV2(json["interestedDepartments"]),
+      myTimetableLectures: <Lecture>[],
+      reviewWritableLectures: <Lecture>[],
+      reviews: <Review>[],
+    );
+  }
+
   User.fromJson(Map<String, dynamic> json)
     : id = json['id'],
       email = json['email'],
       studentId = json['student_id'],
       firstName = json['firstName'],
-      lastName = json['lastName'] {
+      lastName = json['lastName'],
+      degree = null {
     if (json['majors'] != null) {
       majors = [];
       json['majors'].forEach((v) {
@@ -103,4 +134,27 @@ class User {
     data['reviews'] = this.reviews.map((v) => v.toJson()).toList();
     return data;
   }
+}
+
+List<Department> _departmentsFromV2(Object? value) {
+  return (value as List<dynamic>)
+      .map(
+        (department) =>
+            Department.fromV2Json(department as Map<String, dynamic>),
+      )
+      .toList(growable: false);
+}
+
+int _positiveInt(int value, String field) {
+  if (value <= 0) {
+    throw FormatException("$field must be a positive integer");
+  }
+  return value;
+}
+
+String _nonEmptyString(String value, String field) {
+  if (value.trim().isEmpty) {
+    throw FormatException("$field must be a non-empty string");
+  }
+  return value;
 }

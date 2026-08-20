@@ -36,7 +36,7 @@ const API_V2_SEMESTERS_URL = API_V2_URL + "semesters";
 const API_V2_CURRENT_SEMESTER_URL = API_V2_SEMESTERS_URL + "/current";
 const API_V2_TIMETABLES_URL = API_V2_URL + "timetables";
 const API_V2_TIMETABLE_DETAIL_URL = API_V2_TIMETABLES_URL + "/{id}";
-const API_V2_USERS_INFO_URL = API_V2_URL + "users/info";
+const API_V2_USER_INFO_URL = API_V2_URL + "users/info";
 const API_V2_LIKED_REVIEWS_URL = API_V2_URL + "users/{user_id}/reviews/liked";
 const API_V2_DEPARTMENT_OPTIONS_URL = API_V2_URL + "department-options";
 

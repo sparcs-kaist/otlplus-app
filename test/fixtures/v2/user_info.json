@@ -1,0 +1,23 @@
+{
+  "id": 42,
+  "name": "홍길동",
+  "mail": "hong@kaist.ac.kr",
+  "studentNumber": 20261234,
+  "degree": "학사",
+  "majorDepartments": [
+    {
+      "id": 24356,
+      "name": "전산학부"
+    },
+    {
+      "id": 9947,
+      "name": "전기및전자공학부"
+    }
+  ],
+  "interestedDepartments": [
+    {
+      "id": 623,
+      "name": "물리학과"
+    }
+  ]
+}
