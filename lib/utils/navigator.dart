@@ -11,13 +11,19 @@ class OTLNavigator {
   static List<_TransitionHistory> _history = [];
 
   static void _removeLastHistory() {
+    if (_history.isEmpty) return;
+
     switch (_history.removeLast()) {
       case _TransitionHistory.rightLeft:
-        _rightleftTransitionHistory.removeLast();
+        if (_rightleftTransitionHistory.isNotEmpty) {
+          _rightleftTransitionHistory.removeLast();
+        }
         break;
       case _TransitionHistory.downUp:
       case _TransitionHistory.immediate:
-        _downupTransitionHistory.removeLast();
+        if (_downupTransitionHistory.isNotEmpty) {
+          _downupTransitionHistory.removeLast();
+        }
         break;
       case _TransitionHistory.dialog:
         break;
@@ -27,10 +33,10 @@ class OTLNavigator {
   static void _removeLastUntil(
     bool Function(_TransitionHistory mode) predicate,
   ) {
-    while (!predicate(_history.last)) {
+    while (_history.isNotEmpty && !predicate(_history.last)) {
       _removeLastHistory();
     }
-    _removeLastHistory();
+    if (_history.isNotEmpty) _removeLastHistory();
   }
 
   static Future<T?> push<T extends Object?>(
@@ -89,13 +95,14 @@ class OTLNavigator {
     OTLNavigatorTransition? until,
     T? result,
   }) {
+    if (_history.isEmpty) return;
+
     NavigatorState navigator = Navigator.of(context);
-    assert(_history.isNotEmpty);
     if (until == null) {
       _removeLastHistory();
       return navigator.pop(result);
     } else if (until == OTLNavigatorTransition.rightLeft) {
-      assert(_rightleftTransitionHistory.isNotEmpty);
+      if (_rightleftTransitionHistory.isEmpty) return;
       navigator.popUntil(
         (Route<dynamic> route) =>
             _rightleftTransitionHistory.last == route || route.isFirst,
@@ -103,7 +110,7 @@ class OTLNavigator {
       _removeLastUntil((mode) => mode == _TransitionHistory.rightLeft);
       return navigator.pop(result);
     } else {
-      assert(_downupTransitionHistory.isNotEmpty);
+      if (_downupTransitionHistory.isEmpty) return;
       navigator.popUntil(
         (Route<dynamic> route) =>
             _downupTransitionHistory.last == route || route.isFirst,
