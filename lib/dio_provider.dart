@@ -31,8 +31,8 @@ class DioProvider {
 
   static TelemetryCoordinator? _telemetry;
   static Future<void> Function()? _onSessionExpired;
-  static String Function() _localeSupplier =
-      () => PlatformDispatcher.instance.locale.languageCode;
+  static String Function() _localeSupplier = () =>
+      PlatformDispatcher.instance.locale.languageCode;
 
   /// Registers the source used to resolve the locale for each request.
   static void configureLocaleSupplier(String Function() supplier) {
@@ -63,11 +63,8 @@ class DioProvider {
         onRequest: (options, handler) async {
           options.headers['Accept-Language'] = _localeSupplier();
           final accessToken = await _storageService.getAccessToken();
-          final refreshToken = await _storageService.getRefreshToken();
-
-          if (accessToken != null && refreshToken != null) {
+          if (accessToken != null) {
             options.headers['Authorization'] = 'Bearer $accessToken';
-            options.headers['X-Refresh-Token'] = refreshToken;
           }
           return handler.next(options);
         },
@@ -125,65 +122,77 @@ class DioProvider {
           stackTrace,
           operation: 'automatic_logout',
         );
+        return;
       }
     }
-    await _storageService.deleteTokens();
   }
 
   Future<SessionRefreshResult> _refreshToken() async {
-    final String? refreshToken;
+    String? leaseId;
     try {
-      refreshToken = await _storageService.getRefreshToken();
-    } catch (error, stackTrace) {
-      await _telemetry?.recordNonFatal(
-        error,
-        stackTrace,
-        operation: 'refresh_session',
-      );
-      return SessionRefreshResult.unavailable;
-    }
-    if (refreshToken == null) {
-      return SessionRefreshResult.rejected;
-    }
-
-    final refreshDio = Dio(
-      BaseOptions(
-        baseUrl: _dio.options.baseUrl,
-        connectTimeout: Duration(seconds: 10),
-        receiveTimeout: Duration(seconds: 10),
-        headers: {'Accept-Language': _localeSupplier()},
-      ),
-    );
-    try {
-      final response = await refreshDio.post(
-        SESSION_REFRESH_URL,
-        data: {'token': refreshToken},
-      );
-
-      if (response.statusCode == 200 && response.data != null) {
-        final newAccessToken = response.data['accessToken'];
-        final newRefreshToken = response.data['refreshToken'];
-
-        if (newAccessToken != null && newRefreshToken != null) {
-          await _storageService.saveTokens(
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-          );
-          return SessionRefreshResult.success;
-        }
-      }
-      return SessionRefreshResult.rejected;
-    } on DioException catch (error, stackTrace) {
-      final status = error.response?.statusCode;
-      if (status != null && status >= 400 && status < 500) {
+      final initialPair = await _storageService.getTokenPair();
+      if (initialPair == null) {
         return SessionRefreshResult.rejected;
       }
-      await _telemetry?.recordNonFatal(
-        error,
-        stackTrace,
-        operation: 'refresh_session',
+
+      leaseId = await _storageService.acquireRefreshLease();
+      if (leaseId == null) {
+        return SessionRefreshResult.unavailable;
+      }
+
+      final attemptedPair = await _storageService.getTokenPair();
+      if (attemptedPair == null) {
+        return SessionRefreshResult.rejected;
+      }
+      if (attemptedPair.refreshToken != initialPair.refreshToken) {
+        return SessionRefreshResult.success;
+      }
+
+      final attemptedRefreshToken = attemptedPair.refreshToken;
+      final refreshDio = Dio(
+        BaseOptions(
+          baseUrl: _dio.options.baseUrl,
+          connectTimeout: Duration(seconds: 10),
+          receiveTimeout: Duration(seconds: 10),
+          headers: {'Accept-Language': _localeSupplier()},
+        ),
       );
-      return SessionRefreshResult.unavailable;
+      try {
+        final response = await refreshDio.post(
+          SESSION_REFRESH_URL,
+          data: {'token': attemptedRefreshToken},
+        );
+
+        if (response.statusCode == 200 && response.data != null) {
+          final newAccessToken = response.data['accessToken'];
+          final newRefreshToken = response.data['refreshToken'];
+          if (newAccessToken is String &&
+              newAccessToken.isNotEmpty &&
+              newRefreshToken is String &&
+              newRefreshToken.isNotEmpty) {
+            final written = await _storageService.saveRefreshedTokens(
+              expectedRefreshToken: attemptedRefreshToken,
+              accessToken: newAccessToken,
+              refreshToken: newRefreshToken,
+            );
+            if (written || await _storageService.hasTokens()) {
+              return SessionRefreshResult.success;
+            }
+          }
+        }
+        return _rejectAttemptedSession(attemptedRefreshToken);
+      } on DioException catch (error, stackTrace) {
+        final status = error.response?.statusCode;
+        if (status != null && status >= 400 && status < 500) {
+          return _rejectAttemptedSession(attemptedRefreshToken);
+        }
+        await _telemetry?.recordNonFatal(
+          error,
+          stackTrace,
+          operation: 'refresh_session',
+        );
+        return SessionRefreshResult.unavailable;
+      }
     } catch (error, stackTrace) {
       await _telemetry?.recordNonFatal(
         error,
@@ -191,6 +200,30 @@ class DioProvider {
         operation: 'refresh_session',
       );
       return SessionRefreshResult.unavailable;
+    } finally {
+      if (leaseId != null) {
+        try {
+          await _storageService.releaseRefreshLease(leaseId);
+        } catch (error, stackTrace) {
+          await _telemetry?.recordNonFatal(
+            error,
+            stackTrace,
+            operation: 'release_refresh_lease',
+          );
+        }
+      }
     }
+  }
+
+  Future<SessionRefreshResult> _rejectAttemptedSession(
+    String attemptedRefreshToken,
+  ) async {
+    final cleared = await _storageService.deleteTokensIfRefreshTokenMatches(
+      attemptedRefreshToken,
+    );
+    if (cleared || !await _storageService.hasTokens()) {
+      return SessionRefreshResult.rejected;
+    }
+    return SessionRefreshResult.success;
   }
 }
