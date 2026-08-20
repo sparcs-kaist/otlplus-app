@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/constants/enums.dart';
 
 class TimetableModeControl extends StatefulWidget {
   const TimetableModeControl({
     Key? key,
-    this.dropdownIndex = 0,
+    this.selectedMode = TimetableViewMode.classes,
     required this.onTap,
   }) : super(key: key);
-  final int dropdownIndex;
-  final Function(int) onTap;
+  final TimetableViewMode selectedMode;
+  final ValueChanged<TimetableViewMode> onTap;
 
   @override
   State<TimetableModeControl> createState() => _TimetableModeControlState();
 }
 
 class _TimetableModeControlState extends State<TimetableModeControl> {
-  static const List<String> _dropdownList = ['수업 시간표', '시험 시간표', '지도'];
-  static const List<IconData> _iconList = [
-    Icons.schedule,
-    Icons.menu_book,
-    Icons.map_outlined,
-  ];
+  static const Map<TimetableViewMode, IconData> _icons = {
+    TimetableViewMode.classes: Icons.schedule,
+    TimetableViewMode.exams: Icons.menu_book,
+    TimetableViewMode.map: Icons.map_outlined,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class _TimetableModeControlState extends State<TimetableModeControl> {
       child: Stack(
         children: [
           AnimatedPositioned(
-            left: 48.0 * widget.dropdownIndex,
+            left: 48.0 * widget.selectedMode.index,
             duration: Duration(milliseconds: 500),
             curve: Curves.easeInOut,
             child: Container(
@@ -50,17 +50,18 @@ class _TimetableModeControlState extends State<TimetableModeControl> {
           ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _dropdownList.length,
+            itemCount: TimetableViewMode.values.length,
             itemBuilder: (_, index) {
+              final mode = TimetableViewMode.values[index];
               return GestureDetector(
-                onTap: () => widget.onTap(index),
+                onTap: () => widget.onTap(mode),
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   height: 32,
                   padding: EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                   child: Icon(
-                    _iconList[index],
-                    color: (index == widget.dropdownIndex)
+                    _icons[mode],
+                    color: mode == widget.selectedMode
                         ? OTLColor.grayF
                         : OTLColor.pinksMain,
                   ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/lecture.dart';
@@ -18,6 +19,15 @@ class TimetableModel extends ChangeNotifier {
 
   late int _selectedSemesterIndex;
   Semester get selectedSemester => _semesters[_selectedSemesterIndex];
+  Season get selectedSeason {
+    final season = Season.fromCode(selectedSemester.semester);
+    if (season == null) {
+      throw StateError(
+        'Unsupported semester code: ${selectedSemester.semester}',
+      );
+    }
+    return season;
+  }
 
   late List<Timetable> _timetables;
   List<Timetable> get timetables => _timetables;
@@ -35,8 +45,8 @@ class TimetableModel extends ChangeNotifier {
 
   Timetable get currentTimetable => _timetables[_selectedTimetableIndex];
 
-  int _selectedModeIndex = 0;
-  int get selectedMode => _selectedModeIndex;
+  TimetableViewMode _selectedMode = TimetableViewMode.classes;
+  TimetableViewMode get selectedMode => _selectedMode;
 
   bool _isLoaded = false;
   bool get isLoaded => _isLoaded;
@@ -61,7 +71,7 @@ class TimetableModel extends ChangeNotifier {
       _semesters = [
         Semester(
           year: 2024,
-          semester: 3,
+          semester: Season.fall.code,
           beginning: DateTime.now(),
           end: DateTime.now(),
         ),
@@ -111,8 +121,8 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setMode(int index) {
-    _selectedModeIndex = index;
+  void setMode(TimetableViewMode mode) {
+    _selectedMode = mode;
     notifyListeners();
   }
 
@@ -125,7 +135,7 @@ class TimetableModel extends ChangeNotifier {
         API_TIMETABLE_URL.replaceFirst("{user_id}", _user.id.toString()),
         queryParameters: {
           "year": selectedSemester.year,
-          "semester": selectedSemester.semester,
+          "semester": selectedSeason.code,
         },
       );
 
@@ -151,7 +161,7 @@ class TimetableModel extends ChangeNotifier {
           .where(
             (lecture) =>
                 lecture.year == selectedSemester.year &&
-                lecture.semester == selectedSemester.semester,
+                lecture.semester == selectedSeason.code,
           )
           .toList();
       Timetable myTimetable = Timetable(id: -1, lectures: myLecturesList);
@@ -178,7 +188,7 @@ class TimetableModel extends ChangeNotifier {
         API_TIMETABLE_URL.replaceFirst("{user_id}", user.id.toString()),
         data: {
           "year": selectedSemester.year,
-          "semester": selectedSemester.semester,
+          "semester": selectedSeason.code,
           "lectures": (lectures == null)
               ? []
               : lectures.map((lecture) => lecture.id).toList(),
@@ -292,7 +302,7 @@ class TimetableModel extends ChangeNotifier {
         queryParameters: {
           'timetable': currentTimetable.id,
           'year': selectedSemester.year,
-          'semester': selectedSemester.semester,
+          'semester': selectedSeason.code,
           'language': language,
         },
         options: Options(responseType: ResponseType.bytes),
