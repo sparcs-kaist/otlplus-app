@@ -8,15 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
-    @ObservedObject var viewModel = WatchViewModel()
-    
-    @State private var loginState: Bool = true
-    
+    @ObservedObject private var viewModel = WatchViewModel.shared
+
+    @State private var loginState: Bool = WatchTokenVault.hasTokenPair
+
     var body: some View {
-        if loginState {
-            WeeklyTableView(loginState: $loginState)
-        } else {
-            LoginView()
+        Group {
+            if loginState {
+                WeeklyTableView(loginState: $loginState)
+            } else {
+                LoginView()
+            }
+        }
+        .onChange(of: viewModel.tokenPair) { tokenPair in
+            loginState = tokenPair != nil
         }
     }
 }

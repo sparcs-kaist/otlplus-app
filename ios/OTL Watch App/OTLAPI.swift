@@ -10,8 +10,8 @@ import Alamofire
 import SwiftUI
 
 struct URLs {
-    static let base = "https://otl.sparcs.org/"
-    
+    static let base = "https://otl.kaist.ac.kr/"
+
     static var sessionInfo: String { base + "session/info" }
     static var apiTimetable: String { base + "api/users/{user_id}/timetables" }
     static var apiSemester: String { base + "api/semesters" }
@@ -190,115 +190,122 @@ func getColourForCourse(course: Int) -> Color {
 }
 
 
+enum WatchOTLAPIError: Error {
+    case unauthorized
+    case httpStatus(Int)
+    case missingAccessToken
+}
+
 class OTLAPI {
     static let shared = OTLAPI()
-    
+
     private var accessToken: String?
-    private var refreshToken: String?
-        
-    private init() {}
-    
-    func setTokens(accessToken: String?, refreshToken: String?) {
-        self.accessToken = accessToken
-        self.refreshToken = refreshToken
+
+    private init() {
+        loadStoredAccessToken()
     }
-    
+
+    private func loadStoredAccessToken() {
+        accessToken = try? WatchTokenVault.read()?.accessToken
+    }
+
     private var authHeaders: HTTPHeaders {
         var headers: HTTPHeaders = []
-        if let token = accessToken {
-            headers.add(.authorization(bearerToken: token))
+        headers.add(name: "Accept-Language", value: Locale.preferredLanguages.first ?? "ko")
+        if let accessToken = accessToken {
+            headers.add(.authorization(bearerToken: accessToken))
         }
         return headers
     }
-    
+
     private let jsonDecoder: JSONDecoder = {
         let decoder = JSONDecoder()
-        
-        // Create a date formatter
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ" // Replace this with the exact format you expect
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         decoder.dateDecodingStrategy = .formatted(dateFormatter)
-        
         return decoder
     }()
-    
+
     func getTimetables(userID: String, year: Int, semester: Int, completion: @escaping (Result<[Timetable], Error>) -> Void) {
         let url = URLs.apiTimetable.replacingOccurrences(of: "{user_id}", with: userID)
         let parameters: [String: Any] = ["year": year, "semester": semester]
-        
-        AF.request(url, method: .get, parameters: parameters, headers: authHeaders).responseData { response in
-            self.handleResponse(response, completion: completion)
-        }
+        request(url, parameters: parameters, completion: completion)
     }
-    
+
     func getSemesters(completion: @escaping (Result<[Semester], Error>) -> Void) {
-        AF.request(URLs.apiSemester, method: .get, headers: authHeaders).responseData { response in
-            self.handleResponse(response, completion: completion)
-        }
+        request(URLs.apiSemester, completion: completion)
     }
 
     func getActualTimetable(userID: String, year: Int, semester: Int, completion: @escaping (Result<[Timetable], Error>) -> Void) {
-        AF.request(URLs.sessionInfo, method: .get, headers: authHeaders).responseData { response in
-            switch response.result {
-            case .success(let data):
-                do {
-                    let userInfo = try self.jsonDecoder.decode(UserInfo.self, from: data)
-                    let lecturesForSemester = userInfo.my_timetable_lectures.filter { $0.year == year && $0.semester == semester }
-                    let timetable = Timetable(id: 0, lectures: lecturesForSemester)
-                    completion(.success([timetable]))
-                } catch {
-                    completion(.failure(error))
+        request(URLs.sessionInfo) { (result: Result<UserInfo, Error>) in
+            completion(result.map { userInfo in
+                let lectures = userInfo.my_timetable_lectures.filter {
+                    $0.year == year && $0.semester == semester
                 }
-            case .failure(let error):
-                completion(.failure(error))
-            }
+                return [Timetable(id: 0, lectures: lectures)]
+            })
         }
     }
-    
+
     func getActualSemesters(userID: String, completion: @escaping (Result<[SemesterElement], Error>) -> Void) {
-        AF.request(URLs.sessionInfo, method: .get, headers: authHeaders).responseData { response in
+        request(URLs.sessionInfo) { (result: Result<UserInfo, Error>) in
+            completion(result.map { userInfo in
+                let semesters = Set(userInfo.my_timetable_lectures.map {
+                    SemesterElement(year: $0.year, semester: $0.semester)
+                })
+                return semesters.sorted { lhs, rhs in
+                    lhs.year == rhs.year ? lhs.semester > rhs.semester : lhs.year > rhs.year
+                }
+            })
+        }
+    }
+
+    private func request<T: Decodable>(
+        _ url: String,
+        parameters: Parameters? = nil,
+        completion: @escaping (Result<T, Error>) -> Void
+    ) {
+        loadStoredAccessToken()
+        guard accessToken != nil else {
+            completion(.failure(WatchOTLAPIError.missingAccessToken))
+            return
+        }
+
+        AF.request(
+            url,
+            method: .get,
+            parameters: parameters,
+            encoding: URLEncoding.default,
+            headers: authHeaders
+        ).responseData { response in
+            guard let statusCode = response.response?.statusCode else {
+                if let error = response.error {
+                    completion(.failure(error))
+                } else {
+                    completion(.failure(WatchOTLAPIError.httpStatus(-1)))
+                }
+                return
+            }
+            guard (200..<300).contains(statusCode) else {
+                completion(.failure(
+                    statusCode == 401
+                        ? WatchOTLAPIError.unauthorized
+                        : WatchOTLAPIError.httpStatus(statusCode)
+                ))
+                return
+            }
+
             switch response.result {
             case .success(let data):
                 do {
-                    print("getActualSemesters")
-                    let userInfo = try self.jsonDecoder.decode(UserInfo.self, from: data)
-                    var semesters = [SemesterElement]()
-                    for lecture in userInfo.my_timetable_lectures {
-                        semesters.append(SemesterElement(year: lecture.year, semester: lecture.semester))
-                    }
-                    semesters = Array(Set(semesters))
-                    semesters.sort { lhs, rhs in
-                        if lhs.year > rhs.year {
-                            return true
-                        } else if lhs.year == rhs.year {
-                            return lhs.semester > rhs.semester
-                        } else {
-                            return false
-                        }
-                    }
-                    completion(.success(semesters))
+                    completion(.success(try self.jsonDecoder.decode(T.self, from: data)))
                 } catch {
-                    print("getActualSemesters Error: \(error)")
                     completion(.failure(error))
                 }
             case .failure(let error):
-                print("getActualSemesters Error: \(error)")
                 completion(.failure(error))
             }
         }
     }
-    
-    private func handleResponse<T: Decodable>(_ response: AFDataResponse<Data>, completion: @escaping (Result<T, Error>) -> Void) {
-        switch response.result {
-        case .success(let data):
-            do {
-                let decodedData = try jsonDecoder.decode(T.self, from: data)
-                completion(.success(decodedData))
-            } catch {
-                completion(.failure(error))
-            }
-        case .failure(let error):
-            completion(.failure(error))
-        }
-    }
+
 }
