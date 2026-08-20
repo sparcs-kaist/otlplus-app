@@ -40,6 +40,21 @@ class TimetableRepository {
     return TimetableCollection(summaries: summaries, timetables: timetables);
   }
 
+  Future<Timetable> fetchMyTimetable(int year, int semester) async {
+    _validateYear(year);
+    _validateSemester(semester);
+
+    final response = await _dio.get<Map<String, dynamic>>(
+      API_V2_MY_TIMETABLE_URL,
+      queryParameters: <String, dynamic>{"year": year, "semester": semester},
+    );
+    return Timetable.fromV2MyTimetable(
+      response.data as Map<String, dynamic>,
+      year: year,
+      semester: semester,
+    );
+  }
+
   Future<int> create({
     required int year,
     required int semester,

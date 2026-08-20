@@ -198,6 +198,45 @@ void main() {
     });
   });
 
+  group("TimetableRepository.fetchMyTimetable", () {
+    test("uses the dedicated endpoint and supplied semester context", () async {
+      adapter.register(
+        "GET",
+        "/$API_V2_MY_TIMETABLE_URL?semester=3&year=2026",
+        detailFixture,
+      );
+
+      final timetable = await repository.fetchMyTimetable(2026, 3);
+
+      expect(timetable.id, anyOf(0, -1));
+      expect(timetable.lectures.single.id, 1921750);
+      expect(timetable.lectures.single.year, 2026);
+      expect(timetable.lectures.single.semester, 3);
+      expect(adapter.requests, hasLength(1));
+      final request = adapter.requests.single;
+      expect(request.method, "GET");
+      expect(request.uri.path, "/$API_V2_MY_TIMETABLE_URL");
+      expect(request.queryParameters, <String, dynamic>{
+        "year": 2026,
+        "semester": 3,
+      });
+    });
+
+    test("validates year and semester before HTTP", () async {
+      await expectLater(repository.fetchMyTimetable(0, 3), throwsArgumentError);
+      await expectLater(
+        repository.fetchMyTimetable(2026, 0),
+        throwsArgumentError,
+      );
+      await expectLater(
+        repository.fetchMyTimetable(2026, 5),
+        throwsArgumentError,
+      );
+
+      expect(adapter.requests, isEmpty);
+    });
+  });
+
   test("create posts lectureIds without the legacy lectures key", () async {
     adapter.register("POST", "/$API_V2_TIMETABLES_URL", <String, dynamic>{
       "id": 9,
