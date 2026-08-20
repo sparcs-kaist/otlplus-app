@@ -1,52 +1,64 @@
-import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/constants/text_styles.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
-import 'package:otlplus/models/filter.dart';
-import 'package:otlplus/models/course.dart';
+import "dart:async";
+
+import "package:flutter/foundation.dart";
+import "package:otlplus/dio_provider.dart";
+import "package:otlplus/models/course.dart";
+import "package:otlplus/models/filter.dart";
+import "package:otlplus/repositories/course_repository.dart";
+import "package:otlplus/repositories/department_repository.dart";
 
 class CourseSearchModel extends ChangeNotifier {
+  CourseSearchModel([
+    CourseRepository? courseRepository,
+    DepartmentRepository? departmentRepository,
+  ]) : _courseRepository =
+           courseRepository ?? CourseRepository(DioProvider().dio),
+       _departmentRepository =
+           departmentRepository ?? DepartmentRepository(DioProvider().dio);
+
+  final CourseRepository _courseRepository;
+  final DepartmentRepository _departmentRepository;
+
   List<Course>? _courses;
   List<Course>? get courses => _courses;
 
-  String _courseSearchText = '';
-  String get courseSearchText => _courseSearchText;
-  void setCourseSearchText(String text) {
-    _courseSearchText = text;
+  String _searchText = "";
+  String get searchText => _searchText;
+
+  void setSearchText(String text) {
+    _searchText = text;
   }
 
-  Map<String, FilterGroupInfo> _courseFilter = {
+  final Map<String, FilterGroupInfo> _courseFilter = <String, FilterGroupInfo>{
     "departments": FilterGroupInfo(
       label: "department.department",
       isMultiSelect: true,
-      options: [
-        [
+      options: <List<CodeLabelPair>>[
+        <CodeLabelPair>[
           CodeLabelPair(code: "HSS", label: "department.hss"),
           CodeLabelPair(code: "CE", label: "department.ce"),
           CodeLabelPair(code: "MSB", label: "department.msb"),
           CodeLabelPair(code: "ME", label: "department.me"),
         ],
-        [
+        <CodeLabelPair>[
           CodeLabelPair(code: "PH", label: "department.ph"),
           CodeLabelPair(code: "BiS", label: "department.bis"),
           CodeLabelPair(code: "IE", label: "department.ie"),
           CodeLabelPair(code: "ID", label: "department.id"),
         ],
-        [
+        <CodeLabelPair>[
           CodeLabelPair(code: "BS", label: "department.bs"),
           CodeLabelPair(code: "CBE", label: "department.cbe"),
           CodeLabelPair(code: "MAS", label: "department.mas"),
           CodeLabelPair(code: "MS", label: "department.ms"),
         ],
-        [
+        <CodeLabelPair>[
           CodeLabelPair(code: "NQE", label: "department.nqe"),
           CodeLabelPair(code: "TS", label: "department.ts"),
           CodeLabelPair(code: "CS", label: "department.cs"),
           CodeLabelPair(code: "EE", label: "department.ee"),
         ],
-        [
+        <CodeLabelPair>[
           CodeLabelPair(code: "AE", label: "department.ae"),
           CodeLabelPair(code: "CH", label: "department.ch"),
           CodeLabelPair(code: "ETC", label: "department.etc"),
@@ -56,20 +68,20 @@ class CourseSearchModel extends ChangeNotifier {
     "types": FilterGroupInfo(
       label: "type.type",
       isMultiSelect: true,
-      options: [
-        [
+      options: <List<CodeLabelPair>>[
+        <CodeLabelPair>[
           CodeLabelPair(code: "BR", label: "type.br"),
           CodeLabelPair(code: "BE", label: "type.be"),
           CodeLabelPair(code: "MR", label: "type.mr"),
           CodeLabelPair(code: "ME", label: "type.me"),
         ],
-        [
+        <CodeLabelPair>[
           CodeLabelPair(code: "MGC", label: "type.mgc"),
           CodeLabelPair(code: "HSE", label: "type.hse"),
           CodeLabelPair(code: "GR", label: "type.gr"),
           CodeLabelPair(code: "EG", label: "type.eg"),
         ],
-        [
+        <CodeLabelPair>[
           CodeLabelPair(code: "OE", label: "type.oe"),
           CodeLabelPair(code: "ETC", label: "type.etc"),
         ],
@@ -78,246 +90,217 @@ class CourseSearchModel extends ChangeNotifier {
     "levels": FilterGroupInfo(
       label: "level.level",
       isMultiSelect: true,
-      options: [
-        [
+      options: <List<CodeLabelPair>>[
+        <CodeLabelPair>[
           CodeLabelPair(code: "100", label: "level.100s"),
           CodeLabelPair(code: "200", label: "level.200s"),
           CodeLabelPair(code: "300", label: "level.300s"),
           CodeLabelPair(code: "400", label: "level.400s"),
         ],
-        [CodeLabelPair(code: "ETC", label: "level.etc")],
+        <CodeLabelPair>[CodeLabelPair(code: "ETC", label: "level.etc")],
       ],
     ),
     "terms": FilterGroupInfo(
       label: "term.term",
       isMultiSelect: false,
       type: "slider",
-      options: [
-        [CodeLabelPair(code: "ALL", label: "term.all", selected: true)],
-        [CodeLabelPair(code: "3", label: "term.3_years", selected: false)],
-        [CodeLabelPair(code: "2", label: "term.2_years", selected: false)],
-        [CodeLabelPair(code: "1", label: "term.1_years", selected: false)],
+      options: <List<CodeLabelPair>>[
+        <CodeLabelPair>[
+          CodeLabelPair(code: "ALL", label: "term.all", selected: true),
+        ],
+        <CodeLabelPair>[CodeLabelPair(code: "3", label: "term.3_years")],
+        <CodeLabelPair>[CodeLabelPair(code: "2", label: "term.2_years")],
+        <CodeLabelPair>[CodeLabelPair(code: "1", label: "term.1_years")],
       ],
     ),
   };
-  get courseFilter => _courseFilter;
+
+  Map<String, FilterGroupInfo> get courseFilter => _courseFilter;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  // Retained for the dictionary page's existing public API.
+  bool get isSearching => _isLoading;
+
+  Object? _error;
+  Object? get error => _error;
+
+  int _requestGeneration = 0;
+
+  List<String> get selectedFilterLabelKeys => List<String>.unmodifiable(
+    _courseFilter.values.expand(_selectedLabelsForSummary),
+  );
 
   void resetCourseFilter() {
+    _requestGeneration += 1;
     _courses = null;
-    _courseSearchText = '';
-    _courseFilter.values.forEach((e) {
-      if (e.isMultiSelect)
-        e.options.forEach((b) => b.forEach((c) => c.selected = false));
-      else {
-        e.options.forEach((b) => b.forEach((c) => c.selected = false));
-        e.options.first.first.selected = true;
+    _searchText = "";
+    _isLoading = false;
+    _error = null;
+    for (final group in _courseFilter.values) {
+      for (final option in group.options.expand((row) => row)) {
+        option.selected = false;
       }
-    });
-    updateCourseSearchquery();
+      if (!group.isMultiSelect) group.options.first.first.selected = true;
+    }
     notifyListeners();
   }
 
-  void setCourseFilterSelected(String varient, String code, bool selected) {
-    assert(['departments', 'types', 'levels', 'terms'].contains(varient));
-    _courseFilter[varient]!.options
-            .expand((i) => i)
-            .firstWhere((i) => i.code == code)
+  void setCourseFilterSelected(String variant, String code, bool selected) {
+    assert(
+      <String>{"departments", "types", "levels", "terms"}.contains(variant),
+    );
+    _courseFilter[variant]!.options
+            .expand((row) => row)
+            .firstWhere((option) => option.code == code)
             .selected =
         selected;
     notifyListeners();
   }
 
-  bool _isSearching = false;
-  bool get isSearching => _isSearching;
+  Future<bool> courseSearch({String order = "DEF"}) {
+    final departmentCodes = _selectedCodes("departments");
+    final typeCodes = _mapTypeCodes(_selectedCodes("types"));
+    final levelCodes = _mapLevelCodes(_selectedCodes("levels"));
+    final term = _selectedTerm();
+    final keyword = _searchText;
+    final hasSearchCriteria =
+        departmentCodes.isNotEmpty ||
+        typeCodes.isNotEmpty ||
+        levelCodes.isNotEmpty ||
+        term != null ||
+        keyword.isNotEmpty;
+    if (!hasSearchCriteria) return Future<bool>.value(false);
 
-  Text? _courseSearchquery;
-  Text get courseSearchquery => (_courseSearchquery == null)
-      ? Text(
-          "common.search_hint".tr(),
-          style: bodyRegular.copyWith(color: OTLColor.grayA),
-        )
-      : _courseSearchquery!;
-  void updateCourseSearchquery() {
-    List<String> _selectedFilters = (_courseFilter.map(
-      (k, v) => MapEntry(
-        k,
-        (v.isMultiSelect == false && v.options.first.first.selected == true) ||
-                v.options.expand((i) => i).every((i) => i.selected == true)
-            ? Iterable<String>.empty()
-            : v.options
-                  .expand((i) => i)
-                  .where((i) => i.selected == true)
-                  .map((i) => i.label),
+    final generation = ++_requestGeneration;
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    // The search page uses this result to navigate immediately; repository
+    // completion is represented by [isLoading], [error], and [courses].
+    unawaited(
+      _loadCourses(
+        generation: generation,
+        keyword: keyword,
+        departmentCodes: departmentCodes,
+        typeCodes: typeCodes,
+        levelCodes: levelCodes,
+        term: term,
+        order: order,
       ),
-    )).values.expand((i) => i).toList();
-    if (_selectedFilters.length == 0 && _courseSearchText.length == 0) {
-      _courseSearchquery = null;
-    } else {
-      _courseSearchquery = Text.rich(
-        TextSpan(
-          style: bodyRegular.copyWith(color: OTLColor.grayA),
-          children: [
-            TextSpan(
-              text: _courseSearchText.isEmpty ? '' : '"$_courseSearchText"',
-            ),
-            TextSpan(
-              children: [
-                if (_selectedFilters.length > 0 && _courseSearchText.length > 0)
-                  TextSpan(text: ", "),
-                TextSpan(text: _selectedFilters.map((e) => e.tr()).join(", ")),
-              ],
-            ),
-          ],
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    );
+    return Future<bool>.value(true);
+  }
+
+  Future<void> _loadCourses({
+    required int generation,
+    required String keyword,
+    required List<String> departmentCodes,
+    required List<String> typeCodes,
+    required List<int> levelCodes,
+    required int? term,
+    required String order,
+  }) async {
+    try {
+      final departmentIds = await _departmentRepository.resolveFilterCodes(
+        departmentCodes,
       );
+      if (generation != _requestGeneration) return;
+      final result = await _courseRepository.search(
+        CourseSearchQuery(
+          keyword: keyword,
+          types: typeCodes,
+          departments: departmentIds,
+          levels: levelCodes,
+          term: term,
+          order: _mapLegacyOrder(order),
+        ),
+      );
+      if (generation != _requestGeneration) return;
+      _courses = result.courses;
+    } catch (caughtError) {
+      if (generation != _requestGeneration) return;
+      _error = caughtError;
+    } finally {
+      if (generation == _requestGeneration) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
-  Future<bool> courseSearch({String order = "DEF", double tune = 3}) async {
-    _courseFilter.forEach((k, v) {
-      if (v.options.expand((i) => i).every((i) => i.selected == false)) {
-        if (v.isMultiSelect == true)
-          v.options.expand((i) => i).forEach((j) {
-            // j.selected = true;
-          });
-        else
-          v.options.first.first.selected = true;
-      }
-    });
-    List<CodeLabelPair> dep =
-        _courseFilter['departments']!.options
-            .expand((i) => i)
-            .every((i) => i.selected == false)
-        ? []
-        : _courseFilter['departments']!.options
-              .expand((i) => i)
-              .where((i) => i.selected == true)
-              .toList();
-    List<CodeLabelPair> typ =
-        _courseFilter['types']!.options
-            .expand((i) => i)
-            .every((i) => i.selected == false)
-        ? []
-        : _courseFilter['types']!.options
-              .expand((i) => i)
-              .where((i) => i.selected == true)
-              .toList();
-    List<CodeLabelPair> lev =
-        _courseFilter['levels']!.options
-            .expand((i) => i)
-            .every((i) => i.selected == false)
-        ? []
-        : _courseFilter['levels']!.options
-              .expand((i) => i)
-              .where((i) => i.selected == true)
-              .toList();
-    CodeLabelPair term = _courseFilter['terms']!.options
-        .expand((i) => i)
-        .firstWhere((i) => i.selected == true);
-    if (dep.length == 0 &&
-        typ.length == 0 &&
-        lev.length == 0 &&
-        _courseSearchText.length == 0)
-      return false;
-    Future(() async {
-      updateCourseSearchquery();
-      _isSearching = true;
-      notifyListeners();
-      try {
-        final response = await DioProvider().dio.getUri(
-          Uri(
-            path: API_COURSE_URL,
-            queryParameters: {
-              "keyword": _courseSearchText,
-              "department": dep.length == 0
-                  ? ['ALL']
-                  : dep.map((i) => i.code).toList(),
-              "type": typ.length == 0
-                  ? ['ALL']
-                  : typ.map((i) => i.code).toList(),
-              "level": lev.length == 0
-                  ? ['ALL']
-                  : lev.map((i) => i.code).toList(),
-              "term": term.code,
-            },
-          ),
-        );
-
-        final rawCourses = response.data as List;
-        _courses = rawCourses.map((course) => Course.fromJson(course)).toList();
-
-        switch (order) {
-          case "RAT":
-            final avgRatings =
-                _courses!.fold<double>(
-                  0,
-                  (acc, val) => acc + val.grade + val.load + val.speech,
-                ) /
-                _courses!.length;
-            _courses!.sort((a, b) {
-              final aRating =
-                  ((a.grade + a.load + a.speech) * a.reviewTotalWeight +
-                      avgRatings * tune) /
-                  (a.reviewTotalWeight + tune);
-              final bRating =
-                  ((b.grade + b.load + b.speech) * b.reviewTotalWeight +
-                      avgRatings * tune) /
-                  (b.reviewTotalWeight + tune);
-              return bRating.compareTo(aRating);
-            });
-            break;
-          case "GRA":
-            final avgRatings =
-                _courses!.fold<double>(0, (acc, val) => acc + val.grade) /
-                _courses!.length;
-            _courses!.sort((a, b) {
-              final aRating =
-                  (a.grade * a.reviewTotalWeight + avgRatings * tune) /
-                  (a.reviewTotalWeight + tune);
-              final bRating =
-                  (b.grade * b.reviewTotalWeight + avgRatings * tune) /
-                  (b.reviewTotalWeight + tune);
-              return bRating.compareTo(aRating);
-            });
-            break;
-          case "LOA":
-            final avgRatings =
-                _courses!.fold<double>(0, (acc, val) => acc + val.load) /
-                _courses!.length;
-            _courses!.sort((a, b) {
-              final aRating =
-                  (a.load * a.reviewTotalWeight + avgRatings * tune) /
-                  (a.reviewTotalWeight + tune);
-              final bRating =
-                  (b.load * b.reviewTotalWeight + avgRatings * tune) /
-                  (b.reviewTotalWeight + tune);
-              return bRating.compareTo(aRating);
-            });
-            break;
-          case "SPE":
-            final avgRatings =
-                _courses!.fold<double>(0, (acc, val) => acc + val.speech) /
-                _courses!.length;
-            _courses!.sort((a, b) {
-              final aRating =
-                  (a.speech * a.reviewTotalWeight + avgRatings * tune) /
-                  (a.reviewTotalWeight + tune);
-              final bRating =
-                  (b.speech * b.reviewTotalWeight + avgRatings * tune) /
-                  (b.reviewTotalWeight + tune);
-              return bRating.compareTo(aRating);
-            });
-            break;
-        }
-      } catch (exception) {
-        print(exception);
-      }
-
-      _isSearching = false;
-      notifyListeners();
-    });
-    return true;
+  List<String> _selectedCodes(String groupName) {
+    return _courseFilter[groupName]!.options
+        .expand((row) => row)
+        .where((option) => option.selected)
+        .map((option) => option.code)
+        .toList(growable: false);
   }
+
+  int? _selectedTerm() {
+    final selected = _selectedCodes("terms");
+    if (selected.isEmpty || selected.first == "ALL") return null;
+    return int.tryParse(selected.first);
+  }
+}
+
+Iterable<String> _selectedLabelsForSummary(FilterGroupInfo group) {
+  final options = group.options.expand((row) => row);
+  if ((!group.isMultiSelect && group.options.first.first.selected) ||
+      options.every((option) => option.selected)) {
+    return const <String>[];
+  }
+  return options
+      .where((option) => option.selected)
+      .map((option) => option.label);
+}
+
+const Map<String, String> _v2TypeCodeByLegacyCode = <String, String>{
+  "BR": "BR",
+  "BE": "BE",
+  "MR": "MR",
+  "ME": "ME",
+  "MGC": "MGC",
+  "HSE": "HSE",
+  "GR": "GR",
+  "EG": "EG",
+  "OE": "OE",
+};
+
+List<String> _mapTypeCodes(Iterable<String> legacyCodes) {
+  return legacyCodes
+      .map((code) => _v2TypeCodeByLegacyCode[code])
+      .whereType<String>()
+      .toList(growable: false);
+}
+
+List<int> _mapLevelCodes(Iterable<String> legacyCodes) {
+  final levels = <int>[];
+  for (final code in legacyCodes) {
+    if (code == "ETC") {
+      levels.addAll(const <int>[500, 600, 700, 800, 900]);
+      continue;
+    }
+    final level = int.tryParse(code);
+    if (level != null) levels.add(level);
+  }
+  return levels;
+}
+
+const Map<String, String> _v2OrderByLegacyOrder = <String, String>{
+  "DEF": "code",
+  "RAT": "popular",
+  "GRA": "popular",
+  "LOA": "popular",
+  "SPE": "popular",
+};
+
+String _mapLegacyOrder(String legacyOrder) {
+  // v2 no longer exposes grade/load/speech rating fields. Mapping all legacy
+  // rating dimensions to the server's popularity order preserves useful ranking
+  // without silently sorting on compatibility-zero model fields. DEF and
+  // unknown values use the v2 course-code order.
+  return _v2OrderByLegacyOrder[legacyOrder] ?? "code";
 }
