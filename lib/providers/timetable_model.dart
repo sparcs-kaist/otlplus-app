@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -9,15 +10,73 @@ import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/timetable.dart';
 import 'package:otlplus/models/user.dart';
+import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:otlplus/utils/export_file.dart';
 
+typedef TimetableFileWriter =
+    Future<void> Function(ShareType type, Uint8List? bytes);
+
 class TimetableModel extends ChangeNotifier {
+  TimetableModel({
+    TimetableRepository? repository,
+    Dio? legacyShareDio,
+    TimetableFileWriter? fileWriter,
+    bool forTest = false,
+  }) : _repository = repository ?? TimetableRepository(DioProvider().dio),
+       _legacyShareDio = legacyShareDio ?? DioProvider().dio,
+       _fileWriter = fileWriter ?? writeFile {
+    if (forTest) {
+      _user = User(
+        id: 0,
+        email: 'email',
+        studentId: 'studentId',
+        firstName: 'firstName',
+        lastName: 'lastName',
+        majors: [],
+        departments: [],
+        myTimetableLectures: [],
+        reviewWritableLectures: [],
+        reviews: [],
+      );
+      _semesters = [
+        Semester(
+          year: 2024,
+          semester: Season.fall.code,
+          beginning: DateTime.now(),
+          end: DateTime.now(),
+        ),
+      ];
+      _summaries = [
+        const TimetableListItem(
+          id: 1,
+          name: 'Timetable 1',
+          year: 2024,
+          semester: 3,
+          timeTableOrder: 0,
+        ),
+      ];
+      _timetables = [
+        Timetable(id: -1, lectures: []),
+        Timetable(id: 1, lectures: []),
+      ];
+      _selectedSemesterIndex = 0;
+      _isLoaded = true;
+    }
+  }
+
+  final TimetableRepository _repository;
+
+  // Image/iCal export has not moved to TimetableRepository yet. Keep this
+  // isolated boundary only for the retained share endpoints.
+  final Dio _legacyShareDio;
+  final TimetableFileWriter _fileWriter;
+
   late User _user;
   User get user => _user;
 
-  late List<Semester> _semesters;
+  List<Semester> _semesters = <Semester>[];
 
-  late int _selectedSemesterIndex;
+  int _selectedSemesterIndex = 0;
   Semester get selectedSemester => _semesters[_selectedSemesterIndex];
   Season get selectedSeason {
     final season = Season.fromCode(selectedSemester.semester);
@@ -29,8 +88,12 @@ class TimetableModel extends ChangeNotifier {
     return season;
   }
 
-  late List<Timetable> _timetables;
-  List<Timetable> get timetables => _timetables;
+  List<TimetableListItem> _summaries = <TimetableListItem>[];
+  List<TimetableListItem> get summaries =>
+      List<TimetableListItem>.unmodifiable(_summaries);
+
+  List<Timetable> _timetables = <Timetable>[];
+  List<Timetable> get timetables => List<Timetable>.unmodifiable(_timetables);
 
   Lecture? _tempLecture;
   Lecture? get tempLecture => _tempLecture;
@@ -48,75 +111,54 @@ class TimetableModel extends ChangeNotifier {
   TimetableViewMode _selectedMode = TimetableViewMode.classes;
   TimetableViewMode get selectedMode => _selectedMode;
 
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
   bool _isLoaded = false;
   bool get isLoaded => _isLoaded;
 
   bool _loadFailed = false;
   bool get loadFailed => _loadFailed;
 
-  TimetableModel({bool forTest = false}) {
-    if (forTest) {
-      _user = User(
-        id: 0,
-        email: "email",
-        studentId: "studentId",
-        firstName: "firstName",
-        lastName: "lastName",
-        majors: [],
-        departments: [],
-        myTimetableLectures: [],
-        reviewWritableLectures: [],
-        reviews: [],
-      );
-      _semesters = [
-        Semester(
-          year: 2024,
-          semester: Season.fall.code,
-          beginning: DateTime.now(),
-          end: DateTime.now(),
-        ),
-      ];
-      _timetables = [
-        Timetable(id: 0, lectures: []),
-        Timetable(id: 1, lectures: []),
-      ];
-      _selectedSemesterIndex = 0;
-    }
-  }
+  Object? _error;
+  Object? get error => _error;
 
-  void loadSemesters({required User user, required List<Semester> semesters}) {
+  int _loadRequestId = 0;
+
+  Future<void> loadSemesters({
+    required User user,
+    required List<Semester> semesters,
+  }) async {
     _user = user;
-    _semesters = semesters;
-    _selectedSemesterIndex = semesters.length - 1;
-    notifyListeners();
-    _loadTimetable();
+    _semesters = List<Semester>.of(semesters);
+    if (_semesters.isEmpty) {
+      _setLoadError(StateError('At least one semester is required'));
+      return;
+    }
+    _selectedSemesterIndex = _semesters.length - 1;
+    await _loadTimetable();
   }
 
-  get canGoPreviousSemester => _selectedSemesterIndex > 0;
+  bool get canGoPreviousSemester => _selectedSemesterIndex > 0;
 
   bool goPreviousSemester() {
-    if (canGoPreviousSemester) {
-      _selectedSemesterIndex--;
-      notifyListeners();
-      _loadTimetable();
-      return true;
-    }
-    return false;
+    if (!canGoPreviousSemester) return false;
+    _selectedSemesterIndex--;
+    unawaited(_loadTimetable());
+    return true;
   }
 
-  get canGoNextSemester => _selectedSemesterIndex < _semesters.length - 1;
+  bool get canGoNextSemester => _selectedSemesterIndex < _semesters.length - 1;
 
   bool goNextSemester() {
-    if (canGoNextSemester) {
-      _selectedSemesterIndex++;
-      notifyListeners();
-      _loadTimetable();
-      return true;
-    }
-    return false;
+    if (!canGoNextSemester) return false;
+    _selectedSemesterIndex++;
+    unawaited(_loadTimetable());
+    return true;
   }
 
   void setIndex(int index) {
+    if (index < 0 || index >= _timetables.length) return;
     _selectedTimetableIndex = index;
     notifyListeners();
   }
@@ -126,56 +168,105 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> _loadTimetable({bool hasRetriedEmpty = false}) async {
+  Future<bool> _loadTimetable() async {
+    final requestId = ++_loadRequestId;
+    final selectServerTimetable = _selectedTimetableIndex > 0;
+    _isLoading = true;
+    _isLoaded = false;
     _loadFailed = false;
+    _error = null;
+    _selectedTimetableIndex = 0;
+    _summaries = <TimetableListItem>[];
+    _timetables = <Timetable>[];
     notifyListeners();
 
     try {
-      final response = await DioProvider().dio.get(
-        API_TIMETABLE_URL.replaceFirst("{user_id}", _user.id.toString()),
-        queryParameters: {
-          "year": selectedSemester.year,
-          "semester": selectedSeason.code,
-        },
-      );
-
-      List<dynamic> rawTimetables = response.data as List;
-
-      if (rawTimetables.isEmpty) {
-        _selectedTimetableIndex = -1;
-        _timetables = [];
-        if (hasRetriedEmpty) {
-          _loadFailed = true;
-          notifyListeners();
-          return false;
+      final results = await Future.wait<Object>(<Future<Object>>[
+        _repository.fetchMyTimetable(
+          selectedSemester.year,
+          selectedSeason.code,
+        ),
+        _repository.fetchBySemester(selectedSemester.year, selectedSeason.code),
+      ]);
+      final primary = results[0] as Timetable;
+      var collection = results[1] as TimetableCollection;
+      if (requestId != _loadRequestId) return false;
+      if (collection.summaries.isEmpty) {
+        await _repository.create(
+          year: selectedSemester.year,
+          semester: selectedSeason.code,
+          lectureIds: <int>[],
+        );
+        collection = await _repository.fetchBySemester(
+          selectedSemester.year,
+          selectedSeason.code,
+        );
+        if (collection.summaries.isEmpty) {
+          throw StateError('Created timetable was missing from the refetch');
         }
-        await createTimetable();
-        return _loadTimetable(hasRetriedEmpty: true);
       }
+      if (requestId != _loadRequestId) return false;
 
-      _timetables = rawTimetables
-          .map((timetable) => Timetable.fromJson(timetable))
-          .toList();
-
-      List<Lecture> myLecturesList = _user.myTimetableLectures
-          .where(
-            (lecture) =>
-                lecture.year == selectedSemester.year &&
-                lecture.semester == selectedSeason.code,
-          )
-          .toList();
-      Timetable myTimetable = Timetable(id: -1, lectures: myLecturesList);
-      _timetables.insert(0, myTimetable);
-      _selectedTimetableIndex = _selectedTimetableIndex == 0 ? 0 : 1;
+      _applyCollection(
+        primary,
+        collection,
+        selectServerTimetable: selectServerTimetable,
+      );
+      _isLoading = false;
       _isLoaded = true;
       notifyListeners();
       return true;
     } catch (exception) {
-      print(exception);
-      _loadFailed = true;
-      notifyListeners();
+      if (requestId != _loadRequestId) return false;
+      _setLoadError(exception);
+      return false;
     }
-    return false;
+  }
+
+  void _applyCollection(
+    Timetable primary,
+    TimetableCollection collection, {
+    int? preferredTimetableId,
+    bool selectServerTimetable = false,
+  }) {
+    if (collection.summaries.isEmpty) {
+      throw StateError('Timetable collection must not be empty');
+    }
+    if (collection.summaries.length != collection.timetables.length) {
+      throw StateError(
+        'Timetable summaries and details must have equal length',
+      );
+    }
+    for (var index = 0; index < collection.summaries.length; index++) {
+      if (collection.summaries[index].id != collection.timetables[index].id) {
+        throw StateError('Timetable summary/detail order is inconsistent');
+      }
+    }
+
+    _summaries = List<TimetableListItem>.of(collection.summaries);
+    _timetables = <Timetable>[primary, ...collection.timetables];
+
+    if (preferredTimetableId != null) {
+      final summaryIndex = _summaries.indexWhere(
+        (summary) => summary.id == preferredTimetableId,
+      );
+      _selectedTimetableIndex = summaryIndex < 0 ? 0 : summaryIndex + 1;
+    } else if (selectServerTimetable && _summaries.isNotEmpty) {
+      _selectedTimetableIndex = 1;
+    } else {
+      _selectedTimetableIndex = 0;
+    }
+  }
+
+  void _setLoadError(Object exception) {
+    _error = exception;
+    _isLoading = false;
+    _isLoaded = false;
+    _loadFailed = true;
+    _selectedTimetableIndex = 0;
+    _summaries = <TimetableListItem>[];
+    _timetables = <Timetable>[];
+    notifyListeners();
   }
 
   Future<void> retryLoad() async {
@@ -183,118 +274,145 @@ class TimetableModel extends ChangeNotifier {
   }
 
   Future<bool> createTimetable({List<Lecture>? lectures}) async {
+    if (_semesters.isEmpty || !_isLoaded || _timetables.isEmpty) return false;
     try {
-      final response = await DioProvider().dio.post(
-        API_TIMETABLE_URL.replaceFirst("{user_id}", user.id.toString()),
-        data: {
-          "year": selectedSemester.year,
-          "semester": selectedSeason.code,
-          "lectures": (lectures == null)
-              ? []
-              : lectures.map((lecture) => lecture.id).toList(),
-        },
+      _error = null;
+      final id = await _repository.create(
+        year: selectedSemester.year,
+        semester: selectedSeason.code,
+        lectureIds: (lectures ?? <Lecture>[])
+            .map((lecture) => lecture.id)
+            .toList(growable: false),
       );
-      final timetable = Timetable.fromJson(response.data);
-      _timetables.add(timetable);
-      _selectedTimetableIndex = _timetables.length - 1;
+      final collection = await _repository.fetchBySemester(
+        selectedSemester.year,
+        selectedSeason.code,
+      );
+      _applyCollection(_timetables.first, collection, preferredTimetableId: id);
+      _isLoaded = true;
+      _loadFailed = false;
       notifyListeners();
-      return true;
+      return _selectedTimetableIndex > 0;
     } catch (exception) {
-      print(exception);
+      _error = exception;
+      notifyListeners();
+      return false;
     }
-    return false;
   }
 
-  Future<bool> addLecture({
-    required Lecture lecture,
-    required FutureOr<bool> Function() noOverlap,
-    required FutureOr<bool> Function(Iterable<Lecture>) onOverlap,
-  }) async {
-    try {
-      final overlappedLectures = currentTimetable.lectures.where(
-        (timetableLecture) => lecture.classtimes.any(
-          (thisClasstime) => timetableLecture.classtimes.any(
-            (classtime) =>
-                (classtime.day == thisClasstime.day) &&
-                (classtime.begin < thisClasstime.end) &&
-                (classtime.end > thisClasstime.begin),
+  List<Lecture> overlappingLectures(Lecture lecture) {
+    if (!_hasEditableTimetable) return <Lecture>[];
+    return currentTimetable.lectures
+        .where(
+          (timetableLecture) => lecture.classtimes.any(
+            (thisClasstime) => timetableLecture.classtimes.any(
+              (classtime) =>
+                  classtime.day == thisClasstime.day &&
+                  classtime.begin < thisClasstime.end &&
+                  classtime.end > thisClasstime.begin,
+            ),
           ),
-        ),
-      );
+        )
+        .toList(growable: false);
+  }
 
-      if (overlappedLectures.length > 0) {
-        if (!await onOverlap(overlappedLectures)) return false;
-
-        for (final lecture in overlappedLectures) {
-          await DioProvider().dio.post(
-            API_TIMETABLE_REMOVE_LECTURE_URL
-                .replaceFirst("{user_id}", user.id.toString())
-                .replaceFirst("{timetable_id}", currentTimetable.id.toString()),
-            data: {"lecture": lecture.id},
-          );
-        }
-        currentTimetable.lectures.removeWhere(overlappedLectures.contains);
-      } else if (!await noOverlap())
-        return false;
-
-      final response = await DioProvider().dio.post(
-        API_TIMETABLE_ADD_LECTURE_URL
-            .replaceFirst("{user_id}", user.id.toString())
-            .replaceFirst("{timetable_id}", currentTimetable.id.toString()),
-        data: {"lecture": lecture.id},
-      );
-      final timetable = Timetable.fromJson(response.data);
-      _timetables[_selectedTimetableIndex] = timetable;
-      notifyListeners();
-      return true;
-    } catch (exception) {
-      print(exception);
+  Future<TimetableAddResult> addLecture({
+    required Lecture lecture,
+    bool replaceOverlaps = false,
+  }) async {
+    if (!_hasEditableTimetable) return TimetableAddResult.failed;
+    final hadError = _error != null;
+    _error = null;
+    final overlaps = overlappingLectures(lecture);
+    if (overlaps.isNotEmpty && !replaceOverlaps) {
+      if (hadError) notifyListeners();
+      return TimetableAddResult.overlap;
     }
-    return false;
+
+    try {
+      for (final overlap in overlaps) {
+        final updated = await _repository.updateLecture(
+          summary: _currentSummary,
+          lectureId: overlap.id,
+          action: TimetableLectureAction.delete,
+        );
+        _replaceCurrentTimetable(updated);
+      }
+      final updated = await _repository.updateLecture(
+        summary: _currentSummary,
+        lectureId: lecture.id,
+        action: TimetableLectureAction.add,
+      );
+      _replaceCurrentTimetable(updated);
+      notifyListeners();
+      return TimetableAddResult.added;
+    } catch (exception) {
+      _error = exception;
+      notifyListeners();
+      return TimetableAddResult.failed;
+    }
   }
 
   Future<bool> removeLecture({required Lecture lecture}) async {
+    if (!_hasEditableTimetable) return false;
     try {
-      final response = await DioProvider().dio.post(
-        API_TIMETABLE_REMOVE_LECTURE_URL
-            .replaceFirst("{user_id}", user.id.toString())
-            .replaceFirst("{timetable_id}", currentTimetable.id.toString()),
-        data: {"lecture": lecture.id},
+      _error = null;
+      final updated = await _repository.updateLecture(
+        summary: _currentSummary,
+        lectureId: lecture.id,
+        action: TimetableLectureAction.delete,
       );
-      final timetable = Timetable.fromJson(response.data);
-      _timetables[_selectedTimetableIndex] = timetable;
+      _replaceCurrentTimetable(updated);
       notifyListeners();
       return true;
     } catch (exception) {
-      print(exception);
+      _error = exception;
+      notifyListeners();
+      return false;
     }
-    return false;
   }
 
   Future<bool> deleteTimetable() async {
+    if (!_hasEditableTimetable) return false;
     try {
-      if (_timetables.length <= 1) return false;
-
-      await DioProvider().dio.delete(
-        API_TIMETABLE_URL.replaceFirst("{user_id}", user.id.toString()) +
-            "/" +
-            currentTimetable.id.toString(),
-        data: {},
-      );
-
-      _timetables.remove(currentTimetable);
-      if (_selectedTimetableIndex > 0) _selectedTimetableIndex--;
+      _error = null;
+      final deletedIndex = _selectedTimetableIndex;
+      await _repository.delete(currentTimetable.id);
+      _summaries.removeAt(deletedIndex - 1);
+      _timetables.removeAt(deletedIndex);
+      _selectedTimetableIndex = deletedIndex - 1;
+      if (_selectedTimetableIndex >= _timetables.length) {
+        _selectedTimetableIndex = _timetables.length - 1;
+      }
       notifyListeners();
       return true;
     } catch (exception) {
-      print(exception);
+      _error = exception;
+      notifyListeners();
+      return false;
     }
-    return false;
+  }
+
+  // The dedicated my-timetable response is read-only at UI index 0. The
+  // server collection contains only editable user-created timetable summaries.
+  bool get _hasEditableTimetable =>
+      _selectedTimetableIndex > 0 &&
+      _selectedTimetableIndex < _timetables.length &&
+      _selectedTimetableIndex - 1 < _summaries.length;
+
+  TimetableListItem get _currentSummary =>
+      _summaries[_selectedTimetableIndex - 1];
+
+  void _replaceCurrentTimetable(Timetable timetable) {
+    if (timetable.id != _currentSummary.id) {
+      throw StateError('Updated timetable id does not match its summary');
+    }
+    _timetables[_selectedTimetableIndex] = timetable;
   }
 
   Future<bool> shareTimetable(ShareType type, String language) async {
     try {
-      final response = await DioProvider().dio.get(
+      final response = await _legacyShareDio.get(
         API_SHARE_URL.replaceFirst(
           '{share_type}',
           type == ShareType.image ? 'image' : 'ical',
@@ -308,11 +426,18 @@ class TimetableModel extends ChangeNotifier {
         options: Options(responseType: ResponseType.bytes),
       );
 
-      writeFile(type, response.data);
+      final data = response.data;
+      final bytes = data == null
+          ? null
+          : data is Uint8List
+          ? data
+          : Uint8List.fromList(data as List<int>);
+      await _fileWriter(type, bytes);
       return true;
     } catch (exception) {
-      print(exception);
+      _error = exception;
+      notifyListeners();
+      return false;
     }
-    return false;
   }
 }

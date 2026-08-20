@@ -21,4 +21,6 @@ enum ReviewTab { hallOfFame, latest }
 
 enum TimetableViewMode { classes, exams, map }
 
+enum TimetableAddResult { added, overlap, failed }
+
 enum TimetableTabAction { copy, exportImage, exportIcal, delete }
