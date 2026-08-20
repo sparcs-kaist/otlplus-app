@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -21,16 +22,14 @@ class ReviewPage extends StatefulWidget {
 class _ReviewPageState extends State<ReviewPage> {
   @override
   Widget build(BuildContext context) {
-    final _selectedMode = context.select<HallOfFameModel, int>(
+    final _selectedMode = context.select<HallOfFameModel, ReviewTab>(
       (m) => m.selectedMode,
     );
 
     return OTLLayout(
-      leading: ReviewModeControl(
-        selectedMode: context.watch<HallOfFameModel>().selectedMode,
-      ),
+      leading: ReviewModeControl(selectedMode: _selectedMode),
       trailing: Visibility(
-        visible: context.watch<HallOfFameModel>().selectedMode == 0,
+        visible: _selectedMode == ReviewTab.hallOfFame,
         child: Padding(
           padding: const EdgeInsets.only(right: 16.0),
           child: HallOfFameControl(),
@@ -42,7 +41,7 @@ class _ReviewPageState extends State<ReviewPage> {
         ),
         child: NotificationListener<ScrollNotification>(
           onNotification: (scrollNotification) {
-            if (_selectedMode == 1) {
+            if (_selectedMode == ReviewTab.latest) {
               final reviewModel = context.read<LatestReviewsModel>();
 
               if (!reviewModel.isLoading &&
@@ -69,7 +68,10 @@ class _ReviewPageState extends State<ReviewPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                _selectedMode == 1 ? LatestReviewsPage() : HallOfFamePage(),
+                switch (_selectedMode) {
+                  ReviewTab.hallOfFame => HallOfFamePage(),
+                  ReviewTab.latest => LatestReviewsPage(),
+                },
               ],
             ),
           ),

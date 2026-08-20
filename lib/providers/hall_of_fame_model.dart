@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/review.dart';
@@ -29,9 +30,9 @@ class HallOfFameModel extends ChangeNotifier {
     // );
   }
 
-  int _selectedMode = 0;
-  int get selectedMode => _selectedMode;
-  void setMode(int mode) {
+  ReviewTab _selectedMode = ReviewTab.hallOfFame;
+  ReviewTab get selectedMode => _selectedMode;
+  void setMode(ReviewTab mode) {
     _selectedMode = mode;
     notifyListeners();
     scrollController.animateTo(
