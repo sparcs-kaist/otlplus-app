@@ -15,10 +15,6 @@ dependencies:
   dotted_border: "^2.1.0"
   flutter_web_browser: "^0.17.3"
   webview_flutter: "^4.14.1"
-  webview_cookie_manager:
-    git:
-      url: https://github.com/fryette/webview_cookie_manager.git
-      ref: master
   path_provider: "^2.1.6"
   permission_handler: "^11.3.1"
   provider: "^6.1.2"
