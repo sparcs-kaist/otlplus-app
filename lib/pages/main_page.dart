@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -38,62 +39,39 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  @override
-  void initState() {
-    super.initState();
-    initWidgetData();
+  int? _syncedWidgetUserId;
+  int? _syncingWidgetUserId;
+
+  void _scheduleWidgetUserSync(int userId) {
+    if (_syncedWidgetUserId == userId || _syncingWidgetUserId == userId) return;
+    _syncingWidgetUserId = userId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_syncWidgetUser(userId));
+    });
   }
 
-  Future<void> initWidgetData() async {
+  Future<void> _syncWidgetUser(int userId) async {
     try {
-      final storageService = StorageService();
-      final accessToken = await storageService.getAccessToken();
-      final refreshToken = await storageService.getRefreshToken();
-
-      if (accessToken != null && refreshToken != null) {
-        await _initAndroidWidgetTokens(accessToken, refreshToken);
-        await _initWidgetKitTokens(accessToken, refreshToken);
+      if (Platform.isIOS) {
+        await WidgetKit.setItem(
+          'uid',
+          userId.toString(),
+          'group.org.sparcs.otl',
+        );
+        WidgetKit.reloadAllTimelines();
+        await StorageService().syncNativeReplicas();
       }
-
-      // Set user ID for widgets
-      final infoModel = context.read<InfoModel>();
-      if (infoModel.hasData) {
-        if (Platform.isIOS) {
-          WidgetKit.setItem(
-            'uid',
-            infoModel.user.id.toString(),
-            'group.org.sparcs.otl',
-          );
-          WidgetKit.reloadAllTimelines();
-        }
-        if (Platform.isAndroid) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString("user_id", infoModel.user.id.toString());
-        }
+      if (Platform.isAndroid) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("user_id", userId.toString());
       }
-    } catch (e) {
-      print("Widget data init failed: $e");
+      _syncedWidgetUserId = userId;
+    } catch (error) {
+      debugPrint("Widget data init failed: $error");
+    } finally {
+      _syncingWidgetUserId = null;
     }
-  }
-
-  Future<void> _initAndroidWidgetTokens(
-    String accessToken,
-    String refreshToken,
-  ) async {
-    if (!Platform.isAndroid) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("access_token", accessToken);
-    await prefs.setString("refresh_token", refreshToken);
-  }
-
-  Future<void> _initWidgetKitTokens(
-    String accessToken,
-    String refreshToken,
-  ) async {
-    if (!Platform.isIOS) return;
-    WidgetKit.setItem('accessToken', accessToken, 'group.org.sparcs.otl');
-    WidgetKit.setItem('refreshToken', refreshToken, 'group.org.sparcs.otl');
-    WidgetKit.reloadAllTimelines();
   }
 
   @override
@@ -120,6 +98,8 @@ class _MainPageState extends State<MainPage> {
       }
       return const Center(child: CircularProgressIndicator());
     }
+
+    _scheduleWidgetUserSync(infoModel.user.id);
 
     if (infoModel.semesters.isEmpty) {
       final isEn = context.locale == const Locale('en');
