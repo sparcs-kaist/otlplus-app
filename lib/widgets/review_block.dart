@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
@@ -39,6 +40,7 @@ class _ReviewBlockState extends State<ReviewBlock> {
   Widget build(BuildContext context) {
     String content = widget.review.content;
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final season = Season.fromCode(widget.review.lecture.semester);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -82,16 +84,10 @@ class _ReviewBlockState extends State<ReviewBlock> {
                           ),
                           const TextSpan(text: " "),
                           TextSpan(text: widget.review.lecture.year.toString()),
-                          const TextSpan(text: " "),
-                          TextSpan(
-                            text: [
-                              "",
-                              "semester.spring".tr(),
-                              "semester.summer".tr(),
-                              "semester.fall".tr(),
-                              "semester.winter".tr(),
-                            ][widget.review.lecture.semester],
-                          ),
+                          if (season != null) ...[
+                            const TextSpan(text: " "),
+                            TextSpan(text: season.labelKey.tr()),
+                          ],
                         ],
                       ),
                     ),

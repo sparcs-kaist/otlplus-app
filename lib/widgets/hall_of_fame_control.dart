@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/extensions/semester.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/info_model.dart';
@@ -49,7 +50,7 @@ class _HallOfFameControlState extends State<HallOfFameControl> {
             Text(
               _currentSemester == null
                   ? "common.all".tr()
-                  : "${_currentSemester?.year} ${_currentSemester?.semester == 1 ? 'semester.spring'.tr() : 'semester.fall'.tr()}",
+                  : _currentSemester!.title,
               style: bodyBold.copyWith(color: OTLColor.pinksMain),
             ),
             const SizedBox(width: 2.0),
@@ -70,8 +71,7 @@ class _HallOfFameControlState extends State<HallOfFameControl> {
           _targetSemesters.length,
           (index) => ItemData(
             value: _targetSemesters[index],
-            text:
-                "${_targetSemesters[index].year} ${_targetSemesters[index].semester == 1 ? 'semester.spring'.tr() : 'semester.fall'.tr()}",
+            text: _targetSemesters[index].title,
             icon: _currentSemester == _targetSemesters[index]
                 ? Icons.check
                 : null,

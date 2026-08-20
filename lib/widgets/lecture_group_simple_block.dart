@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/pages/lecture_detail_page.dart';
@@ -24,10 +25,13 @@ class LectureGroupSimpleBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final season = Season.fromCode(semester);
+    final isBeforeYear = season == Season.spring || season == Season.summer;
+    final isAfterYear = season == Season.fall || season == Season.winter;
 
     return Column(
       children: <Widget>[
-        if (semester == 1) const Spacer(),
+        if (isBeforeYear) const Spacer(),
         Container(
           width: isEn ? 150.0 : 100.0,
           margin: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -104,7 +108,7 @@ class LectureGroupSimpleBlock extends StatelessWidget {
             ).toList(),
           ),
         ),
-        if (semester == 3) const Spacer(),
+        if (isAfterYear) const Spacer(),
       ],
     );
   }
