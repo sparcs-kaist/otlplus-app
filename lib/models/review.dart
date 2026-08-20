@@ -1,5 +1,6 @@
 import 'package:otlplus/models/nested_course.dart';
 import 'package:otlplus/models/nested_lecture.dart';
+import 'package:otlplus/models/professor.dart';
 
 class Review {
   final int id;
@@ -42,6 +43,72 @@ class Review {
       load = json['load'],
       speech = json['speech'],
       userspecificIsLiked = json['userspecific_is_liked'];
+
+  factory Review.fromV2Json(Map<String, dynamic> json) {
+    final courseId = json['courseId'] as int;
+    final courseName = json['courseName'] as String;
+    final professors = (json['professors'] as List<dynamic>)
+        .map((professorJson) {
+          final professor = professorJson as Map<String, dynamic>;
+          final name = professor['name'] as String;
+          return Professor(
+            name: name,
+            nameEn: name,
+            professorId: professor['id'] as int,
+            reviewTotalWeight: 0,
+          );
+        })
+        .toList(growable: false);
+
+    return Review(
+      id: json['id'] as int,
+      course: NestedCourse(
+        id: courseId,
+        oldCode: '',
+        type: '',
+        typeEn: '',
+        title: courseName,
+        titleEn: courseName,
+        summary: '',
+        reviewTotalWeight: 0,
+      ),
+      lecture: NestedLecture(
+        id: json['lectureId'] as int,
+        title: courseName,
+        titleEn: courseName,
+        course: courseId,
+        oldCode: '',
+        classNo: '',
+        year: json['year'] as int,
+        semester: json['semester'] as int,
+        code: '',
+        department: 0,
+        departmentCode: '',
+        departmentName: '',
+        departmentNameEn: '',
+        type: '',
+        typeEn: '',
+        limit: 0,
+        numPeople: 0,
+        isEnglish: false,
+        credit: 0,
+        creditAu: 0,
+        commonTitle: courseName,
+        commonTitleEn: courseName,
+        classTitle: '',
+        classTitleEn: '',
+        reviewTotalWeight: 0,
+        professors: professors,
+      ),
+      content: json['content'] as String,
+      like: json['like'] as int,
+      isDeleted: (json['isDeleted'] as bool) ? 1 : 0,
+      grade: json['grade'] as int,
+      load: json['load'] as int,
+      speech: json['speech'] as int,
+      userspecificIsLiked: json['likedByUser'] as bool,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
