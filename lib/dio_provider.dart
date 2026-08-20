@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:dio/dio.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/services/storage_service.dart';
@@ -29,6 +31,13 @@ class DioProvider {
 
   static TelemetryCoordinator? _telemetry;
   static Future<void> Function()? _onSessionExpired;
+  static String Function() _localeSupplier =
+      () => PlatformDispatcher.instance.locale.languageCode;
+
+  /// Registers the source used to resolve the locale for each request.
+  static void configureLocaleSupplier(String Function() supplier) {
+    _localeSupplier = supplier;
+  }
 
   static void configureTelemetry(TelemetryCoordinator telemetry) {
     _telemetry = telemetry;
@@ -52,6 +61,7 @@ class DioProvider {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          options.headers['Accept-Language'] = _localeSupplier();
           final accessToken = await _storageService.getAccessToken();
           final refreshToken = await _storageService.getRefreshToken();
 
@@ -141,6 +151,7 @@ class DioProvider {
         baseUrl: _dio.options.baseUrl,
         connectTimeout: Duration(seconds: 10),
         receiveTimeout: Duration(seconds: 10),
+        headers: {'Accept-Language': _localeSupplier()},
       ),
     );
     try {
