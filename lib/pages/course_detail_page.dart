@@ -302,7 +302,7 @@ class CourseDetailPage extends StatelessWidget {
             for (final season in [Season.spring, Season.summer])
               _buildHistoryRow(
                 context,
-                courseDetailModel.lectures as List<Lecture>,
+                courseDetailModel.lectures,
                 years,
                 season,
                 courseDetailModel.selectedFilter,
@@ -328,7 +328,7 @@ class CourseDetailPage extends StatelessWidget {
             for (final season in [Season.fall, Season.winter])
               _buildHistoryRow(
                 context,
-                courseDetailModel.lectures as List<Lecture>,
+                courseDetailModel.lectures,
                 years,
                 season,
                 courseDetailModel.selectedFilter,
@@ -419,7 +419,8 @@ class CourseDetailPage extends StatelessWidget {
             })
             .toList(),
         ...context.select<CourseDetailModel, List<Widget>>((model) {
-          if (model.reviews?.isEmpty == true) {
+          final reviews = model.reviews;
+          if (reviews.isEmpty) {
             return [
               Center(
                 child: Padding(
@@ -431,22 +432,8 @@ class CourseDetailPage extends StatelessWidget {
                 ),
               ),
             ];
-          } else {
-            return model.reviews
-                    ?.map((review) => ReviewBlock(review: review))
-                    .toList() ??
-                [
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        "common.no_result".tr(),
-                        style: labelRegular.copyWith(color: OTLColor.grayA),
-                      ),
-                    ),
-                  ),
-                ];
           }
+          return reviews.map((review) => ReviewBlock(review: review)).toList();
         }),
       ]),
     );

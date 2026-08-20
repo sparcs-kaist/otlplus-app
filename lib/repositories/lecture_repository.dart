@@ -93,6 +93,18 @@ class LectureRepository {
     return Lecture.fromJson(response.data ?? const <String, dynamic>{});
   }
 
+  /// Fetches course lectures from the retained v1 course lectures API.
+  Future<List<Lecture>> fetchLegacyCourseLectures(int courseId) async {
+    final response = await _dio.get<List<dynamic>>(
+      API_COURSE_LECTURES_URL.replaceFirst("{id}", courseId.toString()),
+    );
+    return List<Lecture>.unmodifiable(
+      (response.data ?? const <dynamic>[]).whereType<Map>().map(
+        (lecture) => Lecture.fromJson(Map<String, dynamic>.from(lecture)),
+      ),
+    );
+  }
+
   /// Fetches reviews from the retained v1 lecture related-reviews API.
   Future<List<Review>> fetchLegacyRelatedReviews(int lectureId) async {
     final response = await _dio.get<List<dynamic>>(

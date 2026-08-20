@@ -269,4 +269,25 @@ void main() {
       "/${API_LECTURE_RELATED_REVIEWS_URL.replaceFirst("{id}", SampleLecture.id.toString())}",
     ]);
   });
+
+  test("fetches retained v1 course lectures through the named route", () async {
+    final adapter = CapturingHttpAdapter();
+    final path = API_COURSE_LECTURES_URL.replaceFirst(
+      "{id}",
+      SampleCourse.id.toString(),
+    );
+    adapter.register("GET", "/$path", <Map<String, dynamic>>[
+      SampleLecture.shared.toJson(),
+    ]);
+    final repository = LectureRepository(
+      Dio(BaseOptions(baseUrl: "http://test/"))..httpClientAdapter = adapter,
+    );
+
+    final lectures = await repository.fetchLegacyCourseLectures(
+      SampleCourse.id,
+    );
+
+    expect(lectures, <Lecture>[SampleLecture.shared]);
+    expect(adapter.requests.single.uri.path, "/$path");
+  });
 }

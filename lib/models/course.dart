@@ -130,6 +130,36 @@ class Course {
     );
   }
 
+  Course withReviewAverages({
+    required double grade,
+    required double load,
+    required double speech,
+  }) {
+    return Course(
+      id: id,
+      oldCode: oldCode,
+      department: department,
+      type: type,
+      typeEn: typeEn,
+      title: title,
+      titleEn: titleEn,
+      summary: summary,
+      reviewTotalWeight: reviewTotalWeight,
+      professors: professors,
+      grade: grade,
+      load: load,
+      speech: speech,
+      userspecificIsRead: userspecificIsRead,
+      open: open,
+      completed: completed,
+      classDuration: classDuration,
+      expDuration: expDuration,
+      credit: credit,
+      creditAU: creditAU,
+      history: history,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['id'] = this.id;

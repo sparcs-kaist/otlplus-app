@@ -1,33 +1,69 @@
-import 'package:flutter/material.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
-import 'package:otlplus/models/course.dart';
-import 'package:otlplus/models/lecture.dart';
-import 'package:otlplus/models/professor.dart';
-import 'package:otlplus/models/review.dart';
+import "package:flutter/foundation.dart";
+import "package:otlplus/dio_provider.dart";
+import "package:otlplus/models/course.dart";
+import "package:otlplus/models/lecture.dart";
+import "package:otlplus/models/professor.dart";
+import "package:otlplus/models/review.dart";
+import "package:otlplus/repositories/course_repository.dart";
+import "package:otlplus/repositories/lecture_repository.dart";
+import "package:otlplus/repositories/review_repository.dart";
 
 class CourseDetailModel extends ChangeNotifier {
+  CourseDetailModel([
+    CourseRepository? courseRepository,
+    LectureRepository? lectureRepository,
+    ReviewRepository? reviewRepository,
+  ]) : _courseRepository =
+           courseRepository ?? CourseRepository(DioProvider().dio),
+       _lectureRepository =
+           lectureRepository ?? LectureRepository(DioProvider().dio),
+       _reviewRepository =
+           reviewRepository ?? ReviewRepository(DioProvider().dio);
+
+  final CourseRepository _courseRepository;
+  final LectureRepository _lectureRepository;
+  final ReviewRepository _reviewRepository;
+
   late Course _course;
   Course get course => _course;
 
-  late String _selectedFilter;
+  String _selectedFilter = "ALL";
   String get selectedFilter => _selectedFilter;
 
   Lecture? get selectedLecture {
     if (_selectedFilter == "ALL") return null;
-    return _lectures.firstWhere(
-      (lecture) => lecture!.professors.any(
+    for (final lecture in _lectures) {
+      final matchesProfessor = lecture.professors.any(
         (professor) => professor.professorId.toString() == _selectedFilter,
-      ),
-      orElse: null,
-    );
+      );
+      if (matchesProfessor) return lecture;
+    }
+    return null;
   }
 
-  late List<Lecture?> _lectures;
-  List<Lecture?> get lectures => _lectures;
+  List<Lecture> _lectures = const <Lecture>[];
+  List<Lecture> get lectures => _lectures;
 
-  late List<Professor> _professors;
+  List<Professor> _professors = const <Professor>[];
   List<Professor> get professors => _professors;
+
+  List<Review> _reviews = const <Review>[];
+  List<Review> get reviews {
+    if (_selectedFilter == "ALL") return _reviews;
+    return _reviews
+        .where(
+          (review) => review.lecture.professors.any(
+            (professor) => professor.professorId.toString() == _selectedFilter,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  Object? _error;
+  Object? get error => _error;
 
   bool _hasData = false;
   bool get hasData => _hasData;
@@ -36,46 +72,57 @@ class CourseDetailModel extends ChangeNotifier {
   bool get loadFailed => _loadFailed;
 
   int? _courseId;
-
-  late List<Review>? _reviews;
-  List<Review>? get reviews {
-    if (_reviews == null) return [];
-    if (_selectedFilter == "ALL") return _reviews;
-    return _reviews!
-        .where(
-          (review) => review.lecture.professors.any(
-            (professor) => professor.professorId.toString() == _selectedFilter,
-          ),
-        )
-        .toList();
-  }
+  int _requestGeneration = 0;
 
   Future<void> loadCourse(int courseId) async {
     _courseId = courseId;
+    final generation = ++_requestGeneration;
+    _isLoading = true;
+    _error = null;
     _hasData = false;
     _loadFailed = false;
     notifyListeners();
 
     try {
-      final response = await DioProvider().dio.get(
-        API_COURSE_URL + "/" + courseId.toString(),
+      final courseRequest = _courseRepository.fetchDetail(courseId);
+      final lectureRequest = _lectureRepository.fetchLegacyCourseLectures(
+        courseId,
       );
+      final reviewRequest = _reviewRepository.fetchCourse(courseId);
+      late Course course;
+      late List<Lecture> lectures;
+      late ReviewListResult reviewResult;
 
-      _course = Course.fromJson(response.data);
-      _lectures = await getCourseLectures();
-      _professors =
-          _lectures
-              .map((lecture) => lecture!.professors)
-              .expand((e) => e)
-              .toList()
-            ..sort((a, b) => a.name.compareTo(b.name));
-      _reviews = await getCourseReviews();
+      await Future.wait<void>(<Future<void>>[
+        courseRequest.then((value) {
+          course = value;
+        }),
+        lectureRequest.then((value) {
+          lectures = value;
+        }),
+        reviewRequest.then((value) {
+          reviewResult = value;
+        }),
+      ]);
+      if (generation != _requestGeneration) return;
+
+      _course = course.withReviewAverages(
+        grade: reviewResult.averageGrade,
+        load: reviewResult.averageLoad,
+        speech: reviewResult.averageSpeech,
+      );
+      _lectures = List<Lecture>.unmodifiable(lectures);
+      _professors = lectures.expand((lecture) => lecture.professors).toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+      _reviews = List<Review>.unmodifiable(reviewResult.reviews);
       _selectedFilter = "ALL";
-
+      _isLoading = false;
       _hasData = true;
       notifyListeners();
-    } catch (exception) {
-      print(exception);
+    } catch (caughtError) {
+      if (generation != _requestGeneration) return;
+      _error = caughtError;
+      _isLoading = false;
       _hasData = false;
       _loadFailed = true;
       notifyListeners();
@@ -87,31 +134,16 @@ class CourseDetailModel extends ChangeNotifier {
     if (courseId != null) await loadCourse(courseId);
   }
 
-  Future<void> updateCourseReviews(Review review) async {
-    int index = _reviews!.indexOf(review);
+  void updateCourseReviews(Review review) {
+    final reviews = _reviews.toList();
+    final index = reviews.indexOf(review);
     if (index > -1) {
-      _reviews!.removeAt(index);
-      _reviews!.insert(index, review);
+      reviews[index] = review;
     } else {
-      _reviews!.insert(0, review);
+      reviews.insert(0, review);
     }
+    _reviews = List<Review>.unmodifiable(reviews);
     notifyListeners();
-  }
-
-  Future<List<Lecture>> getCourseLectures() async {
-    final response = await DioProvider().dio.get(
-      API_COURSE_LECTURE_URL.replaceFirst("{id}", _course.id.toString()),
-    );
-    final rawLectures = response.data as List;
-    return rawLectures.map((lecture) => Lecture.fromJson(lecture)).toList();
-  }
-
-  Future<List<Review>> getCourseReviews() async {
-    final response = await DioProvider().dio.get(
-      API_COURSE_REVIEW_URL.replaceFirst("{id}", _course.id.toString()),
-    );
-    final rawReviews = response.data as List;
-    return rawReviews.map((review) => Review.fromJson(review)).toList();
   }
 
   void setFilter(String filter) {

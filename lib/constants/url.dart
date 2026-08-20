@@ -8,7 +8,7 @@ const SESSION_REFRESH_URL = SESSION_URL + "refresh";
 const API_URL = "api/";
 
 const API_SEMESTER_URL = API_URL + "semesters";
-const API_COURSE_LECTURE_URL = API_URL + "courses/{id}/lectures";
+const API_COURSE_LECTURES_URL = API_URL + "courses/{id}/lectures";
 const API_COURSE_REVIEW_URL = API_URL + "courses/{id}/reviews";
 const API_LECTURE_RELATED_REVIEWS_URL =
     API_URL + "lectures/{id}/related-reviews";
