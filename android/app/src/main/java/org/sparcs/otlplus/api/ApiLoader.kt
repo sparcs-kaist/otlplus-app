@@ -1,102 +1,174 @@
 package org.sparcs.otlplus.api
 
 import android.content.Context
-import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONException
+import org.json.JSONObject
 
-class ApiLoader(context: Context) {
-    private val tokenStore = TokenStore(context)
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS) // Connection timeout
-        .readTimeout(30, TimeUnit.SECONDS)   // Read timeout
-        .writeTimeout(30, TimeUnit.SECONDS)  // Write timeout
-        .build()
-
-    fun getSync(url: String): String? {
-        val requestBuilder = Request.Builder()
-            .url(url)
-
-        tokenStore.accessToken?.let {
-            requestBuilder.addHeader("Authorization", "Bearer $it")
-        }
-
-        val request = requestBuilder.build()
-
-        return try {
-            val response = client.newCall(request).execute()
-            if (response.isSuccessful) {
-                response.body?.string()
-            } else if (response.code == 401) {
-                // Token might be expired, try to refresh
-                if (refreshToken()) {
-                    // Retry once with new token
-                    val newRequestBuilder = Request.Builder()
-                        .url(url)
-                    tokenStore.accessToken?.let {
-                        newRequestBuilder.addHeader("Authorization", "Bearer $it")
-                    }
-                    val newResponse = client.newCall(newRequestBuilder.build()).execute()
-                    if (newResponse.isSuccessful) {
-                        newResponse.body?.string()
-                    } else {
-                        null
-                    }
-                } else {
-                    null
-                }
-            } else {
-                null
-            }
-        } catch (e: IOException) {
-            null
-        }
-    }
-
-    private fun refreshToken(): Boolean {
-        val currentRefreshToken = tokenStore.refreshToken ?: return false
-        val baseUrl = "https://otl.kaist.ac.kr"
-        val refreshUrl = "$baseUrl/session/refresh"
-
-        val json = JSONObject()
-        json.put("token", currentRefreshToken)
-        
-        val mediaType = "application/json; charset=utf-8".toMediaType()
-        val body = json.toString().toRequestBody(mediaType)
-
-        val request = Request.Builder()
-            .url(refreshUrl)
-            .post(body)
-            .build()
-
-        return try {
-            val response = client.newCall(request).execute()
-            if (response.isSuccessful) {
-                val responseBody = response.body?.string() ?: return false
-                val jsonResponse = JSONObject(responseBody)
-                val newAccessToken = jsonResponse.optString("accessToken")
-                val newRefreshToken = jsonResponse.optString("refreshToken")
-
-                if (newAccessToken.isNotEmpty() && newRefreshToken.isNotEmpty()) {
-                    tokenStore.updateTokens(newAccessToken, newRefreshToken)
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        } catch (e: IOException) {
-            false
-        }
-    }
-
-    // Deprecated or not used in worker for simplicity
-    fun get(url: String, then: (String) -> Unit) {
-        // ... (existing implementation or update if needed)
-    }
+enum class ApiLoadFailure {
+    REJECTED,
+    UNAVAILABLE,
 }
 
+data class ApiLoadResult(
+    val body: String? = null,
+    val failure: ApiLoadFailure? = null,
+)
+
+private enum class RefreshResult {
+    SUCCESS,
+    SUPERSEDED,
+    REJECTED,
+    UNAVAILABLE,
+}
+
+class ApiLoader {
+    private val tokenStore: TokenStore
+    private val client: OkHttpClient
+    private val baseUrl: String
+
+    constructor(context: Context) : this(
+        TokenStore(context),
+        createHttpClient(),
+        DEFAULT_BASE_URL,
+    )
+
+    internal constructor(
+        tokenStore: TokenStore,
+        client: OkHttpClient,
+        baseUrl: String,
+    ) {
+        this.tokenStore = tokenStore
+        this.client = client
+        this.baseUrl = baseUrl.trimEnd('/')
+    }
+
+    fun getSync(url: String): String? = getSyncResult(url).body
+
+    fun getSyncResult(url: String): ApiLoadResult {
+        return try {
+            val requestAccessToken = tokenStore.accessToken
+            val response = executeGet(url, requestAccessToken)
+            when {
+                response.first != null -> ApiLoadResult(body = response.first)
+                response.second != 401 -> ApiLoadResult(failure = ApiLoadFailure.UNAVAILABLE)
+                else -> when (refreshToken(requestAccessToken)) {
+                    RefreshResult.SUCCESS,
+                    RefreshResult.SUPERSEDED -> retryWithCurrentAccessToken(url)
+
+                    RefreshResult.REJECTED -> ApiLoadResult(failure = ApiLoadFailure.REJECTED)
+                    RefreshResult.UNAVAILABLE -> ApiLoadResult(failure = ApiLoadFailure.UNAVAILABLE)
+                }
+            }
+        } catch (_: IOException) {
+            ApiLoadResult(failure = ApiLoadFailure.UNAVAILABLE)
+        } catch (_: TokenVaultException) {
+            ApiLoadResult(failure = ApiLoadFailure.UNAVAILABLE)
+        }
+    }
+
+    private fun executeGet(url: String, accessToken: String?): Pair<String?, Int> {
+        val requestBuilder = Request.Builder().url(url)
+        accessToken?.let { requestBuilder.addHeader("Authorization", "Bearer $it") }
+        return client.newCall(requestBuilder.build()).execute().use { response ->
+            Pair(if (response.isSuccessful) response.body?.string() else null, response.code)
+        }
+    }
+
+    private fun refreshToken(expiredAccessToken: String?): RefreshResult {
+        val leaseId = TokenRefreshLease.acquire() ?: return RefreshResult.UNAVAILABLE
+        return try {
+            val currentPair = tokenStore.readTokenPair() ?: return RefreshResult.REJECTED
+            if (expiredAccessToken != null && currentPair.accessToken != expiredAccessToken) {
+                return RefreshResult.SUPERSEDED
+            }
+
+            val attemptedRefreshToken = currentPair.refreshToken
+            val body = JSONObject()
+                .put("token", attemptedRefreshToken)
+                .toString()
+                .toRequestBody(JSON_MEDIA_TYPE)
+            val request = Request.Builder()
+                .url("$baseUrl/session/refresh")
+                .post(body)
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    if (response.code in 400..499) {
+                        val cleared = tokenStore.clearTokensIfRefreshTokenMatches(
+                            attemptedRefreshToken,
+                        )
+                        return@use if (cleared) {
+                            RefreshResult.REJECTED
+                        } else {
+                            RefreshResult.SUPERSEDED
+                        }
+                    }
+                    if (!response.isSuccessful) {
+                        return@use RefreshResult.UNAVAILABLE
+                    }
+
+                    val responseBody = response.body?.string()
+                        ?: return@use RefreshResult.UNAVAILABLE
+                    val jsonResponse = JSONObject(responseBody)
+                    val newAccessToken = jsonResponse.opt("accessToken") as? String
+                    val newRefreshToken = jsonResponse.opt("refreshToken") as? String
+                    if (newAccessToken.isNullOrEmpty() || newRefreshToken.isNullOrEmpty()) {
+                        val cleared = tokenStore.clearTokensIfRefreshTokenMatches(
+                            attemptedRefreshToken,
+                        )
+                        return@use if (cleared) {
+                            RefreshResult.REJECTED
+                        } else {
+                            RefreshResult.SUPERSEDED
+                        }
+                    }
+
+                    val written = tokenStore.updateTokensIfRefreshTokenMatches(
+                        expectedRefreshToken = attemptedRefreshToken,
+                        newAccessToken = newAccessToken,
+                        newRefreshToken = newRefreshToken,
+                    )
+                    if (written) RefreshResult.SUCCESS else RefreshResult.SUPERSEDED
+                }
+            } catch (_: IOException) {
+                RefreshResult.UNAVAILABLE
+            } catch (_: JSONException) {
+                RefreshResult.UNAVAILABLE
+            } catch (_: TokenVaultException) {
+                RefreshResult.UNAVAILABLE
+            }
+        } finally {
+            TokenRefreshLease.release(leaseId)
+        }
+    }
+
+    private fun retryWithCurrentAccessToken(url: String): ApiLoadResult {
+        val response = executeGet(url, tokenStore.accessToken)
+        return if (response.first != null) {
+            ApiLoadResult(body = response.first)
+        } else {
+            ApiLoadResult(failure = ApiLoadFailure.UNAVAILABLE)
+        }
+    }
+
+    private companion object {
+        const val DEFAULT_BASE_URL = "https://otl.kaist.ac.kr"
+        val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+        val REFRESH_LOCK = Any()
+
+        fun createHttpClient(): OkHttpClient {
+            return OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build()
+        }
+    }
+}
