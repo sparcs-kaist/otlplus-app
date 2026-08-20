@@ -15,9 +15,7 @@ void main() {
 
   setUp(() async {
     final semesters =
-        jsonDecode(
-              await File("test/fixtures/v2/semesters.json").readAsString(),
-            )
+        jsonDecode(await File("test/fixtures/v2/semesters.json").readAsString())
             as Map<String, dynamic>;
     final current =
         jsonDecode(

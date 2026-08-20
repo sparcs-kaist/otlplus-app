@@ -8,9 +8,7 @@ class SemesterRepository {
   final Dio _dio;
 
   Future<List<Semester>> fetchSemesters() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      API_V2_SEMESTERS_URL,
-    );
+    final response = await _dio.get<Map<String, dynamic>>(API_V2_SEMESTERS_URL);
     final data = response.data as Map<String, dynamic>;
     final semesters = data["semesters"] as List<dynamic>;
 

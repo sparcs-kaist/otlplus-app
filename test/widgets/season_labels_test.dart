@@ -186,10 +186,7 @@ Widget _hallOfFameHarness(Semester semester) {
     value: _InfoModel(semesters: [semester]),
     child: MaterialApp(
       home: Scaffold(
-        body: HallOfFameControl(
-          selectedSemester: semester,
-          onChanged: (_) {},
-        ),
+        body: HallOfFameControl(selectedSemester: semester, onChanged: (_) {}),
       ),
     ),
   );

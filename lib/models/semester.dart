@@ -71,9 +71,7 @@ class Semester {
       ),
       courseAddDropPeriodEnd: _tryParseDate(json["courseAddDropPeriodEnd"]),
       courseDropDeadline: _tryParseDate(json["courseDropDeadline"]),
-      courseEvaluationDeadline: _tryParseDate(
-        json["courseEvaluationDeadline"],
-      ),
+      courseEvaluationDeadline: _tryParseDate(json["courseEvaluationDeadline"]),
       gradePosting: _tryParseDate(json["gradePosting"]),
     );
   }
