@@ -22,6 +22,23 @@ int _requireNonNegative(int value, String field) {
   return value;
 }
 
+List<Lecture> _lecturesFromV2(
+  Map<String, dynamic> json, {
+  required int year,
+  required int semester,
+}) {
+  final lectures = json['lectures'] as List<dynamic>;
+  return lectures
+      .map(
+        (lecture) => Lecture.fromV2Json(
+          lecture as Map<String, dynamic>,
+          year: year,
+          semester: semester,
+        ),
+      )
+      .toList();
+}
+
 class TimetableListItem {
   final int id;
   final String name;
@@ -64,19 +81,24 @@ class Timetable {
     Map<String, dynamic> json, {
     required TimetableListItem summary,
   }) {
-    final lectures = json['lectures'] as List<dynamic>;
-
     return Timetable(
       id: summary.id,
-      lectures: lectures
-          .map(
-            (lecture) => Lecture.fromV2Json(
-              lecture as Map<String, dynamic>,
-              year: summary.year,
-              semester: summary.semester,
-            ),
-          )
-          .toList(),
+      lectures: _lecturesFromV2(
+        json,
+        year: summary.year,
+        semester: summary.semester,
+      ),
+    );
+  }
+
+  factory Timetable.fromV2MyTimetable(
+    Map<String, dynamic> json, {
+    required int year,
+    required int semester,
+  }) {
+    return Timetable(
+      id: -1,
+      lectures: _lecturesFromV2(json, year: year, semester: semester),
     );
   }
 

@@ -157,6 +157,32 @@ void main() {
     });
   });
 
+  group('Timetable.fromV2MyTimetable', () {
+    test('uses a synthetic id and supplied semester for taken lectures', () {
+      final timetable = Timetable.fromV2MyTimetable(
+        detailFixture,
+        year: 2026,
+        semester: 3,
+      );
+
+      expect(timetable.id, anyOf(0, -1));
+      expect(timetable.lectures, hasLength(1));
+      expect(timetable.lectures.single.id, 1921750);
+      expect(timetable.lectures.single.year, 2026);
+      expect(timetable.lectures.single.semester, 3);
+    });
+
+    test('accepts an empty lectures list', () {
+      final timetable = Timetable.fromV2MyTimetable(
+        <String, dynamic>{'lectures': <dynamic>[]},
+        year: 2026,
+        semester: 3,
+      );
+
+      expect(timetable.lectures, isEmpty);
+    });
+  });
+
   test('keeps v1 Timetable.fromJson and toJson behavior', () {
     final timetable = Timetable.fromJson(<String, dynamic>{
       'id': 7,
