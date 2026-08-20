@@ -30,9 +30,7 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<InfoModel>.value(value: _InfoModel()),
-          ChangeNotifierProvider<HallOfFameModel>.value(
-            value: hallOfFameModel,
-          ),
+          ChangeNotifierProvider<HallOfFameModel>.value(value: hallOfFameModel),
           ChangeNotifierProvider<LatestReviewsModel>.value(
             value: latestReviewsModel,
           ),
@@ -40,9 +38,7 @@ void main() {
         child: EasyLocalization(
           supportedLocales: const [Locale('ko')],
           path: 'assets/translations',
-          child: MaterialApp(
-            home: _ReviewPageHarness(key: harnessKey),
-          ),
+          child: MaterialApp(home: _ReviewPageHarness(key: harnessKey)),
         ),
       ),
     );

@@ -60,9 +60,7 @@ void main() {
               create: (_) => CourseDetailModel(),
             ),
           ],
-          child: const MaterialApp(
-            home: Scaffold(body: DictionaryPage()),
-          ),
+          child: const MaterialApp(home: Scaffold(body: DictionaryPage())),
         ),
       ),
     );

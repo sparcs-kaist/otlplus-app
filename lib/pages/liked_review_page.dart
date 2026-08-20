@@ -106,10 +106,7 @@ class _LikedReviewPageState extends State<LikedReviewPage> {
                             if (model.isLoading)
                               const SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: EdgeInsets.only(
-                                    top: 4,
-                                    bottom: 12,
-                                  ),
+                                  padding: EdgeInsets.only(top: 4, bottom: 12),
                                   child: Center(
                                     child: SizedBox(
                                       width: 24,
