@@ -4,43 +4,46 @@ import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/extensions/semester.dart';
 import 'package:otlplus/models/semester.dart';
-import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/widgets/dropdown.dart';
 import 'package:provider/provider.dart';
 
 class HallOfFameControl extends StatefulWidget {
-  HallOfFameControl({Key? key}) : super(key: key);
+  const HallOfFameControl({
+    required this.selectedSemester,
+    required this.onChanged,
+    super.key,
+  });
+
+  final Semester? selectedSemester;
+  final ValueChanged<Semester?> onChanged;
 
   @override
   State<HallOfFameControl> createState() => _HallOfFameControlState();
 }
 
 class _HallOfFameControlState extends State<HallOfFameControl> {
-  late List<Semester> _targetSemesters;
-  late Semester? _currentSemester;
   bool _isOpen = false;
 
   @override
   Widget build(BuildContext context) {
-    _targetSemesters = context
+    final targetSemesters = context
         .watch<InfoModel>()
         .semesters
         .where(
-          (s) =>
-              s.year >= 2013 &&
-              (s.gradePosting == null ||
+          (semester) =>
+              semester.year >= 2013 &&
+              (semester.gradePosting == null ||
                   DateTime.now().isAfter(
-                    s.gradePosting!.add(Duration(days: 30)),
+                    semester.gradePosting!.add(const Duration(days: 30)),
                   )),
         )
         .toList();
-    _currentSemester = context.read<HallOfFameModel>().semeseter;
 
     return Dropdown<Semester?>(
       customButton: Container(
         height: 34,
-        padding: EdgeInsets.fromLTRB(16, 0, 8, 0),
+        padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
         decoration: BoxDecoration(
           color: OTLColor.grayF,
           borderRadius: BorderRadius.circular(100),
@@ -48,12 +51,12 @@ class _HallOfFameControlState extends State<HallOfFameControl> {
         child: Row(
           children: [
             Text(
-              _currentSemester == null
-                  ? "common.all".tr()
-                  : _currentSemester!.title,
+              widget.selectedSemester == null
+                  ? 'common.all'.tr()
+                  : widget.selectedSemester!.title,
               style: bodyBold.copyWith(color: OTLColor.pinksMain),
             ),
-            const SizedBox(width: 2.0),
+            const SizedBox(width: 2),
             Icon(
               _isOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
               color: OTLColor.pinksMain,
@@ -65,26 +68,21 @@ class _HallOfFameControlState extends State<HallOfFameControl> {
         ItemData(
           value: null,
           text: 'common.all'.tr(),
-          icon: _currentSemester == null ? Icons.check : null,
+          icon: widget.selectedSemester == null ? Icons.check : null,
         ),
         ...List.generate(
-          _targetSemesters.length,
+          targetSemesters.length,
           (index) => ItemData(
-            value: _targetSemesters[index],
-            text: _targetSemesters[index].title,
-            icon: _currentSemester == _targetSemesters[index]
+            value: targetSemesters[index],
+            text: targetSemesters[index].title,
+            icon: widget.selectedSemester == targetSemesters[index]
                 ? Icons.check
                 : null,
           ),
         ).reversed,
       ],
       hasScrollbar: true,
-      onChanged: (value) {
-        setState(() {
-          context.read<HallOfFameModel>().setSemester(value);
-          context.read<HallOfFameModel>().clear();
-        });
-      },
+      onChanged: widget.onChanged,
       onMenuStateChange: (isOpen) => setState(() => _isOpen = isOpen),
     );
   }

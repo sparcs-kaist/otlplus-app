@@ -11,7 +11,6 @@ import 'package:otlplus/models/user.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/pages/my_review_page.dart';
 import 'package:otlplus/providers/course_detail_model.dart';
-import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/widgets/hall_of_fame_control.dart';
 import 'package:otlplus/widgets/review_block.dart';
@@ -183,15 +182,16 @@ User _user(List<Lecture> lectures) {
 }
 
 Widget _hallOfFameHarness(Semester semester) {
-  final hallOfFameModel = HallOfFameModel()..setSemester(semester);
-  return MultiProvider(
-    providers: [
-      ChangeNotifierProvider<InfoModel>.value(
-        value: _InfoModel(semesters: [semester]),
+  return ChangeNotifierProvider<InfoModel>.value(
+    value: _InfoModel(semesters: [semester]),
+    child: MaterialApp(
+      home: Scaffold(
+        body: HallOfFameControl(
+          selectedSemester: semester,
+          onChanged: (_) {},
+        ),
       ),
-      ChangeNotifierProvider<HallOfFameModel>.value(value: hallOfFameModel),
-    ],
-    child: MaterialApp(home: Scaffold(body: HallOfFameControl())),
+    ),
   );
 }
 
