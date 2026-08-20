@@ -5,41 +5,72 @@ import android.content.ComponentName
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import org.json.JSONException
 import org.json.JSONObject
+import org.sparcs.otlplus.api.ApiLoadFailure
+import org.sparcs.otlplus.api.ApiLoadResult
 import org.sparcs.otlplus.api.ApiLoader
 import org.sparcs.otlplus.api.TimetableData
 
 class UpdateWidgetWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
-    private val CHANNEL = "https://otl.kaist.ac.kr"
+    private val channel = "https://otl.kaist.ac.kr"
 
     override fun doWork(): Result {
         val apiLoader = ApiLoader(applicationContext)
         val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
 
-        // 1. Get current semester
-        val semesterDataString = apiLoader.getSync("$CHANNEL/api/v2/semesters/current") ?: return Result.retry()
-        val semesterJsonObject = JSONObject(semesterDataString)
-        val year = semesterJsonObject.getInt("year")
-        val semester = semesterJsonObject.getInt("semester")
+        return try {
+            val semesterResult = apiLoader.getSyncResult("$channel/api/v2/semesters/current")
+            val semesterDataString = semesterResult.body ?: return resultFor(semesterResult)
+            val semesterJsonObject = JSONObject(semesterDataString)
+            val year = semesterJsonObject.getInt("year")
+            val semester = semesterJsonObject.getInt("semester")
 
-        // 2. Get timetable data
-        val timetableDataString = apiLoader.getSync("$CHANNEL/api/v2/timetables/my-timetable?year=$year&semester=$semester") ?: return Result.retry()
-        val timetableData = TimetableData(timetableDataString)
+            val timetableResult = apiLoader.getSyncResult(
+                "$channel/api/v2/timetables/my-timetable?year=$year&semester=$semester",
+            )
+            val timetableDataString = timetableResult.body ?: return resultFor(timetableResult)
+            val timetableData = TimetableData(timetableDataString)
 
-        // 3. Update NextLectureWidget
-        val nextLectureComponentName = ComponentName(applicationContext, NextLectureWidget::class.java)
-        val nextLectureIds = appWidgetManager.getAppWidgetIds(nextLectureComponentName)
-        for (appWidgetId in nextLectureIds) {
-            updateNextLectureWidget(applicationContext, appWidgetManager, appWidgetId, timetableData)
+            val nextLectureComponentName = ComponentName(
+                applicationContext,
+                NextLectureWidget::class.java,
+            )
+            val nextLectureIds = appWidgetManager.getAppWidgetIds(nextLectureComponentName)
+            for (appWidgetId in nextLectureIds) {
+                updateNextLectureWidget(
+                    applicationContext,
+                    appWidgetManager,
+                    appWidgetId,
+                    timetableData,
+                )
+            }
+
+            val timetableComponentName = ComponentName(
+                applicationContext,
+                TimetableWidget::class.java,
+            )
+            val timetableIds = appWidgetManager.getAppWidgetIds(timetableComponentName)
+            for (appWidgetId in timetableIds) {
+                updateTimetableWidget(
+                    applicationContext,
+                    appWidgetManager,
+                    appWidgetId,
+                    timetableData,
+                )
+            }
+
+            Result.success()
+        } catch (_: JSONException) {
+            Result.retry()
         }
+    }
 
-        // 4. Update TimetableWidget
-        val timetableComponentName = ComponentName(applicationContext, TimetableWidget::class.java)
-        val timetableIds = appWidgetManager.getAppWidgetIds(timetableComponentName)
-        for (appWidgetId in timetableIds) {
-            updateTimetableWidget(applicationContext, appWidgetManager, appWidgetId, timetableData)
+    private fun resultFor(result: ApiLoadResult): Result {
+        return if (result.failure == ApiLoadFailure.REJECTED) {
+            Result.failure()
+        } else {
+            Result.retry()
         }
-
-        return Result.success()
     }
 }
