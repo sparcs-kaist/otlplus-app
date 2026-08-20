@@ -38,6 +38,23 @@ class Classtime extends Time {
     );
   }
 
+  factory Classtime.fromV2Json(Map<String, dynamic> json) {
+    final buildingCode = json['buildingCode'] as String;
+    final buildingName = json['buildingName'] as String;
+
+    return Classtime(
+      buildingCode: buildingCode,
+      classroom: buildingName,
+      classroomEn: buildingName,
+      classroomShort: buildingCode,
+      classroomShortEn: buildingCode,
+      roomName: json['roomName'] as String,
+      day: json['day'] as int,
+      begin: json['begin'] as int,
+      end: json['end'] as int,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['building_code'] = this.buildingCode;

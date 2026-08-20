@@ -12,7 +12,19 @@ const TYPES = [
 
 int _indexOfType(String type) {
   final int idx = TYPES.indexWhere((tp) => type.startsWith(tp));
-  return idx == -1 ? 5 : idx; //ETC == 5
+  if (idx != -1) return idx;
+
+  const localizedTypes = <String, int>{
+    '기초필수': 0,
+    '기초선택': 1,
+    '전공필수': 2,
+    '전공선택': 3,
+    '인문사회선택': 4,
+  };
+  for (final entry in localizedTypes.entries) {
+    if (type.startsWith(entry.key)) return entry.value;
+  }
+  return 5; // ETC
 }
 
 class Lecture {
@@ -37,6 +49,8 @@ class Lecture {
   final bool isEnglish;
   final int credit;
   final int creditAu;
+  final int classDuration;
+  final int expDuration;
   final String commonTitle;
   final String commonTitleEn;
   final String classTitle;
@@ -71,6 +85,8 @@ class Lecture {
     required this.isEnglish,
     required this.credit,
     required this.creditAu,
+    this.classDuration = 0,
+    this.expDuration = 0,
     required this.commonTitle,
     required this.commonTitleEn,
     required this.classTitle,
@@ -111,6 +127,8 @@ class Lecture {
       isEnglish = json['is_english'],
       credit = json['credit'],
       creditAu = json['credit_au'],
+      classDuration = json['num_classes'] ?? 0,
+      expDuration = json['num_labs'] ?? 0,
       commonTitle = json['common_title'],
       commonTitleEn = json['common_title_en'],
       classTitle = json['class_title'],
@@ -138,6 +156,73 @@ class Lecture {
         examtimes.add(Examtime.fromJson(v));
       });
     }
+  }
+
+  factory Lecture.fromV2Json(
+    Map<String, dynamic> json, {
+    required int year,
+    required int semester,
+  }) {
+    final name = json['name'] as String;
+    final subtitle = json['subtitle'] as String;
+    final localizedType = json['type'] as String;
+    final department = json['department'] as Map<String, dynamic>;
+    final localizedDepartmentName = department['name'] as String;
+
+    return Lecture(
+      id: json['id'] as int,
+      title: name,
+      titleEn: name,
+      course: json['courseId'] as int,
+      oldCode: json['code'] as String,
+      classNo: json['classNo'] as String,
+      year: year,
+      semester: semester,
+      code: json['code'] as String,
+      department: department['id'] as int,
+      departmentCode: '',
+      departmentName: localizedDepartmentName,
+      departmentNameEn: localizedDepartmentName,
+      type: localizedType,
+      typeEn: localizedType,
+      typeIdx: _indexOfType(localizedType),
+      limit: json['limitPeople'] as int,
+      numPeople: json['numPeople'] as int,
+      isEnglish: json['isEnglish'] as bool,
+      credit: json['credit'] as int,
+      creditAu: json['creditAU'] as int,
+      classDuration: json['classDuration'] as int,
+      expDuration: json['expDuration'] as int,
+      commonTitle: name,
+      commonTitleEn: name,
+      classTitle: subtitle,
+      classTitleEn: subtitle,
+      reviewTotalWeight: 0.0,
+      professors: (json['professors'] as List<dynamic>).map((professorJson) {
+        final professor = professorJson as Map<String, dynamic>;
+        final localizedName = professor['name'] as String;
+        return Professor(
+          name: localizedName,
+          nameEn: localizedName,
+          professorId: professor['id'] as int,
+          reviewTotalWeight: 0.0,
+        );
+      }).toList(),
+      grade: (json['averageGrade'] as num).toDouble(),
+      load: (json['averageLoad'] as num).toDouble(),
+      speech: (json['averageSpeech'] as num).toDouble(),
+      classtimes: (json['classes'] as List<dynamic>)
+          .map(
+            (classtime) =>
+                Classtime.fromV2Json(classtime as Map<String, dynamic>),
+          )
+          .toList(),
+      examtimes: (json['examTimes'] as List<dynamic>)
+          .map(
+            (examtime) => Examtime.fromV2Json(examtime as Map<String, dynamic>),
+          )
+          .toList(),
+    );
   }
 
   Map<String, dynamic> toJson() {
