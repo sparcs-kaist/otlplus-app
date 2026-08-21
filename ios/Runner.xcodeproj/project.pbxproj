@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -17,6 +17,8 @@
 		8B643C832A6BC16500BF6DAA /* NextClassAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B643C822A6BC16500BF6DAA /* NextClassAccessory.swift */; };
 		8B76C8E42A0E834A007E1947 /* TodayClassesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B76C8E32A0E834A007E1947 /* TodayClassesWidget.swift */; };
 		8B76C8E62A0E837F007E1947 /* WidgetBase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B76C8E52A0E837F007E1947 /* WidgetBase.swift */; };
+		8B8DFCFB2CDB7A4F00AB82CC /* OTL Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8B8DFCD82CDB7A4D00AB82CC /* OTL Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8B8DFD292CDB7CA600AB82CC /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 8B8DFD282CDB7CA600AB82CC /* Alamofire */; };
 		8B949A0629FF4CD0009D4750 /* NotoSansKR-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 8B949A0529FF4CD0009D4750 /* NotoSansKR-Bold.otf */; };
 		8B949A0729FF4CD0009D4750 /* NotoSansKR-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 8B949A0529FF4CD0009D4750 /* NotoSansKR-Bold.otf */; };
 		8B949A1029FF4CDF009D4750 /* NotoSansKR-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 8B949A0F29FF4CDF009D4750 /* NotoSansKR-Medium.otf */; };
@@ -45,6 +47,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		8B8DFCF92CDB7A4F00AB82CC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B8DFCD72CDB7A4D00AB82CC;
+			remoteInfo = "OTL Watch App";
+		};
 		8BB345872A012C99008A0E30 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -62,6 +71,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		8B8DFCFC2CDB7A4F00AB82CC /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				8B8DFCFB2CDB7A4F00AB82CC /* OTL Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8BB3DE1029D1F25B001AD191 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -100,6 +120,7 @@
 		8B643C822A6BC16500BF6DAA /* NextClassAccessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextClassAccessory.swift; sourceTree = "<group>"; };
 		8B76C8E32A0E834A007E1947 /* TodayClassesWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayClassesWidget.swift; sourceTree = "<group>"; };
 		8B76C8E52A0E837F007E1947 /* WidgetBase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBase.swift; sourceTree = "<group>"; };
+		8B8DFCD82CDB7A4D00AB82CC /* OTL Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "OTL Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B949A0529FF4CD0009D4750 /* NotoSansKR-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NotoSansKR-Bold.otf"; sourceTree = "<group>"; };
 		8B949A0F29FF4CDF009D4750 /* NotoSansKR-Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NotoSansKR-Medium.otf"; sourceTree = "<group>"; };
 		8B949A1429FF4CE6009D4750 /* NotoSansKR-Regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NotoSansKR-Regular.otf"; sourceTree = "<group>"; };
@@ -134,7 +155,29 @@
 		E7988E49910FBD984BD7A127 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		8B8DFCD92CDB7A4D00AB82CC /* OTL Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "OTL Watch App";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		8B8DFCD52CDB7A4D00AB82CC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B8DFD292CDB7CA600AB82CC /* Alamofire in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8BB3457D2A012C99008A0E30 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -233,6 +276,7 @@
 				97C146F01CF9000F007C117D /* Runner */,
 				8BB3DE0229D1F25B001AD191 /* OTLWidgets */,
 				8BB345832A012C99008A0E30 /* OTLPlusIntents */,
+				8B8DFCD92CDB7A4D00AB82CC /* OTL Watch App */,
 				97C146EF1CF9000F007C117D /* Products */,
 				39D0B0698705DDCE085402CF /* Pods */,
 				DF1CE87D051FAC522C3E69CB /* Frameworks */,
@@ -245,6 +289,7 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				8BB3DDFD29D1F25A001AD191 /* OTLWidgetsExtension.appex */,
 				8BB345802A012C99008A0E30 /* OTLPlusIntents.appex */,
+				8B8DFCD82CDB7A4D00AB82CC /* OTL Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -288,6 +333,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8B8DFCD72CDB7A4D00AB82CC /* OTL Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8B8DFD062CDB7A4F00AB82CC /* Build configuration list for PBXNativeTarget "OTL Watch App" */;
+			buildPhases = (
+				8B8DFCD42CDB7A4D00AB82CC /* Sources */,
+				8B8DFCD52CDB7A4D00AB82CC /* Frameworks */,
+				8B8DFCD62CDB7A4D00AB82CC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8B8DFCD92CDB7A4D00AB82CC /* OTL Watch App */,
+			);
+			name = "OTL Watch App";
+			packageProductDependencies = (
+				8B8DFD282CDB7CA600AB82CC /* Alamofire */,
+			);
+			productName = "OTL Watch App";
+			productReference = 8B8DFCD82CDB7A4D00AB82CC /* OTL Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
 		8BB3457F2A012C99008A0E30 /* OTLPlusIntents */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8BB3458A2A012C99008A0E30 /* Build configuration list for PBXNativeTarget "OTLPlusIntents" */;
@@ -330,6 +398,7 @@
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				3E2C132D3FA90843D090112E /* [CP] Check Pods Manifest.lock */,
+				8B8DFCFC2CDB7A4F00AB82CC /* Embed Watch Content */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
@@ -346,6 +415,7 @@
 			dependencies = (
 				8BB3DE0E29D1F25B001AD191 /* PBXTargetDependency */,
 				8BB345882A012C99008A0E30 /* PBXTargetDependency */,
+				8B8DFCFA2CDB7A4F00AB82CC /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -362,6 +432,9 @@
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "The Chromium Authors";
 				TargetAttributes = {
+					8B8DFCD72CDB7A4D00AB82CC = {
+						CreatedOnToolsVersion = 16.0;
+					};
 					8BB3457F2A012C99008A0E30 = {
 						CreatedOnToolsVersion = 14.3;
 					};
@@ -394,11 +467,19 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				8BB3DDFC29D1F25A001AD191 /* OTLWidgetsExtension */,
 				8BB3457F2A012C99008A0E30 /* OTLPlusIntents */,
+				8B8DFCD72CDB7A4D00AB82CC /* OTL Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		8B8DFCD62CDB7A4D00AB82CC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8BB3457E2A012C99008A0E30 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -465,7 +546,6 @@
 				"${BUILT_PRODUCTS_DIR}/path_provider_foundation/path_provider_foundation.framework",
 				"${BUILT_PRODUCTS_DIR}/shared_preferences_foundation/shared_preferences_foundation.framework",
 				"${BUILT_PRODUCTS_DIR}/url_launcher_ios/url_launcher_ios.framework",
-				"${BUILT_PRODUCTS_DIR}/webview_cookie_manager/webview_cookie_manager.framework",
 				"${BUILT_PRODUCTS_DIR}/webview_flutter_wkwebview/webview_flutter_wkwebview.framework",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ChannelIOSDK/ChannelIOFront.framework/ChannelIOFront",
 			);
@@ -494,7 +574,6 @@
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/path_provider_foundation.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/shared_preferences_foundation.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/url_launcher_ios.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/webview_cookie_manager.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/webview_flutter_wkwebview.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ChannelIOFront.framework",
 			);
@@ -599,6 +678,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8B8DFCD42CDB7A4D00AB82CC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8BB3457C2A012C99008A0E30 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -639,6 +725,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8B8DFCFA2CDB7A4F00AB82CC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8B8DFCD72CDB7A4D00AB82CC /* OTL Watch App */;
+			targetProxy = 8B8DFCF92CDB7A4F00AB82CC /* PBXContainerItemProxy */;
+		};
 		8BB345882A012C99008A0E30 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8BB3457F2A012C99008A0E30 /* OTLPlusIntents */;
@@ -767,6 +858,144 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Profile;
+		};
+		8B8DFCFD2CDB7A4F00AB82CC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "OTL Watch App/OTL Watch App.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 250325.0019;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_ASSET_PATHS = "\"OTL Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = N5V8W52U3U;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = OTL;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = org.sparcs.otlplus;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 2.5.19;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.sparcs.otlplus.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		8B8DFCFE2CDB7A4F00AB82CC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "OTL Watch App/OTL Watch App.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 250325.0019;
+				DEVELOPMENT_ASSET_PATHS = "\"OTL Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = N5V8W52U3U;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = OTL;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = org.sparcs.otlplus;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 2.5.19;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.sparcs.otlplus.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		8B8DFCFF2CDB7A4F00AB82CC /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "OTL Watch App/OTL Watch App.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 250325.0019;
+				DEVELOPMENT_ASSET_PATHS = "\"OTL Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = N5V8W52U3U;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = OTL;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = org.sparcs.otlplus;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 2.5.19;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.sparcs.otlplus.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Profile;
 		};
@@ -1197,6 +1426,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8B8DFD062CDB7A4F00AB82CC /* Build configuration list for PBXNativeTarget "OTL Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B8DFCFD2CDB7A4F00AB82CC /* Debug */,
+				8B8DFCFE2CDB7A4F00AB82CC /* Release */,
+				8B8DFCFF2CDB7A4F00AB82CC /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		8BB3458A2A012C99008A0E30 /* Build configuration list for PBXNativeTarget "OTLPlusIntents" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1251,6 +1490,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8B8DFD282CDB7CA600AB82CC /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8BB397432A8E003300DD352E /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
 		8BB397442A8E003300DD352E /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8BB397432A8E003300DD352E /* XCRemoteSwiftPackageReference "Alamofire" */;

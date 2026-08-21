@@ -80,7 +80,7 @@ jobs:
           echo "UDID=$UDID" >> "$GITHUB_ENV"
           xcrun simctl boot "$UDID"
       - name: Warm up simulator build
-        run: flutter build ios --simulator --debug --dart-define=APP_SMOKE_TEST=true
+        run: flutter build ios --simulator --debug -d "$UDID" --dart-define=APP_SMOKE_TEST=true
       - name: Integration test
         run: flutter test --timeout 20m integration_test -d "$UDID" --dart-define=APP_SMOKE_TEST=true
       - name: Shutdown simulator

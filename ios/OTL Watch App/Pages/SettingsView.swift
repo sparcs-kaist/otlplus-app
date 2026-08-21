@@ -12,9 +12,6 @@ struct SettingsView: View {
     @Binding var selectedSemester: SemesterElement?
     @Binding var selectedTimetable: Int
     
-    @ObservedObject var viewModel = WatchViewModel()
-    @AppStorage("refreshToken") var refreshToken: String = ""
-    @AppStorage("accessToken") var accessToken: String = ""
     @AppStorage("userID") var userID: String = ""
     
     @State private var availableSemesters: [SemesterElement] = [SemesterElement]()
@@ -79,8 +76,7 @@ struct SettingsView: View {
         }
         
         let API: OTLAPI = OTLAPI.shared
-        API.setTokens(accessToken: accessToken, refreshToken: refreshToken)
-        
+
         API.getActualSemesters(userID: self.userID) { results in
             switch results {
             case .success(let data):
@@ -102,8 +98,7 @@ struct SettingsView: View {
         
         if (self.selectedSemester != nil) {
             let API: OTLAPI = OTLAPI.shared
-            API.setTokens(accessToken: accessToken, refreshToken: refreshToken)
-            
+
             API.getTimetables(userID: self.userID, year: self.selectedSemester!.year, semester: self.selectedSemester!.semester) { results in
                 switch results {
                 case .success(let data):

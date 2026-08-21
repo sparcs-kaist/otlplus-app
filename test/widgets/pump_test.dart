@@ -112,13 +112,7 @@ void main() {
 
   testWidgets('pump TimetableTabs', (WidgetTester tester) async {
     await tester.pumpWidget(
-      TimetableTabs(
-        length: 1,
-        onTap: (_) {},
-        onCopyTap: () {},
-        onDeleteTap: (_) {},
-        onExportTap: (_) {},
-      ).scaffold,
+      TimetableTabs(length: 1, onTap: (_) {}, onAction: (_, __) {}).scaffold,
     );
   });
 

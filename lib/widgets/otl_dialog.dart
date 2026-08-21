@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -179,87 +181,98 @@ class OTLDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 256,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: OTLColor.grayF,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: OTLColor.gray0.withValues(alpha: .15),
-              offset: const Offset(2, 2),
-              blurRadius: 16,
-            ),
-          ],
-        ),
-        child: Material(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset('assets/icons/${type.icon}.svg', height: 80),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                alignment: Alignment.centerLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(type.title.tr(), style: titleBold),
-                    const SizedBox(height: 8),
-                    _buildContent(),
-                  ],
-                ),
-              ),
-              () {
-                // Map<isPos, data>
-                final btnData = {
-                  true: {
-                    'btnColor': OTLColor.pinksMain,
-                    'onTap': () {
-                      if (onTapPos != null) onTapPos!();
-                      if (type != OTLDialogType.about)
-                        OTLNavigator.pop(context);
-                    },
-                    'btnText': type.posText.tr(),
-                    'textColor': OTLColor.grayF,
-                  },
-                  false: {
-                    'btnColor': OTLColor.grayE,
-                    'onTap': () {
-                      if (onTapNeg != null) onTapNeg!();
-                      OTLNavigator.pop(context);
-                    },
-                    'btnText': type.negText.tr(),
-                    'textColor': OTLColor.gray0,
-                  },
-                };
+    final mediaQuery = MediaQuery.of(context);
+    final availableWidth = math.max(
+      0.0,
+      mediaQuery.size.width - mediaQuery.padding.horizontal,
+    );
 
-                switch (type.btnStyle) {
-                  case BtnStyle.one:
-                    return _buildButton(btnData[false]!);
-                  case BtnStyle.even:
-                    return Row(
-                      children: [
-                        Expanded(child: _buildButton(btnData[false]!)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _buildButton(btnData[true]!)),
-                      ],
-                    );
-                  case BtnStyle.uneven:
-                    return Row(
-                      children: [
-                        Expanded(child: _buildButton(btnData[true]!)),
-                        const SizedBox(width: 10),
-                        SizedBox(
-                          width: 64,
-                          child: _buildButton(btnData[false]!),
-                        ),
-                      ],
-                    );
-                }
-              }(),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: math.min(256, availableWidth)),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: OTLColor.grayF,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: OTLColor.gray0.withValues(alpha: .15),
+                offset: const Offset(2, 2),
+                blurRadius: 16,
+              ),
             ],
+          ),
+          child: SingleChildScrollView(
+            child: Material(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset('assets/icons/${type.icon}.svg', height: 80),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(type.title.tr(), style: titleBold),
+                        const SizedBox(height: 8),
+                        _buildContent(),
+                      ],
+                    ),
+                  ),
+                  () {
+                    // Map<isPos, data>
+                    final btnData = {
+                      true: {
+                        'btnColor': OTLColor.pinksMain,
+                        'onTap': () {
+                          if (onTapPos != null) onTapPos!();
+                          if (type != OTLDialogType.about)
+                            OTLNavigator.pop(context);
+                        },
+                        'btnText': type.posText.tr(),
+                        'textColor': OTLColor.grayF,
+                      },
+                      false: {
+                        'btnColor': OTLColor.grayE,
+                        'onTap': () {
+                          if (onTapNeg != null) onTapNeg!();
+                          OTLNavigator.pop(context);
+                        },
+                        'btnText': type.negText.tr(),
+                        'textColor': OTLColor.gray0,
+                      },
+                    };
+
+                    switch (type.btnStyle) {
+                      case BtnStyle.one:
+                        return _buildButton(btnData[false]!);
+                      case BtnStyle.even:
+                        return Row(
+                          children: [
+                            Expanded(child: _buildButton(btnData[false]!)),
+                            const SizedBox(width: 10),
+                            Expanded(child: _buildButton(btnData[true]!)),
+                          ],
+                        );
+                      case BtnStyle.uneven:
+                        return Row(
+                          children: [
+                            Expanded(child: _buildButton(btnData[true]!)),
+                            const SizedBox(width: 10),
+                            SizedBox(
+                              width: 64,
+                              child: _buildButton(btnData[false]!),
+                            ),
+                          ],
+                        );
+                    }
+                  }(),
+                ],
+              ),
+            ),
           ),
         ),
       ),

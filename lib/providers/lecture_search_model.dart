@@ -1,14 +1,28 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
-import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/filter.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/semester.dart';
+import 'package:otlplus/repositories/department_repository.dart';
+import 'package:otlplus/repositories/lecture_repository.dart';
 
 class LectureSearchModel extends ChangeNotifier {
+  LectureSearchModel([
+    LectureRepository? lectureRepository,
+    DepartmentRepository? departmentRepository,
+  ]) : _lectureRepository =
+           lectureRepository ?? LectureRepository(DioProvider().dio),
+       _departmentRepository =
+           departmentRepository ?? DepartmentRepository(DioProvider().dio);
+
+  final LectureRepository _lectureRepository;
+  final DepartmentRepository _departmentRepository;
+
   bool get resultOpened => _lectures != null || _isSearching;
 
   List<List<Lecture>>? _lectures;
@@ -95,16 +109,17 @@ class LectureSearchModel extends ChangeNotifier {
   get lectureFilter => _lectureFilter;
 
   void resetLectureFilter() {
+    _requestGeneration += 1;
     _lectures = null;
     _lectureSearchText = '';
-    _lectureFilter.values.forEach((e) {
-      if (e.isMultiSelect)
-        e.options.forEach((b) => b.forEach((c) => c.selected = false));
-      else {
-        e.options.forEach((b) => b.forEach((c) => c.selected = false));
-        e.options.first.first.selected = true;
+    _isSearching = false;
+    _error = null;
+    for (final group in _lectureFilter.values) {
+      for (final option in group.options.expand((row) => row)) {
+        option.selected = false;
       }
-    });
+      if (!group.isMultiSelect) group.options.first.first.selected = true;
+    }
     updateLectureSearchqeury();
     notifyListeners();
   }
@@ -121,6 +136,11 @@ class LectureSearchModel extends ChangeNotifier {
 
   bool _isSearching = false;
   bool get isSearching => _isSearching;
+
+  Object? _error;
+  Object? get error => _error;
+
+  int _requestGeneration = 0;
 
   Text _lectureSearchquery = Text.rich(TextSpan());
   Text get lectureSearchquery => _lectureSearchquery;
@@ -159,7 +179,10 @@ class LectureSearchModel extends ChangeNotifier {
   }
 
   void lectureClear() {
+    _requestGeneration += 1;
     _lectures = null;
+    _isSearching = false;
+    _error = null;
     notifyListeners();
   }
 
@@ -211,95 +234,120 @@ class LectureSearchModel extends ChangeNotifier {
     );
   }
 
-  Future<bool> lectureSearch(Semester semester) async {
-    _lectureFilter.forEach((k, v) {
-      if (v.options.expand((i) => i).every((i) => i.selected == false)) {
-        if (v.isMultiSelect == true)
-          v.options.expand((i) => i).forEach((j) {
-            // j.selected = true;
-          });
-        else
-          v.options.first.first.selected = true;
-      }
-    });
-    List<CodeLabelPair> dep =
-        _lectureFilter['departments']!.options
-            .expand((i) => i)
-            .every((i) => i.selected == false)
-        ? []
-        : _lectureFilter['departments']!.options
-              .expand((i) => i)
-              .where((i) => i.selected == true)
-              .toList();
-    List<CodeLabelPair> typ =
-        _lectureFilter['types']!.options
-            .expand((i) => i)
-            .every((i) => i.selected == false)
-        ? []
-        : _lectureFilter['types']!.options
-              .expand((i) => i)
-              .where((i) => i.selected == true)
-              .toList();
-    List<CodeLabelPair> lev =
-        _lectureFilter['levels']!.options
-            .expand((i) => i)
-            .every((i) => i.selected == false)
-        ? []
-        : _lectureFilter['levels']!.options
-              .expand((i) => i)
-              .where((i) => i.selected == true)
-              .toList();
-    if (dep.length == 0 &&
-        typ.length == 0 &&
-        lev.length == 0 &&
-        _lectureSearchText.length == 0)
-      return false;
-    Future(() async {
-      updateLectureSearchqeury();
-      _isSearching = true;
-      notifyListeners();
-      try {
-        final response = await DioProvider().dio.getUri(
-          Uri(
-            path: API_LECTURE_URL,
-            queryParameters: {
-              "year": semester.year.toString(),
-              "semester": semester.semester.toString(),
-              "keyword": _lectureSearchText,
-              "department": dep.length == 0
-                  ? ['ALL']
-                  : dep.map((i) => i.code).toList(),
-              "type": typ.length == 0
-                  ? ['ALL']
-                  : typ.map((i) => i.code).toList(),
-              "level": lev.length == 0
-                  ? ['ALL']
-                  : lev.map((i) => i.code).toList(),
-            },
-          ),
-        );
+  Future<bool> lectureSearch(Semester semester) {
+    final departmentCodes = _selectedCodes('departments');
+    final typeCodes = _mapTypeCodes(_selectedCodes('types'));
+    final levelCodes = _mapLevelCodes(_selectedCodes('levels'));
+    final keyword = _lectureSearchText;
+    final hasSearchCriteria =
+        departmentCodes.isNotEmpty ||
+        typeCodes.isNotEmpty ||
+        levelCodes.isNotEmpty ||
+        keyword.isNotEmpty;
+    if (!hasSearchCriteria) return Future<bool>.value(false);
 
-        final rawLectures = response.data as List;
-        final lectures = rawLectures.map(
-          (lecture) => Lecture.fromJson(lecture),
-        );
-        final courseIds = lectures.map((lecture) => lecture.course).toSet();
+    final generation = ++_requestGeneration;
+    updateLectureSearchqeury();
+    _isSearching = true;
+    _error = null;
+    notifyListeners();
 
-        _lectures = courseIds
-            .map(
-              (course) => lectures
-                  .where((lecture) => lecture.course == course)
-                  .toList(),
-            )
-            .where((course) => course.length > 0)
-            .toList();
-      } catch (exception) {
-        print(exception);
-      }
-
-      _isSearching = false;
-      notifyListeners();
-    });
-    return true;
+    unawaited(
+      _loadLectures(
+        generation: generation,
+        semester: semester,
+        keyword: keyword,
+        departmentCodes: departmentCodes,
+        typeCodes: typeCodes,
+        levelCodes: levelCodes,
+      ),
+    );
+    return Future<bool>.value(true);
   }
+
+  Future<void> _loadLectures({
+    required int generation,
+    required Semester semester,
+    required String keyword,
+    required List<String> departmentCodes,
+    required List<String> typeCodes,
+    required List<int> levelCodes,
+  }) async {
+    try {
+      final departmentIds = await _departmentRepository.resolveFilterCodes(
+        departmentCodes,
+      );
+      if (generation != _requestGeneration) return;
+
+      final lectures = await _lectureRepository.search(
+        LectureSearchQuery(
+          year: semester.year,
+          semester: semester.semester,
+          keyword: keyword,
+          departments: departmentIds,
+          types: typeCodes,
+          levels: levelCodes,
+        ),
+      );
+      if (generation != _requestGeneration) return;
+
+      final courseIds = lectures.map((lecture) => lecture.course).toSet();
+      _lectures = courseIds
+          .map(
+            (courseId) => lectures
+                .where((lecture) => lecture.course == courseId)
+                .toList(growable: false),
+          )
+          .where((courseLectures) => courseLectures.isNotEmpty)
+          .toList(growable: false);
+    } catch (caughtError) {
+      if (generation != _requestGeneration) return;
+      _error = caughtError;
+    } finally {
+      if (generation == _requestGeneration) {
+        _isSearching = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  List<String> _selectedCodes(String groupName) {
+    return _lectureFilter[groupName]!.options
+        .expand((row) => row)
+        .where((option) => option.selected)
+        .map((option) => option.code)
+        .toList(growable: false);
+  }
+}
+
+const Map<String, String> _v2TypeCodeByLegacyCode = <String, String>{
+  'BR': 'BR',
+  'BE': 'BE',
+  'MR': 'MR',
+  'ME': 'ME',
+  'MGC': 'MGC',
+  'HSE': 'HSE',
+  'GR': 'GR',
+  'EG': 'EG',
+  'OE': 'OE',
+};
+
+List<String> _mapTypeCodes(Iterable<String> legacyCodes) {
+  return legacyCodes
+      .map((code) => _v2TypeCodeByLegacyCode[code])
+      .whereType<String>()
+      .toList(growable: false);
+}
+
+List<int> _mapLevelCodes(Iterable<String> legacyCodes) {
+  final levels = <int>[];
+  for (final code in legacyCodes) {
+    if (code == 'ETC') {
+      levels.addAll(const <int>[500, 600, 700, 800, 900]);
+      continue;
+    }
+    final level = int.tryParse(code);
+    if (level != null) levels.add(level);
+  }
+  return levels;
 }

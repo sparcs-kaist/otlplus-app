@@ -25,6 +25,18 @@ class Examtime extends Time {
     );
   }
 
+  factory Examtime.fromV2Json(Map<String, dynamic> json) {
+    final localizedString = json['str'] as String;
+
+    return Examtime(
+      str: localizedString,
+      strEn: localizedString,
+      day: json['day'] as int,
+      begin: json['begin'] as int,
+      end: json['end'] as int,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['str'] = this.str;

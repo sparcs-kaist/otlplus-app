@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/pages/course_search_page.dart';
+import 'package:otlplus/pages/dictionary_page.dart';
 import 'package:otlplus/pages/lecture_detail_page.dart';
 import 'package:otlplus/pages/lecture_search_page.dart';
 import 'package:otlplus/pages/main_page.dart';
@@ -19,6 +20,7 @@ import 'package:otlplus/providers/lecture_detail_model.dart';
 import 'package:otlplus/providers/lecture_search_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/providers/timetable_model.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/extensions.dart';
@@ -43,7 +45,29 @@ void main() {
   });
 
   testWidgets("pump DictionaryPage", (WidgetTester tester) async {
-    // tester.pumpWidget(DictionaryPage().scaffoldAndNotifiers([LectureSearchModel(), CourseSearchModel()]));
+    final searchModel = CourseSearchModel()
+      ..setSearchText("robot")
+      ..setCourseFilterSelected("types", "BR", true);
+
+    await tester.pumpWidget(
+      EasyLocalization(
+        supportedLocales: const <Locale>[Locale("ko")],
+        path: "assets/translations",
+        child: MultiProvider(
+          providers: [
+            ChangeNotifierProvider<CourseSearchModel>.value(value: searchModel),
+            ChangeNotifierProvider<CourseDetailModel>(
+              create: (_) => CourseDetailModel(),
+            ),
+          ],
+          child: const MaterialApp(home: Scaffold(body: DictionaryPage())),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('"robot"'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets("pump LectureDetailPage", (WidgetTester tester) async {

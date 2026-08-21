@@ -143,48 +143,36 @@ class LectureDetailPage extends StatelessWidget {
               onTapPos: () => timetableModel.removeLecture(lecture: lecture),
             ),
           );
-        } else {
-          timetableModel.addLecture(
-            lecture: lecture,
-            noOverlap: () async {
-              bool result = false;
-
-              await OTLNavigator.pushDialog(
-                context: context,
-                builder: (_) => OTLDialog(
-                  type: OTLDialogType.addLectureWithTab,
-                  namedArgs: {'lecture': lectureTitle, 'timetable': timetable},
-                  onTapPos: () => result = true,
-                ),
-              );
-
-              return result;
-            },
-            onOverlap: (lectures) async {
-              bool result = false;
-
-              await OTLNavigator.pushDialog(
-                context: context,
-                builder: (_) => OTLDialog(
-                  type: OTLDialogType.addOverlappingLectureWithTab,
-                  namedArgs: {
-                    'lectures': lectures
-                        .map(
-                          (lecture) =>
-                              "'${isKo ? lecture.title : lecture.titleEn}'",
-                        )
-                        .join(', '),
-                    'lecture': lectureTitle,
-                    'timetable': timetable,
-                  },
-                  onTapPos: () => result = true,
-                ),
-              );
-
-              return result;
-            },
-          );
+          return;
         }
+
+        final overlaps = timetableModel.overlappingLectures(lecture);
+        final hasOverlaps = overlaps.isNotEmpty;
+        OTLNavigator.pushDialog(
+          context: context,
+          builder: (_) => OTLDialog(
+            type: hasOverlaps
+                ? OTLDialogType.addOverlappingLectureWithTab
+                : OTLDialogType.addLectureWithTab,
+            namedArgs: {
+              if (hasOverlaps)
+                'lectures': overlaps
+                    .map(
+                      (overlap) =>
+                          "'${isKo ? overlap.title : overlap.titleEn}'",
+                    )
+                    .join(', '),
+              'lecture': lectureTitle,
+              'timetable': timetable,
+            },
+            onTapPos: () async {
+              await timetableModel.addLecture(
+                lecture: lecture,
+                replaceOverlaps: hasOverlaps,
+              );
+            },
+          ),
+        );
       },
       icon: isAdded
           ? Icons.remove_circle_outline_rounded
@@ -307,9 +295,14 @@ class LectureDetailPage extends StatelessWidget {
             lecture: lecture,
             existingReview: existingReview,
             isSimple: true,
-            onUploaded: (review) {
-              context.read<InfoModel>().getInfo();
-              context.read<LectureDetailModel>().updateLectureReviews(review);
+            onUploaded: () async {
+              final infoModel = context.read<InfoModel>();
+              final detailModel = context.read<LectureDetailModel>();
+              final isUpdateEnabled = detailModel.isUpdateEnabled;
+              await Future.wait<void>(<Future<void>>[
+                infoModel.reload(),
+                detailModel.loadLecture(lecture.id, isUpdateEnabled),
+              ]);
             },
           ),
         ...context.select<LectureDetailModel, List<Widget>>((model) {

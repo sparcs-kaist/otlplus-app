@@ -1,49 +1,77 @@
-import 'package:flutter/material.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart';
 import 'package:otlplus/models/review.dart';
-import 'package:otlplus/models/user.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 
 class LikedReviewModel extends ChangeNotifier {
-  int _page = 0;
-  int get page => _page;
+  LikedReviewModel(this._repository);
+
+  static const int _pageSize = 10;
+
+  final ReviewRepository _repository;
+  final List<Review> _allLikedReviews = <Review>[];
+  final List<Review> _likedReviews = <Review>[];
 
   bool _isLoading = false;
+  bool _hasMore = true;
+  Object? _error;
+  int? _loadedUserId;
+  int? _activeUserId;
+  int _requestGeneration = 0;
+
+  List<Review> get likedReviews => List<Review>.unmodifiable(_likedReviews);
   bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
+  Object? get error => _error;
 
-  List<Review> _likedReviews = <Review>[];
-  List<Review> likedReviews(User _user) {
-    if (_likedReviews.length == 0 && !_isLoading) loadLikedReviews(_user);
-    return _likedReviews;
+  Future<void> load(int userId) async {
+    if (!_isLoading && _loadedUserId == userId) return;
+    if (_isLoading && _activeUserId == userId) return;
+    await refresh(userId);
   }
 
-  Future<void> clear(User _user) async {
-    _likedReviews.clear();
-    _page = 0;
-    await loadLikedReviews(_user);
-  }
-
-  Future<void> loadLikedReviews(User _user) async {
+  Future<void> refresh(int userId) async {
+    final requestGeneration = ++_requestGeneration;
+    _activeUserId = userId;
     _isLoading = true;
+    _error = null;
+    notifyListeners();
 
     try {
-      final response = await DioProvider().dio.get(
-        API_LIKED_REVIEW_URL.replaceFirst("{user_id}", _user.id.toString()),
-        queryParameters: {
-          "order": "-written_datetime",
-          "offset": _page * 10,
-          "limit": 10,
-        },
-      );
-      final rawReviews = response.data as List;
-      _likedReviews.addAll(rawReviews.map((review) => Review.fromJson(review)));
-      _page++;
-      _isLoading = false;
-      notifyListeners();
-    } catch (exception) {
-      print(exception);
-      _isLoading = false;
-      notifyListeners();
+      final reviews = await _repository.fetchLiked(userId);
+      if (requestGeneration != _requestGeneration) return;
+
+      _loadedUserId = userId;
+      _allLikedReviews
+        ..clear()
+        ..addAll(reviews);
+      _likedReviews
+        ..clear()
+        ..addAll(_allLikedReviews.take(_pageSize));
+      _hasMore = _likedReviews.length < _allLikedReviews.length;
+    } catch (error) {
+      if (requestGeneration == _requestGeneration) {
+        _error = error;
+      }
+    } finally {
+      if (requestGeneration == _requestGeneration) {
+        _activeUserId = null;
+        _isLoading = false;
+        notifyListeners();
+      }
     }
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoading || !_hasMore) return;
+
+    final end = math.min(
+      _likedReviews.length + _pageSize,
+      _allLikedReviews.length,
+    );
+    _likedReviews.addAll(_allLikedReviews.getRange(_likedReviews.length, end));
+    _hasMore = end < _allLikedReviews.length;
+    notifyListeners();
   }
 }

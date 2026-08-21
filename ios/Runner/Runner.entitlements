@@ -10,6 +10,10 @@
 	<array>
 		<string>group.org.sparcs.otl</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>N5V8W52U3U.org.sparcs.otlplus.token-vault</string>
+	</array>
 	<key>com.apple.security.network.client</key>
 	<true/>
 	<key>com.apple.security.personal-information.addressbook</key>

@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/models/review.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
@@ -298,13 +299,14 @@ class CourseDetailPage extends StatelessWidget {
         reverse: true,
         child: Column(
           children: <Widget>[
-            _buildHistoryRow(
-              context,
-              courseDetailModel.lectures as List<Lecture>,
-              years,
-              1,
-              courseDetailModel.selectedFilter,
-            ),
+            for (final season in [Season.spring, Season.summer])
+              _buildHistoryRow(
+                context,
+                courseDetailModel.lectures,
+                years,
+                season,
+                courseDetailModel.selectedFilter,
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
@@ -323,13 +325,14 @@ class CourseDetailPage extends StatelessWidget {
                     .toList(),
               ),
             ),
-            _buildHistoryRow(
-              context,
-              courseDetailModel.lectures as List<Lecture>,
-              years,
-              3,
-              courseDetailModel.selectedFilter,
-            ),
+            for (final season in [Season.fall, Season.winter])
+              _buildHistoryRow(
+                context,
+                courseDetailModel.lectures,
+                years,
+                season,
+                courseDetailModel.selectedFilter,
+              ),
           ],
         ),
       ),
@@ -340,7 +343,7 @@ class CourseDetailPage extends StatelessWidget {
     BuildContext context,
     List<Lecture> lectures,
     Set<int> years,
-    int semester,
+    Season season,
     String selectedFilter,
   ) {
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
@@ -351,7 +354,8 @@ class CourseDetailPage extends StatelessWidget {
           final filteredLectures = lectures
               .where(
                 (lecture) =>
-                    lecture.year == year && lecture.semester == semester,
+                    lecture.year == year &&
+                    Season.fromCode(lecture.semester) == season,
               )
               .toList();
           if (filteredLectures.length == 0)
@@ -369,7 +373,7 @@ class CourseDetailPage extends StatelessWidget {
             );
           return LectureGroupSimpleBlock(
             lectures: filteredLectures,
-            semester: semester,
+            semester: season.code,
             filter: selectedFilter,
           );
         }).toList(),
@@ -407,15 +411,20 @@ class CourseDetailPage extends StatelessWidget {
                 lecture: lecture,
                 existingReview: existingReview,
                 isSimple: false,
-                onUploaded: (review) {
-                  context.read<InfoModel>().getInfo();
-                  context.read<CourseDetailModel>().updateCourseReviews(review);
+                onUploaded: () async {
+                  final infoModel = context.read<InfoModel>();
+                  final detailModel = context.read<CourseDetailModel>();
+                  await Future.wait<void>(<Future<void>>[
+                    infoModel.reload(),
+                    detailModel.loadCourse(course.id),
+                  ]);
                 },
               );
             })
             .toList(),
         ...context.select<CourseDetailModel, List<Widget>>((model) {
-          if (model.reviews?.isEmpty == true) {
+          final reviews = model.reviews;
+          if (reviews.isEmpty) {
             return [
               Center(
                 child: Padding(
@@ -427,22 +436,8 @@ class CourseDetailPage extends StatelessWidget {
                 ),
               ),
             ];
-          } else {
-            return model.reviews
-                    ?.map((review) => ReviewBlock(review: review))
-                    .toList() ??
-                [
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        "common.no_result".tr(),
-                        style: labelRegular.copyWith(color: OTLColor.grayA),
-                      ),
-                    ),
-                  ),
-                ];
           }
+          return reviews.map((review) => ReviewBlock(review: review)).toList();
         }),
       ]),
     );

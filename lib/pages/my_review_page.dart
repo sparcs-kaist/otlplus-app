@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/extensions/semester.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/user.dart';
@@ -57,10 +58,7 @@ class MyReviewPage extends StatelessWidget {
                           children: <Widget>[
                             Padding(
                               padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Text(
-                                '${semester.year} ${["", "semester.spring".tr(), "semester.summer".tr(), "semester.fall".tr(), "semester.winter".tr()][semester.semester]}',
-                                style: labelBold,
-                              ),
+                              child: Text(semester.title, style: labelBold),
                             ),
                             ..._buildLectureBlocks(
                               context,

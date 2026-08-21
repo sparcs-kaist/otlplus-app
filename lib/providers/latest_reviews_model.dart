@@ -1,48 +1,56 @@
-import 'package:flutter/material.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:otlplus/models/review.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 
 class LatestReviewsModel extends ChangeNotifier {
-  int _page = 0;
-  int get page => _page;
+  LatestReviewsModel(this._repository);
+
+  static const int _pageSize = 10;
+
+  final ReviewRepository _repository;
+  final List<Review> _latestReviews = <Review>[];
 
   bool _isLoading = false;
+  bool _hasMore = true;
+  bool _hasLoaded = false;
+  Object? _error;
+
+  List<Review> get latestReviews => List<Review>.unmodifiable(_latestReviews);
   bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
+  Object? get error => _error;
 
-  List<Review> _latestReviews = <Review>[];
-  List<Review> get latestReviews {
-    if (_latestReviews.length == 0 && !_isLoading) loadLatestReviews();
-    return _latestReviews;
+  Future<void> load() async {
+    if (_hasLoaded || _isLoading) return;
+    await _fetch(reset: true);
   }
 
-  Future<void> clear() async {
-    _latestReviews.clear();
-    _page = 0;
-    await loadLatestReviews();
+  Future<void> refresh() => _fetch(reset: true);
+
+  Future<void> loadMore() async {
+    if (_isLoading || !_hasMore) return;
+    await _fetch(reset: false);
   }
 
-  Future<void> loadLatestReviews() async {
+  Future<void> _fetch({required bool reset}) async {
+    if (_isLoading) return;
+
     _isLoading = true;
+    _error = null;
+    notifyListeners();
 
     try {
-      final response = await DioProvider().dio.get(
-        API_REVIEW_URL,
-        queryParameters: {
-          "order": "-written_datetime",
-          "offset": _page * 10,
-          "limit": 10,
-        },
+      final result = await _repository.fetchRecent(
+        offset: reset ? 0 : _latestReviews.length,
+        limit: _pageSize,
       );
-      final rawReviews = response.data as List;
-      _latestReviews.addAll(
-        rawReviews.map((review) => Review.fromJson(review)),
-      );
-      _page++;
-      _isLoading = false;
-      notifyListeners();
-    } catch (exception) {
-      print(exception);
+      if (reset) _latestReviews.clear();
+      _latestReviews.addAll(result.reviews);
+      _hasLoaded = true;
+      _hasMore = _latestReviews.length < result.totalCount;
+    } catch (error) {
+      _error = error;
+    } finally {
       _isLoading = false;
       notifyListeners();
     }

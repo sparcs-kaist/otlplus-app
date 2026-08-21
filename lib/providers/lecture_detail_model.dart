@@ -1,19 +1,40 @@
-import 'package:flutter/material.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
-import 'package:otlplus/models/course.dart';
-import 'package:otlplus/models/lecture.dart';
-import 'package:otlplus/models/review.dart';
+import "package:flutter/foundation.dart";
+import "package:otlplus/dio_provider.dart";
+import "package:otlplus/models/course.dart";
+import "package:otlplus/models/lecture.dart";
+import "package:otlplus/models/review.dart";
+import "package:otlplus/repositories/course_repository.dart";
+import "package:otlplus/repositories/lecture_repository.dart";
 
 class LectureDetailModel extends ChangeNotifier {
+  LectureDetailModel([
+    CourseRepository? courseRepository,
+    LectureRepository? lectureRepository,
+  ]) : _courseRepository =
+           courseRepository ?? CourseRepository(DioProvider().dio),
+       _lectureRepository =
+           lectureRepository ?? LectureRepository(DioProvider().dio);
+
+  final CourseRepository _courseRepository;
+  final LectureRepository _lectureRepository;
+
   late Lecture _lecture;
   Lecture get lecture => _lecture;
 
   late Course _course;
   Course get course => _course;
 
+  List<Review> _reviews = const <Review>[];
+  List<Review> get reviews => _reviews;
+
   bool _isUpdateEnabled = false;
   bool get isUpdateEnabled => _isUpdateEnabled;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  Object? _error;
+  Object? get error => _error;
 
   bool _hasData = false;
   bool get hasData => _hasData;
@@ -23,31 +44,54 @@ class LectureDetailModel extends ChangeNotifier {
 
   int? _lectureId;
   bool _lastIsUpdateEnabled = false;
-
-  late List<Review> _reviews;
-  List<Review> get reviews => _reviews;
+  int _requestGeneration = 0;
 
   Future<void> loadLecture(int lectureId, bool isUpdateEnabled) async {
     _lectureId = lectureId;
     _lastIsUpdateEnabled = isUpdateEnabled;
+    final generation = ++_requestGeneration;
+    _isLoading = true;
+    _error = null;
     _hasData = false;
     _loadFailed = false;
     notifyListeners();
 
     try {
-      final response = await DioProvider().dio.get(
-        API_LECTURE_URL + "/" + lectureId.toString(),
+      final lectureRequest = _lectureRepository.fetchLegacyDetail(lectureId);
+      final reviewRequest = _lectureRepository.fetchLegacyRelatedReviews(
+        lectureId,
       );
+      final courseRequest = lectureRequest.then(
+        (lecture) => _courseRepository.fetchDetail(lecture.course),
+      );
+      late Lecture lecture;
+      late Course course;
+      late List<Review> reviews;
 
-      _lecture = Lecture.fromJson(response.data);
-      _course = await getLectureCourse();
-      _reviews = await getLectureReviews();
+      await Future.wait<void>(<Future<void>>[
+        lectureRequest.then((value) {
+          lecture = value;
+        }),
+        courseRequest.then((value) {
+          course = value;
+        }),
+        reviewRequest.then((value) {
+          reviews = value;
+        }),
+      ]);
+      if (generation != _requestGeneration) return;
+
+      _lecture = lecture;
+      _course = course;
+      _reviews = List<Review>.unmodifiable(reviews);
       _isUpdateEnabled = isUpdateEnabled;
-
+      _isLoading = false;
       _hasData = true;
       notifyListeners();
-    } catch (exception) {
-      print(exception);
+    } catch (caughtError) {
+      if (generation != _requestGeneration) return;
+      _error = caughtError;
+      _isLoading = false;
       _hasData = false;
       _loadFailed = true;
       notifyListeners();
@@ -61,32 +105,15 @@ class LectureDetailModel extends ChangeNotifier {
     }
   }
 
-  Future<List<Review>> getLectureReviews() async {
-    final response = await DioProvider().dio.get(
-      API_LECTURE_RELATED_REVIEWS_URL.replaceFirst(
-        "{id}",
-        _lecture.id.toString(),
-      ),
-    );
-    final rawReviews = response.data as List;
-    return rawReviews.map((review) => Review.fromJson(review)).toList();
-  }
-
-  Future<Course> getLectureCourse() async {
-    final response = await DioProvider().dio.get(
-      API_COURSE_URL + "/" + _lecture.course.toString(),
-    );
-    return Course.fromJson(response.data);
-  }
-
-  Future<void> updateLectureReviews(Review review) async {
-    int index = _reviews.indexOf(review);
+  void updateLectureReviews(Review review) {
+    final reviews = _reviews.toList();
+    final index = reviews.indexOf(review);
     if (index > -1) {
-      _reviews.removeAt(index);
-      _reviews.insert(index, review);
+      reviews[index] = review;
     } else {
-      _reviews.insert(0, review);
+      reviews.insert(0, review);
     }
+    _reviews = List<Review>.unmodifiable(reviews);
     notifyListeners();
   }
 }

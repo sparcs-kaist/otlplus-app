@@ -24,11 +24,7 @@ class NextLectureWidget : AppWidgetProvider() {
         // Schedule periodic update if not already scheduled
         schedulePeriodicUpdate(context)
 
-        // Trigger immediate update via WorkManager
-        val workRequest = OneTimeWorkRequestBuilder<UpdateWidgetWorker>()
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .build()
-        WorkManager.getInstance(context).enqueue(workRequest)
+        WidgetRefreshDispatcher.refresh(context)
     }
 
     override fun onEnabled(context: Context) {

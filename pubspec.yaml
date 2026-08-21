@@ -15,21 +15,17 @@ dependencies:
   dotted_border: "^2.1.0"
   flutter_web_browser: "^0.17.3"
   webview_flutter: "^4.14.1"
-  webview_cookie_manager:
-    git:
-      url: https://github.com/fryette/webview_cookie_manager.git
-      ref: master
-  path_provider: "^2.1.5"
+  path_provider: "^2.1.6"
   permission_handler: "^11.3.1"
   provider: "^6.1.2"
   url_launcher: "^6.3.1"
   equatable: "^2.0.7"
-  shared_preferences: "^2.3.5"
+  shared_preferences: "^2.5.5"
   easy_localization: "^3.0.7"
   flutter_widgetkit: "^1.0.3"
-  flutter_svg: "^2.0.17"
+  flutter_svg: "^2.3.0"
   open_app_file: "^4.0.2"
-  flutter_native_splash: "^2.4.4"
+  flutter_native_splash: "^2.4.8"
   mailto: "^2.0.0"
   dropdown_button2: "^3.0.0-beta.21"
   firebase_core: "^3.10.0"
@@ -41,7 +37,7 @@ dependencies:
       url: https://github.com/happycastle114/channel_talk_flutter
       ref: main
   in_app_update: ^4.2.5
-  sentry_flutter: ^9.25.0
+  sentry_flutter: ^9.27.0
   posthog_flutter: ^5.35.1
 dev_dependencies:
   sentry_dart_plugin: ^3.1.2

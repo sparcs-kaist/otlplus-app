@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:otlplus/constants/color.dart';
@@ -44,6 +46,13 @@ class Dropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final availableWidth = math.max(
+      0.0,
+      mediaQuery.size.width - mediaQuery.padding.horizontal,
+    );
+    final dropdownWidth = math.min(200.0, availableWidth);
+
     return DropdownButtonHideUnderline(
       child: DropdownButton2<T>(
         customButton: customButton,
@@ -51,7 +60,7 @@ class Dropdown<T> extends StatelessWidget {
           direction: offsetFromLeft
               ? DropdownDirection.right
               : DropdownDirection.left,
-          width: 200,
+          width: dropdownWidth,
           maxHeight: 237,
           elevation: 0,
           padding: EdgeInsets.zero,

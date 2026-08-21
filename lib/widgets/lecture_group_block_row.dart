@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/extensions/lecture.dart';
 import 'package:otlplus/models/lecture.dart';
@@ -133,50 +134,36 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
   }
 
   Future<void> _addLecture(Lecture lec) async {
+    final timetableModel = context.read<TimetableModel>();
     final isKo = context.locale == Locale('ko');
     final lectureTitle = isKo ? lec.title : lec.titleEn;
+    final overlaps = timetableModel.overlappingLectures(lec);
+    final hasOverlaps = overlaps.isNotEmpty;
 
-    bool result = await context.read<TimetableModel>().addLecture(
-      lecture: lec,
-      noOverlap: () async {
-        bool result = false;
-
-        await OTLNavigator.pushDialog(
-          context: context,
-          builder: (_) => OTLDialog(
-            type: OTLDialogType.addLecture,
-            namedArgs: {'lecture': lectureTitle},
-            onTapPos: () => result = true,
-          ),
-        );
-
-        return result;
-      },
-      onOverlap: (lectures) async {
-        bool result = false;
-
-        await OTLNavigator.pushDialog(
-          context: context,
-          builder: (_) => OTLDialog(
-            type: OTLDialogType.addOverlappingLecture,
-            namedArgs: {
-              'lectures': lectures
-                  .map(
-                    (lecture) => "'${isKo ? lecture.title : lecture.titleEn}'",
-                  )
-                  .join(', '),
-              'lecture': lectureTitle,
-            },
-            onTapPos: () => result = true,
-          ),
-        );
-
-        return result;
-      },
+    await OTLNavigator.pushDialog(
+      context: context,
+      builder: (_) => OTLDialog(
+        type: hasOverlaps
+            ? OTLDialogType.addOverlappingLecture
+            : OTLDialogType.addLecture,
+        namedArgs: {
+          if (hasOverlaps)
+            'lectures': overlaps
+                .map((overlap) => "'${isKo ? overlap.title : overlap.titleEn}'")
+                .join(', '),
+          'lecture': lectureTitle,
+        },
+        onTapPos: () async {
+          final result = await timetableModel.addLecture(
+            lecture: lec,
+            replaceOverlaps: hasOverlaps,
+          );
+          if (result == TimetableAddResult.added) {
+            timetableModel.setTempLecture(null);
+          }
+        },
+      ),
     );
-    if (result) {
-      context.read<TimetableModel>().setTempLecture(null);
-    }
   }
 
   Future<void> _removeLecture(Lecture lec) async {

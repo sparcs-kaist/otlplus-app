@@ -1,25 +1,24 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/text_styles.dart';
-import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/widgets/dropdown.dart';
+
+typedef TimetableTabActionCallback =
+    void Function(TimetableTabAction action, int index);
 
 class TimetableTabs extends StatefulWidget {
   final int index;
   final int length;
-  final Function(int) onTap;
-  final VoidCallback onCopyTap;
-  final Function(int) onDeleteTap;
-  final Function(ShareType) onExportTap;
+  final ValueChanged<int> onTap;
+  final TimetableTabActionCallback onAction;
 
   TimetableTabs({
     this.index = 0,
     required this.length,
     required this.onTap,
-    required this.onCopyTap,
-    required this.onDeleteTap,
-    required this.onExportTap,
+    required this.onAction,
   });
 
   @override
@@ -28,7 +27,13 @@ class TimetableTabs extends StatefulWidget {
 
 class _TimetableTabsState extends State<TimetableTabs> {
   int _index = 0;
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +87,7 @@ class _TimetableTabsState extends State<TimetableTabs> {
     if (i == _index) {
       return Padding(
         padding: const EdgeInsets.only(right: 8.0),
-        child: Dropdown<int>(
+        child: Dropdown<TimetableTabAction>(
           customButton: Container(
             height: 28,
             padding: EdgeInsets.fromLTRB(12, 0, 8, 0),
@@ -100,41 +105,32 @@ class _TimetableTabsState extends State<TimetableTabs> {
           ),
           items: [
             ItemData(
-              value: 0,
+              value: TimetableTabAction.copy,
               text: 'timetable.tab_menu.copy'.tr(),
               icon: Icons.copy,
             ),
             ItemData(
-              value: 1,
+              value: TimetableTabAction.exportImage,
               text: 'timetable.tab_menu.export_img'.tr(),
               icon: Icons.image_outlined,
             ),
             ItemData(
-              value: 2,
+              value: TimetableTabAction.exportIcal,
               text: 'timetable.tab_menu.export_cal'.tr(),
               icon: Icons.calendar_today_outlined,
             ),
             if (i != 0) ...[
               ItemData(
-                value: 3,
+                value: TimetableTabAction.delete,
                 text: 'timetable.tab_menu.delete'.tr(),
                 icon: Icons.delete_outlined,
                 textColor: OTLColor.red,
               ),
             ],
-            /*ItemData(
-                value: 4,
-                text: 'timetable.tab_menu.syllabus'.tr(),
-                icon: Icons.sticky_note_2_outlined,
-              ),*/
           ],
           offsetFromLeft: true,
-          onChanged: (value) {
-            if (value == 0) widget.onCopyTap();
-            if (value == 1) widget.onExportTap(ShareType.image);
-            if (value == 2) widget.onExportTap(ShareType.ical);
-            if (value == 3) widget.onDeleteTap(i);
-            // if (value == 4) Pass
+          onChanged: (action) {
+            if (action != null) widget.onAction(action, i);
           },
         ),
       );

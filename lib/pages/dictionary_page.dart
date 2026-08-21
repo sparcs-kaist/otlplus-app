@@ -52,9 +52,7 @@ class _DictionaryPageState extends State<DictionaryPage> {
                     ),
                   ),
                   const SizedBox(width: 12.0),
-                  Expanded(
-                    child: context.watch<CourseSearchModel>().courseSearchquery,
-                  ),
+                  Expanded(child: _buildCourseSearchSummary(searchModel)),
                 ],
               ),
             ),
@@ -107,6 +105,30 @@ class _DictionaryPageState extends State<DictionaryPage> {
       ),
     );
   }
+}
+
+Widget _buildCourseSearchSummary(CourseSearchModel model) {
+  final labelKeys = model.selectedFilterLabelKeys;
+  if (model.searchText.isEmpty && labelKeys.isEmpty) {
+    return Text(
+      "common.search_hint".tr(),
+      style: bodyRegular.copyWith(color: OTLColor.grayA),
+    );
+  }
+
+  return Text.rich(
+    TextSpan(
+      style: bodyRegular.copyWith(color: OTLColor.grayA),
+      children: <InlineSpan>[
+        TextSpan(text: model.searchText.isEmpty ? "" : '"${model.searchText}"'),
+        if (labelKeys.isNotEmpty && model.searchText.isNotEmpty)
+          const TextSpan(text: ", "),
+        TextSpan(text: labelKeys.map((key) => key.tr()).join(", ")),
+      ],
+    ),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+  );
 }
 
 Widget _buildCopyRight() {

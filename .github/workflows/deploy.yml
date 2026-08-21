@@ -291,6 +291,7 @@ jobs:
       IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
       IOS_PROVISIONING_PROFILE_WIDGET: ${{ secrets.IOS_PROVISIONING_PROFILE_WIDGET }}
       IOS_PROVISIONING_PROFILE_INTENTS: ${{ secrets.IOS_PROVISIONING_PROFILE_INTENTS }}
+      IOS_PROVISIONING_PROFILE_WATCH: ${{ secrets.IOS_PROVISIONING_PROFILE_WATCH }}
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
@@ -395,6 +396,13 @@ jobs:
             echo "⚠️  IOS_PROVISIONING_PROFILE_INTENTS: Not set (Intents extension may fail)"
           fi
 
+          if [ -n "$IOS_PROVISIONING_PROFILE_WATCH" ]; then
+            profile_length=$(echo "$IOS_PROVISIONING_PROFILE_WATCH" | wc -c)
+            echo "✅ IOS_PROVISIONING_PROFILE_WATCH: Available ($profile_length characters)"
+          else
+            echo "⚠️  IOS_PROVISIONING_PROFILE_WATCH: Not set (Watch app may fail)"
+          fi
+
       - name: Create Fastlane environment file
         run: |
           if [ -z "$APPLE_ID" ] || [ -z "$APPLE_PASSWORD" ] || [ -z "$APPLE_TEAM_ID" ]; then
@@ -477,6 +485,15 @@ jobs:
           else
             echo "⚠️  No Intents provisioning profile provided"
           fi
+
+          # Watch app profile (optional)
+          if [ -n "$IOS_PROVISIONING_PROFILE_WATCH" ]; then
+            echo "$IOS_PROVISIONING_PROFILE_WATCH" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile_watch.mobileprovision
+            watch_size=$(stat -f%z ~/Library/MobileDevice/Provisioning\ Profiles/profile_watch.mobileprovision)
+            echo "⌚ Watch provisioning profile size: $watch_size bytes"
+          else
+            echo "⚠️  No Watch provisioning profile provided"
+          fi
           
           # 프로비저닝 프로파일 내용 검증
           if security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision > /dev/null 2>&1; then
@@ -547,33 +564,41 @@ jobs:
           MAIN_PROFILE="$PP_DIR/profile.mobileprovision"
           WIDGET_PROFILE="$PP_DIR/profile_widget.mobileprovision"
           INTENTS_PROFILE="$PP_DIR/profile_intents.mobileprovision"
+          WATCH_PROFILE="$PP_DIR/profile_watch.mobileprovision"
 
           MAIN_NAME=$(extract_field "$MAIN_PROFILE" Name)
           WIDGET_NAME=$(extract_field "$WIDGET_PROFILE" Name)
           INTENTS_NAME=$(extract_field "$INTENTS_PROFILE" Name)
+          WATCH_NAME=$(extract_field "$WATCH_PROFILE" Name)
           MAIN_UUID=$(install_by_uuid "$MAIN_PROFILE")
           WIDGET_UUID=$(install_by_uuid "$WIDGET_PROFILE")
           INTENTS_UUID=$(install_by_uuid "$INTENTS_PROFILE")
+          WATCH_UUID=$(install_by_uuid "$WATCH_PROFILE")
           MAIN_EXPIRATION=$(extract_field "$MAIN_PROFILE" ExpirationDate)
           WIDGET_EXPIRATION=$(extract_field "$WIDGET_PROFILE" ExpirationDate)
           INTENTS_EXPIRATION=$(extract_field "$INTENTS_PROFILE" ExpirationDate)
+          WATCH_EXPIRATION=$(extract_field "$WATCH_PROFILE" ExpirationDate)
 
           echo "📋 Extracted profile metadata:"
           echo "  • Main:    ${MAIN_NAME:-<missing>} (${MAIN_UUID:-missing UUID}) expires ${MAIN_EXPIRATION:-<missing>}"
           echo "  • Widget:  ${WIDGET_NAME:-<missing>} (${WIDGET_UUID:-missing UUID}) expires ${WIDGET_EXPIRATION:-<missing>}"
           echo "  • Intents: ${INTENTS_NAME:-<missing>} (${INTENTS_UUID:-missing UUID}) expires ${INTENTS_EXPIRATION:-<missing>}"
+          echo "  • Watch:   ${WATCH_NAME:-<missing>} (${WATCH_UUID:-missing UUID}) expires ${WATCH_EXPIRATION:-<missing>}"
 
           validate_profile "Main" "$MAIN_NAME" "$MAIN_UUID" "$MAIN_EXPIRATION"
           validate_profile "Widget" "$WIDGET_NAME" "$WIDGET_UUID" "$WIDGET_EXPIRATION"
           validate_profile "Intents" "$INTENTS_NAME" "$INTENTS_UUID" "$INTENTS_EXPIRATION"
+          validate_profile "Watch" "$WATCH_NAME" "$WATCH_UUID" "$WATCH_EXPIRATION"
 
           {
             echo "IOS_PROFILE_NAME=$MAIN_NAME"
             echo "IOS_WIDGET_PROFILE_NAME=$WIDGET_NAME"
             echo "IOS_INTENTS_PROFILE_NAME=$INTENTS_NAME"
+            echo "IOS_WATCH_PROFILE_NAME=$WATCH_NAME"
             echo "IOS_PROFILE_UUID=$MAIN_UUID"
             echo "IOS_WIDGET_PROFILE_UUID=$WIDGET_UUID"
             echo "IOS_INTENTS_PROFILE_UUID=$INTENTS_UUID"
+            echo "IOS_WATCH_PROFILE_UUID=$WATCH_UUID"
           } >> "$GITHUB_ENV"
 
       - name: Install Flutter dependencies

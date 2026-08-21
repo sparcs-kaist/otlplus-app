@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:otlplus/constants/enums.dart';
+import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/pages/lecture_detail_page.dart';
 import 'package:otlplus/pages/lecture_search_page.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -58,7 +60,7 @@ class _TimetablePageState extends State<TimetablePage> {
     final lectures = context.select<TimetableModel, List<Lecture>>(
       (model) => model.currentTimetable.lectures,
     );
-    final mode = context.select<TimetableModel, int>(
+    final mode = context.select<TimetableModel, TimetableViewMode>(
       (model) => model.selectedMode,
     );
 
@@ -78,7 +80,7 @@ class _TimetablePageState extends State<TimetablePage> {
         ),
       ),
       trailing: TimetableModeControl(
-        dropdownIndex: context.watch<TimetableModel>().selectedMode,
+        selectedMode: context.watch<TimetableModel>().selectedMode,
         onTap: (mode) => context.read<TimetableModel>().setMode(mode),
       ),
       body: Column(
@@ -107,7 +109,7 @@ class _TimetablePageState extends State<TimetablePage> {
                             ),
                           ),
                         ),
-                        if (mode == 0)
+                        if (mode == TimetableViewMode.classes)
                           GestureDetector(
                             behavior: HitTestBehavior.translucent,
                             onTap: () {
@@ -138,14 +140,11 @@ class _TimetablePageState extends State<TimetablePage> {
                   Expanded(
                     child: () {
                       switch (mode) {
-                        case 0:
-                        case 1:
-                          return _buildTimetableMode(
-                            context,
-                            lectures,
-                            mode == 1,
-                          );
-                        default:
+                        case TimetableViewMode.classes:
+                          return _buildTimetableMode(context, lectures, false);
+                        case TimetableViewMode.exams:
+                          return _buildTimetableMode(context, lectures, true);
+                        case TimetableViewMode.map:
                           return MapView(lectures: lectures);
                       }
                     }(),
@@ -252,33 +251,32 @@ class _TimetablePageState extends State<TimetablePage> {
     );
   }
 
-  TimetableTabs _buildTimetableTabs(BuildContext context) {
-    final timetableModel = context.watch<TimetableModel>();
-
-    return TimetableTabs(
-      index: timetableModel.selectedIndex,
-      length: timetableModel.timetables.length,
-      onTap: (i) {
-        final timetableModel = context.read<TimetableModel>();
-
-        if (i > 0 && i == timetableModel.timetables.length)
-          timetableModel.createTimetable();
-        else
-          timetableModel.setIndex(i);
-      },
-      onCopyTap: () {
-        final timetableModel = context.read<TimetableModel>();
+  void _handleTimetableTabAction(
+    BuildContext context,
+    TimetableModel timetableModel,
+    TimetableTabAction action,
+    int index,
+  ) {
+    switch (action) {
+      case TimetableTabAction.copy:
         timetableModel.createTimetable(
           lectures: timetableModel.currentTimetable.lectures,
         );
-        /*if (_isSearchOpened) return;
-        setState(() {
-          _isSearchOpened = true;
-          _selectedLecture = null;
-        });*/
-      },
-      onDeleteTap: (i) {
-        if (i == 0) {
+        return;
+      case TimetableTabAction.exportImage:
+        timetableModel.shareTimetable(
+          ShareType.image,
+          context.locale.languageCode,
+        );
+        return;
+      case TimetableTabAction.exportIcal:
+        timetableModel.shareTimetable(
+          ShareType.ical,
+          context.locale.languageCode,
+        );
+        return;
+      case TimetableTabAction.delete:
+        if (index == 0) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             OTLNavigator.pushDialog(
               context: context,
@@ -324,13 +322,26 @@ class _TimetablePageState extends State<TimetablePage> {
             );
           });
         }
+        return;
+    }
+  }
+
+  TimetableTabs _buildTimetableTabs(BuildContext context) {
+    final timetableModel = context.watch<TimetableModel>();
+
+    return TimetableTabs(
+      index: timetableModel.selectedIndex,
+      length: timetableModel.timetables.length,
+      onTap: (i) {
+        final timetableModel = context.read<TimetableModel>();
+
+        if (i > 0 && i == timetableModel.timetables.length)
+          timetableModel.createTimetable();
+        else
+          timetableModel.setIndex(i);
       },
-      onExportTap: (type) {
-        context.read<TimetableModel>().shareTimetable(
-          type,
-          context.locale.languageCode,
-        );
-      },
+      onAction: (action, index) =>
+          _handleTimetableTabAction(context, timetableModel, action, index),
     );
   }
 }

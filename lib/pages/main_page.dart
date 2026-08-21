@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -20,15 +21,13 @@ import 'package:provider/provider.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/timetable.dart';
-import 'package:otlplus/models/user.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/providers/timetable_model.dart';
 import 'package:otlplus/widgets/timetable_block.dart';
 import 'package:otlplus/widgets/today_timetable.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_widgetkit/flutter_widgetkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../models/lecture.dart';
 
 class MainPage extends StatefulWidget {
   static String route = 'main_page';
@@ -40,68 +39,46 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  @override
-  void initState() {
-    super.initState();
-    initWidgetData();
+  int? _syncedWidgetUserId;
+  int? _syncingWidgetUserId;
+
+  void _scheduleWidgetUserSync(int userId) {
+    if (_syncedWidgetUserId == userId || _syncingWidgetUserId == userId) return;
+    _syncingWidgetUserId = userId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_syncWidgetUser(userId));
+    });
   }
 
-  Future<void> initWidgetData() async {
+  Future<void> _syncWidgetUser(int userId) async {
     try {
-      final storageService = StorageService();
-      final accessToken = await storageService.getAccessToken();
-      final refreshToken = await storageService.getRefreshToken();
-
-      if (accessToken != null && refreshToken != null) {
-        await _initAndroidWidgetTokens(accessToken, refreshToken);
-        await _initWidgetKitTokens(accessToken, refreshToken);
+      if (Platform.isIOS) {
+        await WidgetKit.setItem(
+          'uid',
+          userId.toString(),
+          'group.org.sparcs.otl',
+        );
+        WidgetKit.reloadAllTimelines();
+        await StorageService().syncNativeReplicas();
       }
-
-      // Set user ID for widgets
-      final infoModel = context.read<InfoModel>();
-      if (infoModel.hasData) {
-        if (Platform.isIOS) {
-          WidgetKit.setItem(
-            'uid',
-            infoModel.user.id.toString(),
-            'group.org.sparcs.otl',
-          );
-          WidgetKit.reloadAllTimelines();
-        }
-        if (Platform.isAndroid) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString("user_id", infoModel.user.id.toString());
-        }
+      if (Platform.isAndroid) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("user_id", userId.toString());
       }
-    } catch (e) {
-      print("Widget data init failed: $e");
+      _syncedWidgetUserId = userId;
+    } catch (error) {
+      debugPrint("Widget data init failed: $error");
+    } finally {
+      _syncingWidgetUserId = null;
     }
-  }
-
-  Future<void> _initAndroidWidgetTokens(
-    String accessToken,
-    String refreshToken,
-  ) async {
-    if (!Platform.isAndroid) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("access_token", accessToken);
-    await prefs.setString("refresh_token", refreshToken);
-  }
-
-  Future<void> _initWidgetKitTokens(
-    String accessToken,
-    String refreshToken,
-  ) async {
-    if (!Platform.isIOS) return;
-    WidgetKit.setItem('accessToken', accessToken, 'group.org.sparcs.otl');
-    WidgetKit.setItem('refreshToken', refreshToken, 'group.org.sparcs.otl');
-    WidgetKit.reloadAllTimelines();
   }
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final infoModel = context.watch<InfoModel>();
+    final timetableModel = context.watch<TimetableModel?>();
 
     if (!infoModel.hasData) {
       if (infoModel.hasError) {
@@ -122,6 +99,8 @@ class _MainPageState extends State<MainPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    _scheduleWidgetUserSync(infoModel.user.id);
+
     if (infoModel.semesters.isEmpty) {
       final isEn = context.locale == const Locale('en');
       return Center(
@@ -138,11 +117,6 @@ class _MainPageState extends State<MainPage> {
       );
     }
 
-    final semester = infoModel.semesters.firstWhere(
-      (semester) =>
-          semester.beginning.isBefore(now) && semester.end.isAfter(now),
-      orElse: () => infoModel.semesters.last,
-    );
     return OTLLayout(
       extendBodyBehindAppBar: true,
       leading: Padding(
@@ -269,11 +243,7 @@ class _MainPageState extends State<MainPage> {
                                   children: <Widget>[
                                     Column(
                                       children: <Widget>[
-                                        _buildTimetable(
-                                          infoModel.user,
-                                          semester,
-                                          now,
-                                        ),
+                                        _buildTimetable(timetableModel, now),
                                         const SizedBox(height: 24.0),
                                         _buildDivider(),
                                         const SizedBox(height: 24.0),
@@ -451,16 +421,22 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildTimetable(User user, Semester semester, DateTime now) {
-    List<Lecture> myLecturesList = user.myTimetableLectures
-        .where(
-          (lecture) =>
-              lecture.year == semester.year &&
-              lecture.semester == semester.semester,
-        )
-        .toList();
-    Timetable timetable = Timetable(id: 0, lectures: myLecturesList);
-    return Container(
+  Widget _buildTimetable(TimetableModel? timetableModel, DateTime now) {
+    if (timetableModel == null || timetableModel.loadFailed) {
+      return SizedBox(
+        height: 76,
+        child: Center(child: Text('common.no_info'.tr(), style: bodyRegular)),
+      );
+    }
+    if (!timetableModel.isLoaded || timetableModel.timetables.isEmpty) {
+      return const SizedBox(
+        height: 76,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final Timetable timetable = timetableModel.timetables.first;
+    return SizedBox(
       height: 76,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,

@@ -1,17 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/constants/enums.dart';
+import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
+import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/hall_of_fame_model.dart';
+import 'package:otlplus/providers/latest_reviews_model.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/hall_of_fame_control.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
+import 'package:otlplus/widgets/review_block.dart';
 import 'package:otlplus/widgets/review_mode_control.dart';
 import 'package:provider/provider.dart';
-import 'package:otlplus/providers/course_detail_model.dart';
-import 'package:otlplus/providers/latest_reviews_model.dart';
-import 'package:otlplus/widgets/review_block.dart';
 
 class ReviewPage extends StatefulWidget {
+  const ReviewPage({super.key});
+
   static String route = 'review_page';
 
   @override
@@ -19,59 +25,121 @@ class ReviewPage extends StatefulWidget {
 }
 
 class _ReviewPageState extends State<ReviewPage> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_loadSelectedFeed());
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSelectedFeed() {
+    return switch (context.read<HallOfFameModel>().selectedMode) {
+      ReviewTab.hallOfFame => context.read<HallOfFameModel>().load(),
+      ReviewTab.latest => context.read<LatestReviewsModel>().load(),
+    };
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.extentAfter > 200) {
+      return;
+    }
+
+    switch (context.read<HallOfFameModel>().selectedMode) {
+      case ReviewTab.hallOfFame:
+        final model = context.read<HallOfFameModel>();
+        if (model.hasMore && !model.isLoading) unawaited(model.loadMore());
+        break;
+      case ReviewTab.latest:
+        final model = context.read<LatestReviewsModel>();
+        if (model.hasMore && !model.isLoading) unawaited(model.loadMore());
+        break;
+    }
+  }
+
+  void _handleModeChanged(ReviewTab mode) {
+    final hallOfFameModel = context.read<HallOfFameModel>();
+    if (hallOfFameModel.selectedMode == mode) return;
+
+    hallOfFameModel.setMode(mode);
+    unawaited(_scrollToTop());
+    unawaited(_loadSelectedFeed());
+  }
+
+  void _handleSemesterChanged(Semester? semester) {
+    unawaited(_selectSemester(semester));
+  }
+
+  Future<void> _selectSemester(Semester? semester) async {
+    final model = context.read<HallOfFameModel>();
+    model.setSemester(semester);
+    await _scrollToTop();
+    await model.refresh();
+  }
+
+  Future<void> _scrollToTop() async {
+    if (!_scrollController.hasClients) return;
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final _selectedMode = context.select<HallOfFameModel, int>(
-      (m) => m.selectedMode,
+    final selectedMode = context.select<HallOfFameModel, ReviewTab>(
+      (model) => model.selectedMode,
+    );
+    final selectedSemester = context.select<HallOfFameModel, Semester?>(
+      (model) => model.semester,
     );
 
     return OTLLayout(
       leading: ReviewModeControl(
-        selectedMode: context.watch<HallOfFameModel>().selectedMode,
+        selectedMode: selectedMode,
+        onChanged: _handleModeChanged,
       ),
       trailing: Visibility(
-        visible: context.watch<HallOfFameModel>().selectedMode == 0,
+        visible: selectedMode == ReviewTab.hallOfFame,
         child: Padding(
-          padding: const EdgeInsets.only(right: 16.0),
-          child: HallOfFameControl(),
+          padding: const EdgeInsets.only(right: 16),
+          child: HallOfFameControl(
+            selectedSemester: selectedSemester,
+            onChanged: _handleSemesterChanged,
+          ),
         ),
       ),
       body: Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(topRight: Radius.circular(16.0)),
+          borderRadius: BorderRadius.only(topRight: Radius.circular(16)),
         ),
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (scrollNotification) {
-            if (_selectedMode == 1) {
-              final reviewModel = context.read<LatestReviewsModel>();
-
-              if (!reviewModel.isLoading &&
-                  scrollNotification.metrics.pixels ==
-                      scrollNotification.metrics.maxScrollExtent) {
-                reviewModel.loadLatestReviews();
-              }
-
-              return true;
-            } else {
-              final hallOfFameModel = context.read<HallOfFameModel>();
-
-              if (!hallOfFameModel.isLoading &&
-                  scrollNotification.metrics.pixels ==
-                      scrollNotification.metrics.maxScrollExtent) {
-                hallOfFameModel.loadHallOfFame();
-              }
-
-              return true;
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                _selectedMode == 1 ? LatestReviewsPage() : HallOfFamePage(),
-              ],
-            ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              switch (selectedMode) {
+                ReviewTab.hallOfFame => HallOfFamePage(
+                  scrollController: _scrollController,
+                ),
+                ReviewTab.latest => LatestReviewsPage(
+                  scrollController: _scrollController,
+                ),
+              },
+            ],
           ),
         ),
       ),
@@ -80,55 +148,38 @@ class _ReviewPageState extends State<ReviewPage> {
 }
 
 class LatestReviewsPage extends StatelessWidget {
-  const LatestReviewsPage({Key? key}) : super(key: key);
+  const LatestReviewsPage({required this.scrollController, super.key});
+
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
-    final _scrollController = context.watch<HallOfFameModel>().scrollController;
-    final latestReviews = context.watch<LatestReviewsModel>().latestReviews;
-    final latestReviewPage = context.watch<LatestReviewsModel>().page;
+    final model = context.watch<LatestReviewsModel>();
+    final reviews = model.latestReviews;
 
     return Expanded(
       child: RefreshIndicator(
-        onRefresh: () async {
-          await context.read<LatestReviewsModel>().clear();
-        },
+        onRefresh: model.refresh,
         child: Scrollbar(
+          controller: scrollController,
           child: CustomScrollView(
-            controller: _scrollController,
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
                   return ReviewBlock(
-                    review: latestReviews[index],
+                    review: reviews[index],
                     onTap: () async {
                       context.read<CourseDetailModel>().loadCourse(
-                        latestReviews[index].course.id,
+                        reviews[index].course.id,
                       );
                       OTLNavigator.push(context, CourseDetailPage());
                     },
                   );
-                }, childCount: latestReviews.length),
+                }, childCount: reviews.length),
               ),
-              if (latestReviewPage * 10 == latestReviews.length) ...[
-                SliverList(
-                  delegate: SliverChildListDelegate([
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: OTLColor.grayE,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ]),
-                ),
-              ],
+              if (model.isLoading) const _LoadingSliver(),
             ],
           ),
         ),
@@ -138,56 +189,62 @@ class LatestReviewsPage extends StatelessWidget {
 }
 
 class HallOfFamePage extends StatelessWidget {
-  const HallOfFamePage({Key? key}) : super(key: key);
+  const HallOfFamePage({required this.scrollController, super.key});
+
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
-    final _scrollController = context.watch<HallOfFameModel>().scrollController;
-    final hallOfFames = context.watch<HallOfFameModel>().hallOfFame;
-    final hallOfFamesPage = context.watch<HallOfFameModel>().page;
+    final model = context.watch<HallOfFameModel>();
+    final reviews = model.hallOfFame;
 
     return Expanded(
       child: RefreshIndicator(
-        onRefresh: () async {
-          await context.read<HallOfFameModel>().clear();
-        },
+        onRefresh: model.refresh,
         child: Scrollbar(
+          controller: scrollController,
           child: CustomScrollView(
-            controller: _scrollController,
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
                   return ReviewBlock(
-                    review: hallOfFames[index],
+                    review: reviews[index],
                     onTap: () async {
                       context.read<CourseDetailModel>().loadCourse(
-                        hallOfFames[index].course.id,
+                        reviews[index].course.id,
                       );
                       OTLNavigator.push(context, CourseDetailPage());
                     },
                   );
-                }, childCount: hallOfFames.length),
+                }, childCount: reviews.length),
               ),
-              if (hallOfFamesPage * 10 == hallOfFames.length) ...[
-                SliverList(
-                  delegate: SliverChildListDelegate([
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: OTLColor.grayE,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ]),
-                ),
-              ],
+              if (model.isLoading) const _LoadingSliver(),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingSliver extends StatelessWidget {
+  const _LoadingSliver();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.only(top: 4, bottom: 12),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              color: OTLColor.grayE,
+              strokeWidth: 2,
+            ),
           ),
         ),
       ),

@@ -25,11 +25,9 @@ class _CourseSearchPageState extends State<CourseSearchPage> {
   @override
   void initState() {
     super.initState();
-    _searchTextController.text = context
-        .read<CourseSearchModel>()
-        .courseSearchText;
+    _searchTextController.text = context.read<CourseSearchModel>().searchText;
     _searchTextController.addListener(() {
-      context.read<CourseSearchModel>().setCourseSearchText(
+      context.read<CourseSearchModel>().setSearchText(
         _searchTextController.text,
       );
     });

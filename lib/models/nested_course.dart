@@ -39,6 +39,33 @@ class NestedCourse {
       summary = json['summary'],
       reviewTotalWeight = json['review_total_weight'];
 
+  /// Parses a v2 course Basic/review nested shape.
+  factory NestedCourse.fromV2Json(Map<String, dynamic> json) {
+    final id = _nestedCourseRequiredInt(
+      json['id'] ?? json['courseId'],
+      'NestedCourse.id',
+    );
+    final name = _nestedCourseRequiredString(
+      json['name'] ?? json['courseName'],
+      'NestedCourse.name',
+    );
+    final departmentJson = json['department'];
+    final type = _nestedCourseString(json['type']);
+    return NestedCourse(
+      id: id,
+      oldCode: _nestedCourseString(json['code'] ?? json['oldCode']),
+      department: departmentJson is Map
+          ? Department.fromV2Json(Map<String, dynamic>.from(departmentJson))
+          : null,
+      type: type,
+      typeEn: _nestedCourseNullableString(json['typeEn']) ?? type,
+      title: name,
+      titleEn: _nestedCourseNullableString(json['nameEn']) ?? name,
+      summary: _nestedCourseString(json['summary']),
+      reviewTotalWeight: _nestedCourseDouble(json['reviewTotalWeight']),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['id'] = this.id;
@@ -55,3 +82,26 @@ class NestedCourse {
     return data;
   }
 }
+
+String _nestedCourseRequiredString(Object? value, String field) {
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('$field must be a non-empty string');
+  }
+  return value;
+}
+
+int _nestedCourseRequiredInt(Object? value, String field) {
+  if (value is! int || value <= 0) {
+    throw FormatException('$field must be a positive integer');
+  }
+  return value;
+}
+
+String _nestedCourseString(Object? value) => value is String ? value : '';
+
+String? _nestedCourseNullableString(Object? value) {
+  return value is String && value.trim().isNotEmpty ? value : null;
+}
+
+double _nestedCourseDouble(Object? value) =>
+    value is num ? value.toDouble() : 0;
