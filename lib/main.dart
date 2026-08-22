@@ -151,6 +151,7 @@ void main() {
                   ChangeNotifierProvider(create: (_) => LectureDetailModel()),
                   ChangeNotifierProvider(
                     create: (_) => SettingsModel(
+                      telemetry: telemetryCoordinator,
                       onCrashReportingChanged: (enabled) {
                         unawaited(sentryConsentGate.setEnabled(enabled));
                       },

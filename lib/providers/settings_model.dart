@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,7 +29,13 @@ class SettingsModel extends ChangeNotifier {
   SettingsModel({
     bool forTest = false,
     void Function(bool enabled)? onCrashReportingChanged,
-  }) : _onCrashReportingChanged = onCrashReportingChanged {
+    TelemetryCoordinator? telemetry,
+    Future<void> Function(String topic)? subscribeToTopic,
+    Future<void> Function(String topic)? unsubscribeFromTopic,
+  }) : _onCrashReportingChanged = onCrashReportingChanged,
+       _telemetry = telemetry,
+       subscribeToTopic = subscribeToTopic ?? _subscribeToTopic,
+       unsubscribeFromTopic = unsubscribeFromTopic ?? _unsubscribeFromTopic {
     if (forTest) {
       _sendCrashlytics = true;
       _sendCrashlyticsAnonymously = false;
@@ -43,7 +52,19 @@ class SettingsModel extends ChangeNotifier {
     }
   }
 
+  static Future<void> _subscribeToTopic(String topic) {
+    return FirebaseMessaging.instance.subscribeToTopic(topic);
+  }
+
+  static Future<void> _unsubscribeFromTopic(String topic) {
+    return FirebaseMessaging.instance.unsubscribeFromTopic(topic);
+  }
+
   final void Function(bool enabled)? _onCrashReportingChanged;
+  final TelemetryCoordinator? _telemetry;
+  final Future<void> Function(String topic) subscribeToTopic;
+  final Future<void> Function(String topic) unsubscribeFromTopic;
+
   // Remain fail-closed until preferences are loaded successfully.
   bool _sendCrashlytics = false;
   bool _sendCrashlyticsAnonymously = false;
@@ -117,6 +138,17 @@ class SettingsModel extends ChangeNotifier {
     _setSubjectSuggestionAlarm(newValue);
   }
 
+  Future<void> _guardedTopic(
+    String operation,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action();
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(error, stackTrace, operation: operation);
+    }
+  }
+
   bool getPromotionAlarm() => _promotionAlarm;
   void setPromotionAlarm(bool newValue) => _setPromotionAlarm(newValue);
   void _setPromotionAlarm(bool newValue) {
@@ -126,9 +158,19 @@ class SettingsModel extends ChangeNotifier {
       (instance) => instance.setBool(_kPromotionAlarm, newValue),
     );
     if (newValue) {
-      FirebaseMessaging.instance.subscribeToTopic('promotion');
+      unawaited(
+        _guardedTopic(
+          'subscribe_promotion',
+          () => subscribeToTopic('promotion'),
+        ),
+      );
     } else {
-      FirebaseMessaging.instance.unsubscribeFromTopic('promotion');
+      unawaited(
+        _guardedTopic(
+          'unsubscribe_promotion',
+          () => unsubscribeFromTopic('promotion'),
+        ),
+      );
     }
   }
 
@@ -141,9 +183,19 @@ class SettingsModel extends ChangeNotifier {
       (instance) => instance.setBool(_kInformationAlarm, newValue),
     );
     if (newValue) {
-      FirebaseMessaging.instance.subscribeToTopic('information');
+      unawaited(
+        _guardedTopic(
+          'subscribe_information',
+          () => subscribeToTopic('information'),
+        ),
+      );
     } else {
-      FirebaseMessaging.instance.unsubscribeFromTopic('information');
+      unawaited(
+        _guardedTopic(
+          'unsubscribe_information',
+          () => unsubscribeFromTopic('information'),
+        ),
+      );
     }
   }
 
@@ -157,9 +209,19 @@ class SettingsModel extends ChangeNotifier {
       (instance) => instance.setBool(_kSubjectSuggestionAlarm, newValue),
     );
     if (newValue) {
-      FirebaseMessaging.instance.subscribeToTopic('subject_suggestion');
+      unawaited(
+        _guardedTopic(
+          'subscribe_subject_suggestion',
+          () => subscribeToTopic('subject_suggestion'),
+        ),
+      );
     } else {
-      FirebaseMessaging.instance.unsubscribeFromTopic('subject_suggestion');
+      unawaited(
+        _guardedTopic(
+          'unsubscribe_subject_suggestion',
+          () => unsubscribeFromTopic('subject_suggestion'),
+        ),
+      );
     }
   }
 
@@ -214,9 +276,20 @@ class SettingsModel extends ChangeNotifier {
     final instance = await SharedPreferences.getInstance();
     final success = await instance.clear();
 
-    FirebaseMessaging.instance.unsubscribeFromTopic('promotion');
-    FirebaseMessaging.instance.unsubscribeFromTopic('information');
-    FirebaseMessaging.instance.unsubscribeFromTopic('subject_suggestion');
+    await Future.wait(<Future<void>>[
+      _guardedTopic(
+        'clear_unsubscribe_promotion',
+        () => unsubscribeFromTopic('promotion'),
+      ),
+      _guardedTopic(
+        'clear_unsubscribe_information',
+        () => unsubscribeFromTopic('information'),
+      ),
+      _guardedTopic(
+        'clear_unsubscribe_subject_suggestion',
+        () => unsubscribeFromTopic('subject_suggestion'),
+      ),
+    ]);
 
     getAllValues(instance);
     return success;
