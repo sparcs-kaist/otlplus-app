@@ -17,6 +17,7 @@ import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/liked_review_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/repositories/review_repository.dart';
+import 'package:otlplus/services/optional_bootstrap.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/sentry_consent_gate.dart';
 import 'package:otlplus/services/storage_service.dart';
@@ -34,8 +35,6 @@ import 'package:otlplus/providers/latest_reviews_model.dart';
 import 'package:otlplus/providers/lecture_search_model.dart';
 import 'package:otlplus/providers/timetable_model.dart';
 import 'package:otlplus/utils/create_material_color.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'firebase_options.dart';
@@ -86,38 +85,6 @@ void main() {
         }
         return true;
       };
-
-      if (!_isSmokeTest) {
-        await FirebaseMessaging.instance.requestPermission(
-          alert: true,
-          announcement: false,
-          badge: true,
-          carPlay: false,
-          criticalAlert: false,
-          provisional: true,
-          sound: true,
-        );
-
-        final token = await FirebaseMessaging.instance.getToken().timeout(
-          const Duration(seconds: 10),
-          onTimeout: () => null,
-        );
-
-        await ChannelTalk.boot(
-          pluginKey: '0abc4b50-9e66-4b45-b910-eb654a481f08',
-          memberHash: token,
-          language: Language.korean,
-          appearance: Appearance.light,
-          channelButtonOption: ChannelButtonOption(
-            position: ChannelButtonPosition.right,
-            xMargin: 16,
-            yMargin: 130,
-          ),
-        ).timeout(const Duration(seconds: 10));
-
-        await ChannelTalk.initPushToken(deviceToken: token ?? "");
-        await ChannelTalk.showChannelButton();
-      }
 
       runApp(
         EasyLocalization(
@@ -199,6 +166,21 @@ void main() {
           ),
         ),
       );
+
+      if (!_isSmokeTest) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => unawaited(
+            OptionalBootstrap(
+              recordNonFatal: (error, stack) =>
+                  telemetryCoordinator.recordNonFatal(
+                    error,
+                    stack,
+                    operation: 'optional_bootstrap',
+                  ),
+            ).run(),
+          ),
+        );
+      }
     },
     (error, stack) {
       unawaited(
