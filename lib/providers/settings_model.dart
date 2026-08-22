@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
@@ -32,10 +33,17 @@ class SettingsModel extends ChangeNotifier {
     TelemetryCoordinator? telemetry,
     Future<void> Function(String topic)? subscribeToTopic,
     Future<void> Function(String topic)? unsubscribeFromTopic,
+    Future<void> Function()? showChannelButton,
+    Future<void> Function()? hideChannelButton,
+    Duration topicTimeout = const Duration(seconds: 10),
   }) : _onCrashReportingChanged = onCrashReportingChanged,
        _telemetry = telemetry,
-       subscribeToTopic = subscribeToTopic ?? _subscribeToTopic,
-       unsubscribeFromTopic = unsubscribeFromTopic ?? _unsubscribeFromTopic {
+       _subscribeToTopic = subscribeToTopic ?? _defaultSubscribeToTopic,
+       _unsubscribeFromTopic =
+           unsubscribeFromTopic ?? _defaultUnsubscribeFromTopic,
+       _showChannelButton = showChannelButton ?? _defaultShowChannelButton,
+       _hideChannelButton = hideChannelButton ?? _defaultHideChannelButton,
+       _topicTimeout = topicTimeout {
     if (forTest) {
       _sendCrashlytics = true;
       _sendCrashlyticsAnonymously = false;
@@ -52,18 +60,29 @@ class SettingsModel extends ChangeNotifier {
     }
   }
 
-  static Future<void> _subscribeToTopic(String topic) {
+  static Future<void> _defaultSubscribeToTopic(String topic) {
     return FirebaseMessaging.instance.subscribeToTopic(topic);
   }
 
-  static Future<void> _unsubscribeFromTopic(String topic) {
+  static Future<void> _defaultUnsubscribeFromTopic(String topic) {
     return FirebaseMessaging.instance.unsubscribeFromTopic(topic);
+  }
+
+  static Future<void> _defaultShowChannelButton() {
+    return ChannelTalk.showChannelButton();
+  }
+
+  static Future<void> _defaultHideChannelButton() {
+    return ChannelTalk.hideChannelButton();
   }
 
   final void Function(bool enabled)? _onCrashReportingChanged;
   final TelemetryCoordinator? _telemetry;
-  final Future<void> Function(String topic) subscribeToTopic;
-  final Future<void> Function(String topic) unsubscribeFromTopic;
+  final Future<void> Function(String topic) _subscribeToTopic;
+  final Future<void> Function(String topic) _unsubscribeFromTopic;
+  final Future<void> Function() _showChannelButton;
+  final Future<void> Function() _hideChannelButton;
+  final Duration _topicTimeout;
 
   // Remain fail-closed until preferences are loaded successfully.
   bool _sendCrashlytics = false;
@@ -114,6 +133,23 @@ class SettingsModel extends ChangeNotifier {
     );
   }
 
+  Future<void> applyChannelButtonVisibility(bool visible) async {
+    setShowsChannelTalkButton(visible);
+    try {
+      if (visible) {
+        await _showChannelButton();
+      } else {
+        await _hideChannelButton();
+      }
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'update_channeltalk_channel_button',
+      );
+    }
+  }
+
   bool getSendAlarm() => _sendAlarm;
   Future<void> setSendAlarm(bool newValue) async {
     if (newValue) {
@@ -143,7 +179,7 @@ class SettingsModel extends ChangeNotifier {
     Future<void> Function() action,
   ) async {
     try {
-      await action();
+      await action().timeout(_topicTimeout);
     } catch (error, stackTrace) {
       await _telemetry?.recordNonFatal(error, stackTrace, operation: operation);
     }
@@ -161,14 +197,14 @@ class SettingsModel extends ChangeNotifier {
       unawaited(
         _guardedTopic(
           'subscribe_promotion',
-          () => subscribeToTopic('promotion'),
+          () => _subscribeToTopic('promotion'),
         ),
       );
     } else {
       unawaited(
         _guardedTopic(
           'unsubscribe_promotion',
-          () => unsubscribeFromTopic('promotion'),
+          () => _unsubscribeFromTopic('promotion'),
         ),
       );
     }
@@ -186,14 +222,14 @@ class SettingsModel extends ChangeNotifier {
       unawaited(
         _guardedTopic(
           'subscribe_information',
-          () => subscribeToTopic('information'),
+          () => _subscribeToTopic('information'),
         ),
       );
     } else {
       unawaited(
         _guardedTopic(
           'unsubscribe_information',
-          () => unsubscribeFromTopic('information'),
+          () => _unsubscribeFromTopic('information'),
         ),
       );
     }
@@ -212,14 +248,14 @@ class SettingsModel extends ChangeNotifier {
       unawaited(
         _guardedTopic(
           'subscribe_subject_suggestion',
-          () => subscribeToTopic('subject_suggestion'),
+          () => _subscribeToTopic('subject_suggestion'),
         ),
       );
     } else {
       unawaited(
         _guardedTopic(
           'unsubscribe_subject_suggestion',
-          () => unsubscribeFromTopic('subject_suggestion'),
+          () => _unsubscribeFromTopic('subject_suggestion'),
         ),
       );
     }
@@ -275,23 +311,23 @@ class SettingsModel extends ChangeNotifier {
   Future<bool> clearAllValues() async {
     final instance = await SharedPreferences.getInstance();
     final success = await instance.clear();
+    getAllValues(instance);
 
     await Future.wait(<Future<void>>[
       _guardedTopic(
         'clear_unsubscribe_promotion',
-        () => unsubscribeFromTopic('promotion'),
+        () => _unsubscribeFromTopic('promotion'),
       ),
       _guardedTopic(
         'clear_unsubscribe_information',
-        () => unsubscribeFromTopic('information'),
+        () => _unsubscribeFromTopic('information'),
       ),
       _guardedTopic(
         'clear_unsubscribe_subject_suggestion',
-        () => unsubscribeFromTopic('subject_suggestion'),
+        () => _unsubscribeFromTopic('subject_suggestion'),
       ),
     ]);
 
-    getAllValues(instance);
     return success;
   }
 }

@@ -4,16 +4,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:otlplus/services/posthog_service.dart';
 
-/// Signature of [TelemetryCoordinator.recordNonFatal]. Capture it before an
-/// `await` so background failures can be reported without touching a
-/// [BuildContext] that may already be unmounted.
-typedef RecordNonFatal =
-    Future<void> Function(
-      Object error,
-      StackTrace stackTrace, {
-      required String operation,
-    });
-
 abstract interface class CrashReportingClient {
   Future<void> deleteUnsentReports();
   Future<void> recordError(

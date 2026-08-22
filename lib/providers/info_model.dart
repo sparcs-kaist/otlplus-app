@@ -9,13 +9,6 @@ import 'package:otlplus/models/user.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-typedef ChannelTalkUpdateUser =
-    Future<void> Function({
-      String? name,
-      String? email,
-      Map<String, dynamic>? customAttributes,
-    });
-
 const SCHEDULE_NAME = [
   "beginning",
   "end",
@@ -29,18 +22,9 @@ const SCHEDULE_NAME = [
 
 class InfoModel extends ChangeNotifier {
   final TelemetryCoordinator? _telemetry;
-  final Future<bool?> Function() channelTalkIsBooted;
-  final ChannelTalkUpdateUser channelTalkUpdateUser;
 
-  InfoModel({
-    bool forTest = false,
-    TelemetryCoordinator? telemetry,
-    Future<bool?> Function()? channelTalkIsBooted,
-    ChannelTalkUpdateUser? channelTalkUpdateUser,
-  }) : _telemetry = telemetry,
-       channelTalkIsBooted = channelTalkIsBooted ?? ChannelTalk.isBooted,
-       channelTalkUpdateUser =
-           channelTalkUpdateUser ?? _defaultChannelTalkUpdateUser {
+  InfoModel({bool forTest = false, TelemetryCoordinator? telemetry})
+    : _telemetry = telemetry {
     if (forTest) {
       _user = User(
         id: 0,
@@ -111,17 +95,17 @@ class InfoModel extends ChangeNotifier {
 
   Future<void> _updateChannelTalkUser(User? user) async {
     try {
-      final booted = await channelTalkIsBooted();
+      final booted = await ChannelTalk.isBooted();
       if (booted != true) return;
 
       if (user != null) {
-        await channelTalkUpdateUser(
+        await ChannelTalk.updateUser(
           name: "${user.firstName} ${user.lastName}",
           email: user.email,
           customAttributes: {"id": user.id, "studentId": user.studentId},
         );
       } else {
-        await channelTalkUpdateUser(
+        await ChannelTalk.updateUser(
           name: "",
           email: "",
           customAttributes: {"id": 0, "studentId": ""},
@@ -134,26 +118,6 @@ class InfoModel extends ChangeNotifier {
         operation: 'update_channeltalk_user',
       );
     }
-  }
-
-  Future<void> recordNonFatal(
-    Object error,
-    StackTrace stackTrace, {
-    required String operation,
-  }) async {
-    await _telemetry?.recordNonFatal(error, stackTrace, operation: operation);
-  }
-
-  static Future<void> _defaultChannelTalkUpdateUser({
-    String? name,
-    String? email,
-    Map<String, dynamic>? customAttributes,
-  }) async {
-    await ChannelTalk.updateUser(
-      name: name,
-      email: email,
-      customAttributes: customAttributes,
-    );
   }
 
   /// Loads the signed-in user's info. On failure [hasError] is set instead of

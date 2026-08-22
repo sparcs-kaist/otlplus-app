@@ -5,9 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
-import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/widgets/dropdown.dart';
 import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -16,7 +14,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:easy_localization/easy_localization.dart';
-import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 
 class SettingsPage extends StatelessWidget {
   @override
@@ -184,18 +181,11 @@ class SettingsPage extends StatelessWidget {
                       value: context
                           .watch<SettingsModel>()
                           .getShowsChannelTalkButton(),
-                      onChanged: (value) {
-                        context.read<SettingsModel>().setShowsChannelTalkButton(
-                          value,
-                        );
-
-                        unawaited(
-                          _updateChannelTalkButton(
-                            value,
-                            context.read<InfoModel>().recordNonFatal,
-                          ),
-                        );
-                      },
+                      onChanged: (value) => unawaited(
+                        context
+                            .read<SettingsModel>()
+                            .applyChannelButtonVisibility(value),
+                      ),
                     ),
                   ),
                   Visibility(
@@ -245,25 +235,6 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _updateChannelTalkButton(
-    bool visible,
-    RecordNonFatal recordNonFatal,
-  ) async {
-    try {
-      if (visible) {
-        await ChannelTalk.showChannelButton();
-      } else {
-        await ChannelTalk.hideChannelButton();
-      }
-    } catch (error, stackTrace) {
-      await recordNonFatal(
-        error,
-        stackTrace,
-        operation: 'update_channeltalk_channel_button',
-      );
-    }
   }
 
   Widget _buildListTile({

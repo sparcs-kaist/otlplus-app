@@ -88,6 +88,35 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
+  test('records non-fatal when channel button update fails', () async {
+    final telemetry = _RecordingTelemetryCoordinator();
+    final escapedErrors = <Object>[];
+    final model = SettingsModel(
+      forTest: true,
+      telemetry: telemetry,
+      showChannelButton: () => Future<void>.error(StateError('show failed')),
+      hideChannelButton: () => Future<void>.error(StateError('hide failed')),
+      subscribeToTopic: (_) async {},
+      unsubscribeFromTopic: (_) async {},
+    );
+
+    await runZonedGuarded<Future<void>>(
+      () async {
+        await model.applyChannelButtonVisibility(false);
+      },
+      (error, stackTrace) {
+        escapedErrors.add(error);
+      },
+    );
+
+    expect(escapedErrors, isEmpty);
+    expect(telemetry.nonFatals, hasLength(1));
+    expect(
+      telemetry.nonFatals.single.operation,
+      'update_channeltalk_channel_button',
+    );
+  });
+
   test(
     'records non-fatal instead of leaking zone error when topic subscribe fails',
     () async {

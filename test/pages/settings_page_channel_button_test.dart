@@ -1,17 +1,15 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/pages/settings_page.dart';
-import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _channelTalkChannel = MethodChannel('channel_talk_flutter');
+import '../utils/extensions.dart';
 
 void main() {
   setUpAll(() async {
@@ -19,6 +17,32 @@ void main() {
     WidgetsFlutterBinding.ensureInitialized();
     await EasyLocalization.ensureInitialized();
   });
+
+  testWidgets(
+    'settings page channel toggle works without an InfoModel provider',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1200, 2400);
+      addTearDown(() {
+        tester.view.resetDevicePixelRatio();
+        tester.view.resetPhysicalSize();
+      });
+
+      await tester.pumpWidget(
+        SettingsPage().materialAndNotifier(SettingsModel(forTest: true)),
+      );
+      await tester.pumpAndSettle();
+
+      final toggle = find.byType(CupertinoSwitch).last;
+      await tester.ensureVisible(toggle);
+
+      expect(toggle, findsOneWidget);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'toggling channel button on settings page does not leak unhandled exceptions',
@@ -30,30 +54,18 @@ void main() {
         tester.view.resetPhysicalSize();
       });
       final telemetry = _RecordingTelemetryCoordinator();
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_channelTalkChannel, (call) async {
-            if (call.method == 'hideChannelButton' ||
-                call.method == 'showChannelButton') {
-              throw MissingPluginException(
-                'No implementation found for method ${call.method}',
-              );
-            }
-            return null;
-          });
-      addTearDown(() {
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(_channelTalkChannel, null);
-      });
 
       await tester.pumpWidget(
         MultiProvider(
           providers: [
-            ChangeNotifierProvider<InfoModel>.value(
-              value: InfoModel(forTest: true, telemetry: telemetry),
-            ),
             ChangeNotifierProvider<SettingsModel>.value(
               value: SettingsModel(
                 forTest: true,
+                telemetry: telemetry,
+                showChannelButton: () =>
+                    Future<void>.error(StateError('show failed')),
+                hideChannelButton: () =>
+                    Future<void>.error(StateError('hide failed')),
                 subscribeToTopic: (_) async {},
                 unsubscribeFromTopic: (_) async {},
               ),
