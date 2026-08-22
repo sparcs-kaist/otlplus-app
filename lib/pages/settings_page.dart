@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/constants/url.dart';
+import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/widgets/dropdown.dart';
 import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -185,11 +189,12 @@ class SettingsPage extends StatelessWidget {
                           value,
                         );
 
-                        if (!value) {
-                          ChannelTalk.hideChannelButton();
-                        } else {
-                          ChannelTalk.showChannelButton();
-                        }
+                        unawaited(
+                          _updateChannelTalkButton(
+                            value,
+                            context.read<InfoModel>().recordNonFatal,
+                          ),
+                        );
                       },
                     ),
                   ),
@@ -240,6 +245,25 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _updateChannelTalkButton(
+    bool visible,
+    RecordNonFatal recordNonFatal,
+  ) async {
+    try {
+      if (visible) {
+        await ChannelTalk.showChannelButton();
+      } else {
+        await ChannelTalk.hideChannelButton();
+      }
+    } catch (error, stackTrace) {
+      await recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'update_channeltalk_channel_button',
+      );
+    }
   }
 
   Widget _buildListTile({
