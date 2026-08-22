@@ -17,6 +17,7 @@ void main() {
         requestPermission: () async {},
         getAPNSToken: () async => 'apns',
         getToken: () => Future<String?>.value('tok'),
+        onTokenRefresh: () => const Stream<String>.empty(),
         channelTalkBoot: ({String? memberHash}) async {
           bootMemberHashes.add(memberHash);
           return true;
@@ -42,6 +43,34 @@ void main() {
     },
   );
 
+  test('shows channel button even when init push token fails', () async {
+    var channelButtonCalls = 0;
+    final recordedErrors = <Object>[];
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () => Future<String?>.value('tok'),
+      onTokenRefresh: () => const Stream<String>.empty(),
+      channelTalkBoot: ({String? memberHash}) async => true,
+      initPushToken: (token) async {
+        throw StateError('init push token failed');
+      },
+      showChannelButton: () async {
+        channelButtonCalls += 1;
+      },
+      recordNonFatal: (error, stack) async {
+        recordedErrors.add(error);
+      },
+      isIOS: false,
+    );
+
+    await bootstrap.run();
+
+    expect(channelButtonCalls, 1);
+    expect(recordedErrors, hasLength(1));
+  });
+
   test(
     'skips fcm token when ios apns token is missing and still boots channeltalk',
     () async {
@@ -57,6 +86,7 @@ void main() {
           getTokenCalls += 1;
           return Future<String?>.value('unexpected-token');
         },
+        onTokenRefresh: () => const Stream<String>.empty(),
         channelTalkBoot: ({String? memberHash}) async {
           bootMemberHashes.add(memberHash);
           return true;
@@ -69,6 +99,7 @@ void main() {
         },
         recordNonFatal: (error, stack) async {},
         isIOS: true,
+        apnsMaxAttempts: 1,
       );
 
       await bootstrap.run();
@@ -79,6 +110,106 @@ void main() {
       expect(channelButtonCalls, 1);
     },
   );
+
+  test('retries apns token before giving up on ios', () async {
+    var apnsTokenCalls = 0;
+    var getTokenCalls = 0;
+    final bootMemberHashes = <String?>[];
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async {
+        apnsTokenCalls += 1;
+        return apnsTokenCalls < 3 ? null : 'apns';
+      },
+      getToken: () {
+        getTokenCalls += 1;
+        return Future<String?>.value('tok');
+      },
+      onTokenRefresh: () => const Stream<String>.empty(),
+      channelTalkBoot: ({String? memberHash}) async {
+        bootMemberHashes.add(memberHash);
+        return true;
+      },
+      initPushToken: (token) async {},
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      delay: (duration) async {},
+      isIOS: true,
+    );
+
+    await bootstrap.run();
+
+    expect(apnsTokenCalls, 3);
+    expect(getTokenCalls, 1);
+    expect(bootMemberHashes, ['tok']);
+  });
+
+  test(
+    'records non-fatal and boots without token when apns never arrives',
+    () async {
+      var getTokenCalls = 0;
+      final recordedErrors = <Object>[];
+      final bootMemberHashes = <String?>[];
+
+      final bootstrap = OptionalBootstrap(
+        requestPermission: () async {},
+        getAPNSToken: () async => null,
+        getToken: () {
+          getTokenCalls += 1;
+          return Future<String?>.value('unexpected-token');
+        },
+        onTokenRefresh: () => const Stream<String>.empty(),
+        channelTalkBoot: ({String? memberHash}) async {
+          bootMemberHashes.add(memberHash);
+          return true;
+        },
+        initPushToken: (token) async {},
+        showChannelButton: () async {},
+        recordNonFatal: (error, stack) async {
+          recordedErrors.add(error);
+        },
+        delay: (duration) async {},
+        isIOS: true,
+        apnsMaxAttempts: 3,
+      );
+
+      await bootstrap.run();
+
+      expect(getTokenCalls, 0);
+      expect(recordedErrors, hasLength(1));
+      expect(bootMemberHashes, [null]);
+    },
+  );
+
+  test('records non-fatal when fcm token times out', () async {
+    final recordedErrors = <Object>[];
+    final bootMemberHashes = <String?>[];
+    final neverCompletes = Completer<String?>();
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () => neverCompletes.future,
+      onTokenRefresh: () => const Stream<String>.empty(),
+      channelTalkBoot: ({String? memberHash}) async {
+        bootMemberHashes.add(memberHash);
+        return true;
+      },
+      initPushToken: (token) async {},
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {
+        recordedErrors.add(error);
+      },
+      isIOS: false,
+      tokenTimeout: const Duration(milliseconds: 10),
+    );
+
+    await bootstrap.run();
+
+    expect(recordedErrors, hasLength(1));
+    expect(bootMemberHashes, [null]);
+  });
 
   test(
     'records non-fatal and still boots channeltalk when getToken throws',
@@ -95,6 +226,7 @@ void main() {
             code: 'TOO_MANY_REGISTRATIONS',
           ),
         ),
+        onTokenRefresh: () => const Stream<String>.empty(),
         channelTalkBoot: ({String? memberHash}) async {
           bootMemberHashes.add(memberHash);
           return true;
@@ -113,6 +245,35 @@ void main() {
       expect(bootMemberHashes, [null]);
     },
   );
+
+  test('records non-fatal when channeltalk boot returns false', () async {
+    final recordedErrors = <Object>[];
+    final pushTokens = <String>[];
+    var channelButtonCalls = 0;
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () => Future<String?>.value('tok'),
+      channelTalkBoot: ({String? memberHash}) async => false,
+      initPushToken: (token) async {
+        pushTokens.add(token);
+      },
+      showChannelButton: () async {
+        channelButtonCalls += 1;
+      },
+      recordNonFatal: (error, stack) async {
+        recordedErrors.add(error);
+      },
+      isIOS: false,
+    );
+
+    await bootstrap.run();
+
+    expect(recordedErrors, hasLength(1));
+    expect(pushTokens, isEmpty);
+    expect(channelButtonCalls, 0);
+  });
 
   test(
     'skips init push token and channel button when boot returns false',
@@ -151,6 +312,7 @@ void main() {
       requestPermission: () async {},
       getAPNSToken: () async => 'apns',
       getToken: () => Future<String?>.value(''),
+      onTokenRefresh: () => const Stream<String>.empty(),
       channelTalkBoot: ({String? memberHash}) async {
         bootMemberHashes.add(memberHash);
         return true;
@@ -195,6 +357,107 @@ void main() {
     expect(recordedErrors, hasLength(1));
     expect(recordedErrors.single, isA<TimeoutException>());
   });
+
+  test('forwards refreshed tokens to channeltalk after boot', () async {
+    final tokenRefreshController = StreamController<String>.broadcast();
+    final pushTokens = <String>[];
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () => Future<String?>.value(null),
+      onTokenRefresh: () => tokenRefreshController.stream,
+      channelTalkBoot: ({String? memberHash}) async => true,
+      initPushToken: (token) async {
+        pushTokens.add(token);
+      },
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(() async {
+      await bootstrap.dispose();
+      await tokenRefreshController.close();
+    });
+
+    await bootstrap.run();
+    tokenRefreshController.add('refreshed-token');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(pushTokens, ['refreshed-token']);
+  });
+
+  test('does not forward refreshed tokens when boot failed', () async {
+    final tokenRefreshController = StreamController<String>.broadcast();
+    final pushTokens = <String>[];
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () => Future<String?>.value(null),
+      onTokenRefresh: () => tokenRefreshController.stream,
+      channelTalkBoot: ({String? memberHash}) async => false,
+      initPushToken: (token) async {
+        pushTokens.add(token);
+      },
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(() async {
+      await bootstrap.dispose();
+      await tokenRefreshController.close();
+    });
+
+    await bootstrap.run();
+    tokenRefreshController.add('refreshed-token');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(pushTokens, isEmpty);
+  });
+
+  test(
+    'never completes with error when refreshed token registration throws',
+    () async {
+      final tokenRefreshController = StreamController<String>.broadcast();
+      final recordedErrors = <Object>[];
+      final escapedErrors = <Object>[];
+      late OptionalBootstrap bootstrap;
+
+      final zoneFuture = runZonedGuarded<Future<void>>(
+        () async {
+          bootstrap = OptionalBootstrap(
+            requestPermission: () async {},
+            getAPNSToken: () async => 'apns',
+            getToken: () => Future<String?>.value(null),
+            onTokenRefresh: () => tokenRefreshController.stream,
+            channelTalkBoot: ({String? memberHash}) async => true,
+            initPushToken: (token) async {
+              throw StateError('refreshed token registration failed');
+            },
+            showChannelButton: () async {},
+            recordNonFatal: (error, stack) async {
+              recordedErrors.add(error);
+            },
+            isIOS: false,
+          );
+
+          await bootstrap.run();
+          tokenRefreshController.add('refreshed-token');
+          await Future<void>.delayed(Duration.zero);
+        },
+        (error, stack) {
+          escapedErrors.add(error);
+        },
+      );
+      await zoneFuture;
+      await bootstrap.dispose();
+      await tokenRefreshController.close();
+
+      expect(escapedErrors, isEmpty);
+      expect(recordedErrors, hasLength(1));
+    },
+  );
 
   test(
     'never completes with error even when every dependency throws',
