@@ -60,6 +60,7 @@ class InfoModel extends ChangeNotifier {
 
   User? _user;
   User get user => _user!;
+  User? get userOrNull => _user;
 
   List<Semester> _semesters = <Semester>[];
   List<Semester> get semesters => _semesters;
