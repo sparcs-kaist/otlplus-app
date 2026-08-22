@@ -47,7 +47,11 @@ void main() {
   test('skips update user when channeltalk is not booted', () async {
     final telemetry = _RecordingTelemetryCoordinator();
     var updateUserCallCount = 0;
-    final model = _LoadedInfoModel(telemetry: telemetry);
+    final model = _LoadedInfoModel(
+      telemetry: telemetry,
+      channelTalkReadyMaxAttempts: 1,
+      delay: (_) async {},
+    );
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_channelTalkChannel, (call) async {
@@ -60,6 +64,102 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(updateUserCallCount, 0);
+    expect(telemetry.nonFatals, hasLength(1));
+  });
+
+  test('retries channeltalk user update until the sdk is booted', () async {
+    final telemetry = _RecordingTelemetryCoordinator();
+    var isBootedCallCount = 0;
+    var updateUserCallCount = 0;
+    final model = _LoadedInfoModel(
+      telemetry: telemetry,
+      channelTalkReadyMaxAttempts: 3,
+      delay: (_) async {},
+    );
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_channelTalkChannel, (call) async {
+          if (call.method == 'isBooted') {
+            isBootedCallCount += 1;
+            return isBootedCallCount >= 3;
+          }
+          if (call.method == 'updateUser') updateUserCallCount += 1;
+          return true;
+        });
+
+    await model.getInfo();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(isBootedCallCount, 3);
+    expect(updateUserCallCount, 1);
+    expect(telemetry.nonFatals, isEmpty);
+  });
+
+  test('records non-fatal when channeltalk never boots', () async {
+    final telemetry = _RecordingTelemetryCoordinator();
+    final model = _LoadedInfoModel(
+      telemetry: telemetry,
+      channelTalkReadyMaxAttempts: 2,
+      delay: (_) async {},
+    );
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_channelTalkChannel, (call) async {
+          if (call.method == 'isBooted') return false;
+          return true;
+        });
+
+    await model.getInfo();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(telemetry.nonFatals, hasLength(1));
+    expect(telemetry.nonFatals.single.operation, 'update_channeltalk_user');
+  });
+
+  test('applies only the latest user when updates overlap', () async {
+    final telemetry = _RecordingTelemetryCoordinator();
+    final firstBootCheckStarted = Completer<void>();
+    final finishFirstBootCheck = Completer<bool?>();
+    final updatedUserNames = <String>[];
+    var isBootedCallCount = 0;
+    final model = _SequencedInfoModel(
+      telemetry: telemetry,
+      users: <User>[_testUser(1, 'First'), _testUser(2, 'Second')],
+    );
+    addTearDown(() {
+      if (!finishFirstBootCheck.isCompleted) {
+        finishFirstBootCheck.complete(false);
+      }
+    });
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_channelTalkChannel, (call) async {
+          if (call.method == 'isBooted') {
+            isBootedCallCount += 1;
+            if (isBootedCallCount == 1) {
+              firstBootCheckStarted.complete();
+              return finishFirstBootCheck.future;
+            }
+            return true;
+          }
+          if (call.method == 'updateUser') {
+            final arguments = call.arguments as Map<Object?, Object?>;
+            updatedUserNames.add(arguments['name']! as String);
+          }
+          return true;
+        });
+
+    await model.getInfo();
+    await firstBootCheckStarted.future;
+    await model.reload();
+    await Future<void>.delayed(Duration.zero);
+    finishFirstBootCheck.complete(true);
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(updatedUserNames, <String>['Second User']);
     expect(telemetry.nonFatals, isEmpty);
   });
 
@@ -92,8 +192,16 @@ void main() {
 }
 
 class _LoadedInfoModel extends InfoModel {
-  _LoadedInfoModel({required TelemetryCoordinator telemetry})
-    : super(forTest: true, telemetry: telemetry);
+  _LoadedInfoModel({
+    required TelemetryCoordinator telemetry,
+    int channelTalkReadyMaxAttempts = 6,
+    Future<void> Function(Duration)? delay,
+  }) : super(
+         forTest: true,
+         telemetry: telemetry,
+         channelTalkReadyMaxAttempts: channelTalkReadyMaxAttempts,
+         delay: delay,
+       );
 
   @override
   Future<List<Semester>> getSemesters() async => <Semester>[
@@ -121,6 +229,48 @@ class _LoadedInfoModel extends InfoModel {
 
   @override
   Map<String, dynamic>? getCurrentSchedule() => null;
+}
+
+class _SequencedInfoModel extends InfoModel {
+  _SequencedInfoModel({
+    required TelemetryCoordinator telemetry,
+    required List<User> users,
+  }) : _users = users,
+       super(forTest: true, telemetry: telemetry);
+
+  final List<User> _users;
+  var _userIndex = 0;
+
+  @override
+  Future<List<Semester>> getSemesters() async => <Semester>[
+    Semester(
+      year: 2026,
+      semester: 3,
+      beginning: DateTime(2026, 8, 1),
+      end: DateTime(2026, 12, 31),
+    ),
+  ];
+
+  @override
+  Future<User> getUser() async => _users[_userIndex++];
+
+  @override
+  Map<String, dynamic>? getCurrentSchedule() => null;
+}
+
+User _testUser(int id, String firstName) {
+  return User(
+    id: id,
+    email: '$firstName@example.com',
+    studentId: '2026000$id',
+    firstName: firstName,
+    lastName: 'User',
+    majors: const [],
+    departments: const [],
+    myTimetableLectures: const [],
+    reviewWritableLectures: const [],
+    reviews: const [],
+  );
 }
 
 class _RecordedNonFatal {

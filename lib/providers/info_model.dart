@@ -22,9 +22,20 @@ const SCHEDULE_NAME = [
 
 class InfoModel extends ChangeNotifier {
   final TelemetryCoordinator? _telemetry;
+  final Duration _channelTalkReadyRetryDelay;
+  final int _channelTalkReadyMaxAttempts;
+  final Future<void> Function(Duration) _delay;
 
-  InfoModel({bool forTest = false, TelemetryCoordinator? telemetry})
-    : _telemetry = telemetry {
+  InfoModel({
+    bool forTest = false,
+    TelemetryCoordinator? telemetry,
+    Duration channelTalkReadyRetryDelay = const Duration(seconds: 2),
+    int channelTalkReadyMaxAttempts = 6,
+    Future<void> Function(Duration)? delay,
+  }) : _telemetry = telemetry,
+       _channelTalkReadyRetryDelay = channelTalkReadyRetryDelay,
+       _channelTalkReadyMaxAttempts = channelTalkReadyMaxAttempts,
+       _delay = delay ?? _defaultDelay {
     if (forTest) {
       _user = User(
         id: 0,
@@ -73,6 +84,12 @@ class InfoModel extends ChangeNotifier {
   Set<int> _years = <int>{};
   Set<int> get years => _years;
 
+  int _channelTalkUserUpdateGeneration = 0;
+
+  static Future<void> _defaultDelay(Duration duration) {
+    return Future<void>.delayed(duration);
+  }
+
   void clearData() {
     // _user = null;
     _semesters = [];
@@ -94,23 +111,46 @@ class InfoModel extends ChangeNotifier {
   }
 
   Future<void> _updateChannelTalkUser(User? user) async {
-    try {
-      final booted = await ChannelTalk.isBooted();
-      if (booted != true) return;
+    final generation = ++_channelTalkUserUpdateGeneration;
 
-      if (user != null) {
-        await ChannelTalk.updateUser(
-          name: "${user.firstName} ${user.lastName}",
-          email: user.email,
-          customAttributes: {"id": user.id, "studentId": user.studentId},
-        );
-      } else {
-        await ChannelTalk.updateUser(
-          name: "",
-          email: "",
-          customAttributes: {"id": 0, "studentId": ""},
-        );
+    try {
+      for (
+        var attempt = 1;
+        attempt <= _channelTalkReadyMaxAttempts;
+        attempt += 1
+      ) {
+        if (generation != _channelTalkUserUpdateGeneration) return;
+
+        final booted = await ChannelTalk.isBooted();
+        if (generation != _channelTalkUserUpdateGeneration) return;
+
+        if (booted == true) {
+          if (user != null) {
+            await ChannelTalk.updateUser(
+              name: "${user.firstName} ${user.lastName}",
+              email: user.email,
+              customAttributes: {"id": user.id, "studentId": user.studentId},
+            );
+          } else {
+            await ChannelTalk.updateUser(
+              name: "",
+              email: "",
+              customAttributes: {"id": 0, "studentId": ""},
+            );
+          }
+          return;
+        }
+
+        if (attempt < _channelTalkReadyMaxAttempts) {
+          await _delay(_channelTalkReadyRetryDelay);
+        }
       }
+
+      if (generation != _channelTalkUserUpdateGeneration) return;
+      throw StateError(
+        'ChannelTalk was not booted after '
+        '$_channelTalkReadyMaxAttempts attempts',
+      );
     } catch (error, stackTrace) {
       await _telemetry?.recordNonFatal(
         error,

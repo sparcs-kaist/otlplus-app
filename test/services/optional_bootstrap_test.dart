@@ -3,8 +3,15 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/services/optional_bootstrap.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
   test(
     'boots channeltalk and registers push token when messaging succeeds',
     () async {
@@ -255,6 +262,7 @@ void main() {
       requestPermission: () async {},
       getAPNSToken: () async => 'apns',
       getToken: () => Future<String?>.value('tok'),
+      onTokenRefresh: () => const Stream<String>.empty(),
       channelTalkBoot: ({String? memberHash}) async => false,
       initPushToken: (token) async {
         pushTokens.add(token);
@@ -342,6 +350,7 @@ void main() {
       requestPermission: () async {},
       getAPNSToken: () async => 'apns',
       getToken: () => Future<String?>.value('tok'),
+      onTokenRefresh: () => const Stream<String>.empty(),
       channelTalkBoot: ({String? memberHash}) => neverCompletes.future,
       initPushToken: (token) async {},
       showChannelButton: () async {},
@@ -416,6 +425,189 @@ void main() {
     expect(pushTokens, isEmpty);
   });
 
+  test('registers a token that refreshed before channeltalk booted', () async {
+    final tokenRefreshController = StreamController<String>.broadcast();
+    final bootStarted = Completer<void>();
+    final finishBoot = Completer<bool?>();
+    final pushTokens = <String>[];
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => tokenRefreshController.stream,
+      channelTalkBoot: ({String? memberHash}) {
+        bootStarted.complete();
+        return finishBoot.future;
+      },
+      initPushToken: (token) async {
+        pushTokens.add(token);
+      },
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(() async {
+      if (!finishBoot.isCompleted) finishBoot.complete(false);
+      await bootstrap.dispose();
+      await tokenRefreshController.close();
+    });
+
+    final runFuture = bootstrap.run();
+    await bootStarted.future;
+    tokenRefreshController.add('refreshed-before-boot');
+    await Future<void>.delayed(Duration.zero);
+    finishBoot.complete(true);
+    await runFuture;
+
+    expect(pushTokens, ['refreshed-before-boot']);
+  });
+
+  test('does not register the same token twice', () async {
+    final tokenRefreshController = StreamController<String>.broadcast();
+    var registrationCalls = 0;
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => tokenRefreshController.stream,
+      channelTalkBoot: ({String? memberHash}) async => true,
+      initPushToken: (token) async {
+        registrationCalls += 1;
+      },
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(() async {
+      await bootstrap.dispose();
+      await tokenRefreshController.close();
+    });
+
+    await bootstrap.run();
+    tokenRefreshController.add('same-token');
+    tokenRefreshController.add('same-token');
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+
+    expect(registrationCalls, 1);
+  });
+
+  test('serializes overlapping push token registrations', () async {
+    final tokenRefreshController = StreamController<String>.broadcast();
+    final firstStarted = Completer<void>();
+    final secondStarted = Completer<void>();
+    final finishFirst = Completer<void>();
+    final finishSecond = Completer<void>();
+    var activeRegistrations = 0;
+    var maxActiveRegistrations = 0;
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => tokenRefreshController.stream,
+      channelTalkBoot: ({String? memberHash}) async => true,
+      initPushToken: (token) async {
+        activeRegistrations += 1;
+        if (activeRegistrations > maxActiveRegistrations) {
+          maxActiveRegistrations = activeRegistrations;
+        }
+        if (token == 'first') {
+          firstStarted.complete();
+          await finishFirst.future;
+        } else {
+          secondStarted.complete();
+          await finishSecond.future;
+        }
+        activeRegistrations -= 1;
+      },
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(() async {
+      if (!finishFirst.isCompleted) finishFirst.complete();
+      if (!finishSecond.isCompleted) finishSecond.complete();
+      await bootstrap.dispose();
+      await tokenRefreshController.close();
+    });
+
+    await bootstrap.run();
+    tokenRefreshController.add('first');
+    await firstStarted.future;
+    tokenRefreshController.add('second');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(maxActiveRegistrations, 1);
+
+    finishFirst.complete();
+    await secondStarted.future;
+    finishSecond.complete();
+  });
+
+  test('hides the channel button when the stored preference is off', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'showsChannelTalkButton': false,
+    });
+    var showChannelButtonCalls = 0;
+    var hideChannelButtonCalls = 0;
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => const Stream<String>.empty(),
+      channelTalkBoot: ({String? memberHash}) async => true,
+      initPushToken: (token) async {},
+      showChannelButton: () async {
+        showChannelButtonCalls += 1;
+      },
+      hideChannelButton: () async {
+        hideChannelButtonCalls += 1;
+      },
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(bootstrap.dispose);
+
+    await bootstrap.run();
+
+    expect(showChannelButtonCalls, 0);
+    expect(hideChannelButtonCalls, 1);
+  });
+
+  test('shows the channel button when the stored preference is on', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'showsChannelTalkButton': true,
+    });
+    var showChannelButtonCalls = 0;
+    var hideChannelButtonCalls = 0;
+
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => const Stream<String>.empty(),
+      channelTalkBoot: ({String? memberHash}) async => true,
+      initPushToken: (token) async {},
+      showChannelButton: () async {
+        showChannelButtonCalls += 1;
+      },
+      hideChannelButton: () async {
+        hideChannelButtonCalls += 1;
+      },
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(bootstrap.dispose);
+
+    await bootstrap.run();
+
+    expect(showChannelButtonCalls, 1);
+    expect(hideChannelButtonCalls, 0);
+  });
+
   test(
     'never completes with error when refreshed token registration throws',
     () async {
@@ -472,6 +664,7 @@ void main() {
           throw StateError('get APNS token failed');
         },
         getToken: () => Future<String?>.error(StateError('get token failed')),
+        onTokenRefresh: () => const Stream<String>.empty(),
         channelTalkBoot: ({String? memberHash}) async {
           throw StateError('boot failed');
         },

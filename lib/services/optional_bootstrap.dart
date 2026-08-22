@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const _showsChannelTalkButtonKey = 'showsChannelTalkButton';
 
 class OptionalBootstrap {
   OptionalBootstrap({
@@ -14,7 +17,9 @@ class OptionalBootstrap {
     Stream<String> Function()? onTokenRefresh,
     Future<bool?> Function({String? memberHash})? channelTalkBoot,
     Future<void> Function(String token)? initPushToken,
+    Future<bool> Function()? shouldShowChannelButton,
     Future<void> Function()? showChannelButton,
+    Future<void> Function()? hideChannelButton,
     Future<void> Function(Duration duration)? delay,
     bool? isIOS,
     this.apnsRetryDelay = const Duration(milliseconds: 500),
@@ -27,7 +32,10 @@ class OptionalBootstrap {
        onTokenRefresh = onTokenRefresh ?? _onTokenRefresh,
        channelTalkBoot = channelTalkBoot ?? _channelTalkBoot,
        initPushToken = initPushToken ?? _initPushToken,
+       _shouldShowChannelButton =
+           shouldShowChannelButton ?? _defaultShouldShowChannelButton,
        showChannelButton = showChannelButton ?? _showChannelButton,
+       _hideChannelButton = hideChannelButton ?? _defaultHideChannelButton,
        delay = delay ?? _delay,
        isIOS = isIOS ?? (!kIsWeb && Platform.isIOS);
 
@@ -37,7 +45,9 @@ class OptionalBootstrap {
   final Stream<String> Function() onTokenRefresh;
   final Future<bool?> Function({String? memberHash}) channelTalkBoot;
   final Future<void> Function(String token) initPushToken;
+  final Future<bool> Function() _shouldShowChannelButton;
   final Future<void> Function() showChannelButton;
+  final Future<void> Function() _hideChannelButton;
   final Future<void> Function(Duration duration) delay;
   final Future<void> Function(Object error, StackTrace stack) recordNonFatal;
   final bool isIOS;
@@ -47,9 +57,15 @@ class OptionalBootstrap {
   final Duration bootTimeout;
 
   StreamSubscription<String>? tokenRefreshSubscription;
+  Future<void> _pushTokenRegistrations = Future<void>.value();
+  bool _channelTalkBooted = false;
+  String? _pendingPushToken;
+  String? _lastRegisteredPushToken;
 
   Future<void> run() async {
     String? token;
+
+    await _subscribeToTokenRefresh();
 
     try {
       await requestPermission();
@@ -62,6 +78,10 @@ class OptionalBootstrap {
       }
     } catch (error, stack) {
       await _recordNonFatalSafely(error, stack);
+    }
+
+    if (_pendingPushToken == null && token != null && token.isNotEmpty) {
+      _pendingPushToken = token;
     }
 
     bool? booted;
@@ -79,24 +99,31 @@ class OptionalBootstrap {
       return;
     }
 
-    await _subscribeToTokenRefresh();
-
-    if (token != null && token.isNotEmpty) {
-      await _initPushTokenSafely(token);
-    }
+    _channelTalkBooted = true;
+    await _flushPendingPushToken();
 
     try {
-      await showChannelButton();
+      if (await _shouldShowChannelButton()) {
+        await showChannelButton();
+      } else {
+        await _hideChannelButton();
+      }
     } catch (error, stack) {
       await _recordNonFatalSafely(error, stack);
     }
   }
 
   Future<void> _subscribeToTokenRefresh() async {
+    if (tokenRefreshSubscription != null) return;
+
     try {
       tokenRefreshSubscription = onTokenRefresh().listen(
         (token) {
-          unawaited(_initPushTokenSafely(token));
+          if (token.isEmpty) return;
+          _pendingPushToken = token;
+          if (_channelTalkBooted) {
+            unawaited(_flushPendingPushToken());
+          }
         },
         onError: (Object error, StackTrace stack) {
           unawaited(_recordNonFatalSafely(error, stack));
@@ -107,12 +134,31 @@ class OptionalBootstrap {
     }
   }
 
-  Future<void> _initPushTokenSafely(String token) async {
-    try {
-      await initPushToken(token);
-    } catch (error, stack) {
-      await _recordNonFatalSafely(error, stack);
+  Future<void> _flushPendingPushToken() async {
+    final token = _pendingPushToken;
+    _pendingPushToken = null;
+    if (token == null || token.isEmpty) return;
+
+    await _serializePushTokenRegistration(token);
+    if (_channelTalkBooted && _pendingPushToken != null) {
+      await _flushPendingPushToken();
     }
+  }
+
+  Future<void> _serializePushTokenRegistration(String token) {
+    final previousRegistration = _pushTokenRegistrations.catchError((_) {});
+    final registration = previousRegistration.then((_) async {
+      if (token == _lastRegisteredPushToken) return;
+
+      try {
+        await initPushToken(token);
+        _lastRegisteredPushToken = token;
+      } catch (error, stack) {
+        await _recordNonFatalSafely(error, stack);
+      }
+    });
+    _pushTokenRegistrations = registration;
+    return registration;
   }
 
   Future<void> dispose() async {
@@ -198,7 +244,16 @@ class OptionalBootstrap {
     await ChannelTalk.initPushToken(deviceToken: token);
   }
 
+  static Future<bool> _defaultShouldShowChannelButton() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getBool(_showsChannelTalkButtonKey) ?? true;
+  }
+
   static Future<void> _showChannelButton() async {
     await ChannelTalk.showChannelButton();
+  }
+
+  static Future<void> _defaultHideChannelButton() async {
+    await ChannelTalk.hideChannelButton();
   }
 }

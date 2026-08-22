@@ -50,9 +50,9 @@ void main() {
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      var crashReportingEnabled = false;
       if (!_isSmokeTest) {
-        final crashReportingEnabled =
-            await SettingsModel.loadCrashReportingEnabled();
+        crashReportingEnabled = await SettingsModel.loadCrashReportingEnabled();
         await sentryConsentGate.setEnabled(crashReportingEnabled);
         await Sentry.init(sentryConsentGate.configure);
       }
@@ -63,7 +63,9 @@ void main() {
           options: DefaultFirebaseOptions.currentPlatform,
         );
       }
-      await telemetryCoordinator.initialize();
+      await telemetryCoordinator.initialize(
+        crashReportingEnabled: crashReportingEnabled,
+      );
       DioProvider.configureTelemetry(telemetryCoordinator);
 
       FlutterError.onError = (details) {
