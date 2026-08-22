@@ -163,6 +163,90 @@ void main() {
     expect(model.error, same(failure));
     expect(model.latestReviews, isEmpty);
   });
+
+  group('review feed snapshots', () {
+    test(
+      'latest reviews snapshot does not change when model refreshes to empty',
+      () async {
+        final repository = _FakeReviewRepository(
+          recentResults: <ReviewListResult>[
+            _result(reviewCount: 3, totalCount: 3),
+            _result(reviewCount: 0, totalCount: 0),
+          ],
+        );
+        final model = LatestReviewsModel(repository);
+
+        await model.load();
+        final snapshot = model.latestReviews;
+
+        await model.refresh();
+
+        expect(snapshot, hasLength(3));
+        expect(snapshot, List<Review>.filled(3, SampleReview.shared));
+        expect(model.latestReviews, isEmpty);
+      },
+    );
+
+    test(
+      'hall of fame snapshot does not change when model refreshes to empty',
+      () async {
+        final repository = _FakeReviewRepository(
+          hallOfFameResults: <ReviewListResult>[
+            _result(reviewCount: 3, totalCount: 3),
+            _result(reviewCount: 0, totalCount: 0),
+          ],
+        );
+        final model = HallOfFameModel(repository);
+
+        await model.load();
+        final snapshot = model.hallOfFame;
+
+        await model.refresh();
+
+        expect(snapshot, hasLength(3));
+        expect(snapshot, List<Review>.filled(3, SampleReview.shared));
+        expect(model.hallOfFame, isEmpty);
+      },
+    );
+
+    test('latest reviews getter returns loaded reviews', () async {
+      final repository = _FakeReviewRepository(
+        recentResults: <ReviewListResult>[
+          _result(reviewCount: 3, totalCount: 3),
+        ],
+      );
+      final model = LatestReviewsModel(repository);
+
+      await model.load();
+
+      expect(model.latestReviews, hasLength(3));
+    });
+
+    test('exposed review list is unmodifiable', () async {
+      final repository = _FakeReviewRepository(
+        recentResults: <ReviewListResult>[
+          _result(reviewCount: 3, totalCount: 3),
+        ],
+        hallOfFameResults: <ReviewListResult>[
+          _result(reviewCount: 3, totalCount: 3),
+        ],
+      );
+      final latest = LatestReviewsModel(repository);
+      final hallOfFame = HallOfFameModel(repository);
+
+      await latest.load();
+      await hallOfFame.load();
+
+      expect(
+        () => latest.latestReviews.add(SampleReview.shared),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => hallOfFame.hallOfFame.add(SampleReview.shared),
+        throwsUnsupportedError,
+      );
+    });
+  });
 }
 
 ReviewListResult _result({required int reviewCount, required int totalCount}) {
