@@ -17,6 +17,7 @@ import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/liked_review_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/repositories/review_repository.dart';
+import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/optional_bootstrap.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/sentry_consent_gate.dart';
@@ -183,6 +184,8 @@ void main() {
             ).run(),
           ),
         );
+      } else {
+        sharedChannelTalkReadiness.markUnavailable();
       }
     },
     (error, stack) {

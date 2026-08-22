@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/user.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 
@@ -19,10 +20,118 @@ void main() {
         .setMockMethodCallHandler(_channelTalkChannel, null);
   });
 
+  test(
+    'records non-fatal when channeltalk readiness resolves unavailable',
+    () async {
+      final telemetry = _RecordingTelemetryCoordinator();
+      final readiness = ChannelTalkReadiness()..markUnavailable();
+      var updateUserCallCount = 0;
+      final model = _LoadedInfoModel(
+        telemetry: telemetry,
+        channelTalkReadiness: readiness,
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_channelTalkChannel, (call) async {
+            if (call.method == 'isBooted') return true;
+            if (call.method == 'updateUser') updateUserCallCount += 1;
+            return true;
+          });
+
+      await model.getInfo();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(updateUserCallCount, 0);
+      expect(telemetry.nonFatals, hasLength(1));
+      expect(telemetry.nonFatals.single.operation, 'update_channeltalk_user');
+    },
+  );
+
+  test(
+    'syncs channeltalk user when boot completes after the retry budget would have expired',
+    () async {
+      final telemetry = _RecordingTelemetryCoordinator();
+      final readiness = ChannelTalkReadiness();
+      var updateUserCallCount = 0;
+      final model = _LoadedInfoModel(
+        telemetry: telemetry,
+        channelTalkReadiness: readiness,
+        channelTalkReadyTimeout: const Duration(milliseconds: 100),
+      );
+      addTearDown(readiness.markUnavailable);
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_channelTalkChannel, (call) async {
+            if (call.method == 'updateUser') updateUserCallCount += 1;
+            return true;
+          });
+
+      await model.getInfo();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      readiness.markBooted();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(updateUserCallCount, 1);
+      expect(telemetry.nonFatals, isEmpty);
+    },
+  );
+
+  test(
+    'applies only the latest user when the first update is still in flight',
+    () async {
+      final telemetry = _RecordingTelemetryCoordinator();
+      final firstUpdateStarted = Completer<void>();
+      final finishFirstUpdate = Completer<void>();
+      final appliedUserNames = <String>[];
+      final readiness = ChannelTalkReadiness()..markBooted();
+      final model = _SequencedInfoModel(
+        telemetry: telemetry,
+        users: <User>[_testUser(1, 'First'), _testUser(2, 'Second')],
+        channelTalkReadiness: readiness,
+      );
+      addTearDown(() {
+        if (!finishFirstUpdate.isCompleted) finishFirstUpdate.complete();
+      });
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_channelTalkChannel, (call) async {
+            if (call.method == 'isBooted') return true;
+            if (call.method == 'updateUser') {
+              final arguments = call.arguments as Map<Object?, Object?>;
+              final name = arguments['name']! as String;
+              if (name == 'First User') {
+                firstUpdateStarted.complete();
+                await finishFirstUpdate.future;
+              }
+              appliedUserNames.add(name);
+            }
+            return true;
+          });
+
+      await model.getInfo();
+      await firstUpdateStarted.future;
+      await model.reload();
+      await Future<void>.delayed(Duration.zero);
+      finishFirstUpdate.complete();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(appliedUserNames, isNotEmpty);
+      expect(appliedUserNames.last, 'Second User');
+      expect(telemetry.nonFatals, isEmpty);
+    },
+  );
+
   test('records non-fatal when channeltalk update fails', () async {
     final telemetry = _RecordingTelemetryCoordinator();
     final escapedErrors = <Object>[];
-    final model = _LoadedInfoModel(telemetry: telemetry);
+    final readiness = ChannelTalkReadiness()..markBooted();
+    final model = _LoadedInfoModel(
+      telemetry: telemetry,
+      channelTalkReadiness: readiness,
+    );
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_channelTalkChannel, (call) async {
@@ -46,16 +155,15 @@ void main() {
 
   test('skips update user when channeltalk is not booted', () async {
     final telemetry = _RecordingTelemetryCoordinator();
+    final readiness = ChannelTalkReadiness()..markUnavailable();
     var updateUserCallCount = 0;
     final model = _LoadedInfoModel(
       telemetry: telemetry,
-      channelTalkReadyMaxAttempts: 1,
-      delay: (_) async {},
+      channelTalkReadiness: readiness,
     );
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_channelTalkChannel, (call) async {
-          if (call.method == 'isBooted') return false;
           if (call.method == 'updateUser') updateUserCallCount++;
           return null;
         });
@@ -67,52 +175,47 @@ void main() {
     expect(telemetry.nonFatals, hasLength(1));
   });
 
-  test('retries channeltalk user update until the sdk is booted', () async {
+  test('waits for channeltalk readiness before updating the user', () async {
     final telemetry = _RecordingTelemetryCoordinator();
-    var isBootedCallCount = 0;
+    final readiness = ChannelTalkReadiness();
     var updateUserCallCount = 0;
     final model = _LoadedInfoModel(
       telemetry: telemetry,
-      channelTalkReadyMaxAttempts: 3,
-      delay: (_) async {},
+      channelTalkReadiness: readiness,
+      channelTalkReadyTimeout: const Duration(milliseconds: 100),
     );
+    addTearDown(readiness.markUnavailable);
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_channelTalkChannel, (call) async {
-          if (call.method == 'isBooted') {
-            isBootedCallCount += 1;
-            return isBootedCallCount >= 3;
-          }
           if (call.method == 'updateUser') updateUserCallCount += 1;
           return true;
         });
 
     await model.getInfo();
     await Future<void>.delayed(Duration.zero);
+    expect(updateUserCallCount, 0);
+
+    readiness.markBooted();
+    await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
 
-    expect(isBootedCallCount, 3);
     expect(updateUserCallCount, 1);
     expect(telemetry.nonFatals, isEmpty);
   });
 
   test('records non-fatal when channeltalk never boots', () async {
     final telemetry = _RecordingTelemetryCoordinator();
+    final readiness = ChannelTalkReadiness();
     final model = _LoadedInfoModel(
       telemetry: telemetry,
-      channelTalkReadyMaxAttempts: 2,
-      delay: (_) async {},
+      channelTalkReadiness: readiness,
+      channelTalkReadyTimeout: const Duration(milliseconds: 5),
     );
-
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(_channelTalkChannel, (call) async {
-          if (call.method == 'isBooted') return false;
-          return true;
-        });
+    addTearDown(readiness.markUnavailable);
 
     await model.getInfo();
-    await Future<void>.delayed(Duration.zero);
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(telemetry.nonFatals, hasLength(1));
     expect(telemetry.nonFatals.single.operation, 'update_channeltalk_user');
@@ -120,30 +223,18 @@ void main() {
 
   test('applies only the latest user when updates overlap', () async {
     final telemetry = _RecordingTelemetryCoordinator();
-    final firstBootCheckStarted = Completer<void>();
-    final finishFirstBootCheck = Completer<bool?>();
+    final readiness = ChannelTalkReadiness();
     final updatedUserNames = <String>[];
-    var isBootedCallCount = 0;
     final model = _SequencedInfoModel(
       telemetry: telemetry,
       users: <User>[_testUser(1, 'First'), _testUser(2, 'Second')],
+      channelTalkReadiness: readiness,
+      channelTalkReadyTimeout: const Duration(milliseconds: 100),
     );
-    addTearDown(() {
-      if (!finishFirstBootCheck.isCompleted) {
-        finishFirstBootCheck.complete(false);
-      }
-    });
+    addTearDown(readiness.markUnavailable);
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_channelTalkChannel, (call) async {
-          if (call.method == 'isBooted') {
-            isBootedCallCount += 1;
-            if (isBootedCallCount == 1) {
-              firstBootCheckStarted.complete();
-              return finishFirstBootCheck.future;
-            }
-            return true;
-          }
           if (call.method == 'updateUser') {
             final arguments = call.arguments as Map<Object?, Object?>;
             updatedUserNames.add(arguments['name']! as String);
@@ -152,10 +243,8 @@ void main() {
         });
 
     await model.getInfo();
-    await firstBootCheckStarted.future;
     await model.reload();
-    await Future<void>.delayed(Duration.zero);
-    finishFirstBootCheck.complete(true);
+    readiness.markBooted();
     await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
 
@@ -166,7 +255,11 @@ void main() {
   test('updates channeltalk user when booted', () async {
     final telemetry = _RecordingTelemetryCoordinator();
     final updateUserArguments = <Object?>[];
-    final model = _LoadedInfoModel(telemetry: telemetry);
+    final readiness = ChannelTalkReadiness()..markBooted();
+    final model = _LoadedInfoModel(
+      telemetry: telemetry,
+      channelTalkReadiness: readiness,
+    );
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_channelTalkChannel, (call) async {
@@ -194,13 +287,13 @@ void main() {
 class _LoadedInfoModel extends InfoModel {
   _LoadedInfoModel({
     required TelemetryCoordinator telemetry,
-    int channelTalkReadyMaxAttempts = 6,
-    Future<void> Function(Duration)? delay,
+    ChannelTalkReadiness? channelTalkReadiness,
+    Duration channelTalkReadyTimeout = const Duration(seconds: 30),
   }) : super(
          forTest: true,
          telemetry: telemetry,
-         channelTalkReadyMaxAttempts: channelTalkReadyMaxAttempts,
-         delay: delay,
+         channelTalkReadiness: channelTalkReadiness,
+         channelTalkReadyTimeout: channelTalkReadyTimeout,
        );
 
   @override
@@ -235,8 +328,15 @@ class _SequencedInfoModel extends InfoModel {
   _SequencedInfoModel({
     required TelemetryCoordinator telemetry,
     required List<User> users,
+    ChannelTalkReadiness? channelTalkReadiness,
+    Duration channelTalkReadyTimeout = const Duration(seconds: 30),
   }) : _users = users,
-       super(forTest: true, telemetry: telemetry);
+       super(
+         forTest: true,
+         telemetry: telemetry,
+         channelTalkReadiness: channelTalkReadiness,
+         channelTalkReadyTimeout: channelTalkReadyTimeout,
+       );
 
   final List<User> _users;
   var _userIndex = 0;

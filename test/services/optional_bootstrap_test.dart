@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/optional_bootstrap.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -253,6 +254,58 @@ void main() {
     },
   );
 
+  test('marks channeltalk unavailable when boot returns false', () async {
+    final readiness = ChannelTalkReadiness();
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => const Stream<String>.empty(),
+      channelTalkBoot: ({String? memberHash}) async => false,
+      initPushToken: (token) async {},
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      channelTalkReadiness: readiness,
+      isIOS: false,
+    );
+    addTearDown(bootstrap.dispose);
+
+    await bootstrap.run();
+    final isReady = await readiness.isReady.timeout(
+      const Duration(milliseconds: 10),
+      onTimeout: () => true,
+    );
+
+    expect(isReady, isFalse);
+  });
+
+  test('marks channeltalk unavailable when boot throws', () async {
+    final readiness = ChannelTalkReadiness();
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => const Stream<String>.empty(),
+      channelTalkBoot: ({String? memberHash}) async {
+        throw StateError('boot failed');
+      },
+      initPushToken: (token) async {},
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      channelTalkReadiness: readiness,
+      isIOS: false,
+    );
+    addTearDown(bootstrap.dispose);
+
+    await bootstrap.run();
+    final isReady = await readiness.isReady.timeout(
+      const Duration(milliseconds: 10),
+      onTimeout: () => true,
+    );
+
+    expect(isReady, isFalse);
+  });
+
   test('records non-fatal when channeltalk boot returns false', () async {
     final recordedErrors = <Object>[];
     final pushTokens = <String>[];
@@ -366,6 +419,78 @@ void main() {
     expect(recordedErrors, hasLength(1));
     expect(recordedErrors.single, isA<TimeoutException>());
   });
+
+  test('cancels the token refresh subscription when boot fails', () async {
+    final tokenRefreshController = StreamController<String>.broadcast();
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => tokenRefreshController.stream,
+      channelTalkBoot: ({String? memberHash}) async => false,
+      initPushToken: (token) async {},
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(() async {
+      await bootstrap.dispose();
+      await tokenRefreshController.close();
+    });
+
+    await bootstrap.run();
+
+    expect(tokenRefreshController.hasListener, isFalse);
+  });
+
+  test(
+    'records non-fatal and unblocks the queue when push token registration hangs',
+    () async {
+      final tokenRefreshController = StreamController<String>.broadcast();
+      final firstRegistrationStarted = Completer<void>();
+      final finishFirstRegistration = Completer<void>();
+      final recordedErrors = <Object>[];
+      final registeredTokens = <String>[];
+      final bootstrap = OptionalBootstrap(
+        requestPermission: () async {},
+        getAPNSToken: () async => 'apns',
+        getToken: () async => null,
+        onTokenRefresh: () => tokenRefreshController.stream,
+        channelTalkBoot: ({String? memberHash}) async => true,
+        initPushToken: (token) async {
+          if (token == 'first') {
+            firstRegistrationStarted.complete();
+            await finishFirstRegistration.future;
+          } else {
+            registeredTokens.add(token);
+          }
+        },
+        showChannelButton: () async {},
+        recordNonFatal: (error, stack) async {
+          recordedErrors.add(error);
+        },
+        isIOS: false,
+        pushTokenTimeout: const Duration(milliseconds: 5),
+      );
+      addTearDown(() async {
+        if (!finishFirstRegistration.isCompleted) {
+          finishFirstRegistration.complete();
+        }
+        await Future<void>.delayed(Duration.zero);
+        await bootstrap.dispose();
+        await tokenRefreshController.close();
+      });
+
+      await bootstrap.run();
+      tokenRefreshController.add('first');
+      await firstRegistrationStarted.future;
+      tokenRefreshController.add('second');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      expect(recordedErrors, hasLength(1));
+      expect(registeredTokens, <String>['second']);
+    },
+  );
 
   test('forwards refreshed tokens to channeltalk after boot', () async {
     final tokenRefreshController = StreamController<String>.broadcast();

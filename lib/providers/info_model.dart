@@ -6,6 +6,7 @@ import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/user.dart';
+import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,20 +23,18 @@ const SCHEDULE_NAME = [
 
 class InfoModel extends ChangeNotifier {
   final TelemetryCoordinator? _telemetry;
-  final Duration _channelTalkReadyRetryDelay;
-  final int _channelTalkReadyMaxAttempts;
-  final Future<void> Function(Duration) _delay;
+  final ChannelTalkReadiness _channelTalkReadiness;
+  final Duration _channelTalkReadyTimeout;
 
   InfoModel({
     bool forTest = false,
     TelemetryCoordinator? telemetry,
-    Duration channelTalkReadyRetryDelay = const Duration(seconds: 2),
-    int channelTalkReadyMaxAttempts = 6,
-    Future<void> Function(Duration)? delay,
+    ChannelTalkReadiness? channelTalkReadiness,
+    Duration channelTalkReadyTimeout = const Duration(seconds: 30),
   }) : _telemetry = telemetry,
-       _channelTalkReadyRetryDelay = channelTalkReadyRetryDelay,
-       _channelTalkReadyMaxAttempts = channelTalkReadyMaxAttempts,
-       _delay = delay ?? _defaultDelay {
+       _channelTalkReadiness =
+           channelTalkReadiness ?? sharedChannelTalkReadiness,
+       _channelTalkReadyTimeout = channelTalkReadyTimeout {
     if (forTest) {
       _user = User(
         id: 0,
@@ -85,10 +84,7 @@ class InfoModel extends ChangeNotifier {
   Set<int> get years => _years;
 
   int _channelTalkUserUpdateGeneration = 0;
-
-  static Future<void> _defaultDelay(Duration duration) {
-    return Future<void>.delayed(duration);
-  }
+  Future<void> _channelTalkUserUpdates = Future<void>.value();
 
   void clearData() {
     // _user = null;
@@ -114,43 +110,14 @@ class InfoModel extends ChangeNotifier {
     final generation = ++_channelTalkUserUpdateGeneration;
 
     try {
-      for (
-        var attempt = 1;
-        attempt <= _channelTalkReadyMaxAttempts;
-        attempt += 1
-      ) {
-        if (generation != _channelTalkUserUpdateGeneration) return;
-
-        final booted = await ChannelTalk.isBooted();
-        if (generation != _channelTalkUserUpdateGeneration) return;
-
-        if (booted == true) {
-          if (user != null) {
-            await ChannelTalk.updateUser(
-              name: "${user.firstName} ${user.lastName}",
-              email: user.email,
-              customAttributes: {"id": user.id, "studentId": user.studentId},
-            );
-          } else {
-            await ChannelTalk.updateUser(
-              name: "",
-              email: "",
-              customAttributes: {"id": 0, "studentId": ""},
-            );
-          }
-          return;
-        }
-
-        if (attempt < _channelTalkReadyMaxAttempts) {
-          await _delay(_channelTalkReadyRetryDelay);
-        }
+      final isReady = await _channelTalkReadiness.isReady.timeout(
+        _channelTalkReadyTimeout,
+      );
+      if (!isReady) {
+        throw StateError('ChannelTalk is unavailable');
       }
 
-      if (generation != _channelTalkUserUpdateGeneration) return;
-      throw StateError(
-        'ChannelTalk was not booted after '
-        '$_channelTalkReadyMaxAttempts attempts',
-      );
+      await _serializeChannelTalkUserUpdate(user, generation);
     } catch (error, stackTrace) {
       await _telemetry?.recordNonFatal(
         error,
@@ -158,6 +125,29 @@ class InfoModel extends ChangeNotifier {
         operation: 'update_channeltalk_user',
       );
     }
+  }
+
+  Future<void> _serializeChannelTalkUserUpdate(User? user, int generation) {
+    final previousUpdate = _channelTalkUserUpdates.catchError((_) {});
+    final update = previousUpdate.then((_) async {
+      if (generation != _channelTalkUserUpdateGeneration) return;
+
+      if (user != null) {
+        await ChannelTalk.updateUser(
+          name: "${user.firstName} ${user.lastName}",
+          email: user.email,
+          customAttributes: {"id": user.id, "studentId": user.studentId},
+        );
+      } else {
+        await ChannelTalk.updateUser(
+          name: "",
+          email: "",
+          customAttributes: {"id": 0, "studentId": ""},
+        );
+      }
+    });
+    _channelTalkUserUpdates = update;
+    return update;
   }
 
   /// Loads the signed-in user's info. On failure [hasError] is set instead of
