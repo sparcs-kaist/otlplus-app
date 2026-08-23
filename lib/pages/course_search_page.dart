@@ -108,9 +108,12 @@ class _CourseSearchPageState extends State<CourseSearchPage> {
                         ),
                       ),
                       onPressed: () async {
-                        if (await context
+                        final searchSucceeded = await context
                             .read<CourseSearchModel>()
-                            .courseSearch()) {
+                            .courseSearch();
+                        if (!mounted) return;
+
+                        if (searchSucceeded) {
                           OTLNavigator.pop(context, result: true);
                         } else {
                           _focusNode.requestFocus();
