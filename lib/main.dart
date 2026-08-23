@@ -204,6 +204,22 @@ void main() {
 }
 
 class OTLApp extends StatefulWidget {
+  OTLApp({
+    super.key,
+    @visibleForTesting this.uriLinkStreamOverride,
+    @visibleForTesting this.storageServiceOverride,
+    @visibleForTesting this.initializeAppOverride,
+    @visibleForTesting this.recordNonFatalOverride,
+    @visibleForTesting this.homeOverride,
+  });
+
+  final Stream<Uri>? uriLinkStreamOverride;
+  final StorageService? storageServiceOverride;
+  final Future<void> Function()? initializeAppOverride;
+  final Future<void> Function(Object error, StackTrace stack)?
+  recordNonFatalOverride;
+  final Widget? homeOverride;
+
   @override
   _OTLAppState createState() => _OTLAppState();
 }
@@ -211,7 +227,7 @@ class OTLApp extends StatefulWidget {
 class _OTLAppState extends State<OTLApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
-  final _storageService = StorageService();
+  late final StorageService _storageService;
   bool _isLoading = true;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
@@ -219,7 +235,12 @@ class _OTLAppState extends State<OTLApp> {
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    _storageService = widget.storageServiceOverride ?? StorageService();
+    if (widget.initializeAppOverride case final initializeApp?) {
+      initializeApp();
+    } else {
+      _initializeApp();
+    }
     _initDeepLinks();
     _checkForUpdate();
   }
@@ -306,32 +327,81 @@ class _OTLAppState extends State<OTLApp> {
   }
 
   void _initDeepLinks() {
-    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      if (uri.host == 'login' && uri.path == '/') {
-        final accessToken = uri.queryParameters['accessToken'];
-        final refreshToken = uri.queryParameters['refreshToken'];
+    final uriLinkStream =
+        widget.uriLinkStreamOverride ?? _appLinks.uriLinkStream;
+    _linkSubscription = uriLinkStream.listen(
+      (uri) {
+        if (uri.host == 'login' && uri.path == '/') {
+          final accessToken = uri.queryParameters['accessToken'];
+          final refreshToken = uri.queryParameters['refreshToken'];
 
-        if (accessToken != null && refreshToken != null) {
-          _handleLoginTokens(accessToken, refreshToken);
+          if (accessToken != null && refreshToken != null) {
+            unawaited(_handleLoginTokensSafely(accessToken, refreshToken));
+          }
         }
-      }
-    });
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        unawaited(
+          _recordDeepLinkNonFatalSafely(
+            error,
+            stackTrace,
+            operation: 'deep_link_stream',
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleLoginTokensSafely(
+    String accessToken,
+    String refreshToken,
+  ) async {
+    try {
+      await _handleLoginTokens(accessToken, refreshToken);
+    } catch (error, stackTrace) {
+      await _recordDeepLinkNonFatalSafely(
+        error,
+        stackTrace,
+        operation: 'deep_link_login',
+      );
+    }
   }
 
   Future<void> _handleLoginTokens(
     String accessToken,
     String refreshToken,
   ) async {
+    final auth = Provider.of<AuthModel>(context, listen: false);
     await _storageService.saveTokens(
       accessToken: accessToken,
       refreshToken: refreshToken,
     );
-    Provider.of<AuthModel>(context, listen: false).setLoggedIn(true);
+    auth.setLoggedIn(true);
+    if (!mounted) return;
     if (_isLoading) {
       setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _recordDeepLinkNonFatalSafely(
+    Object error,
+    StackTrace stackTrace, {
+    required String operation,
+  }) async {
+    try {
+      final recordNonFatal = widget.recordNonFatalOverride;
+      if (recordNonFatal != null) {
+        await recordNonFatal(error, stackTrace);
+      } else {
+        await telemetryCoordinator.recordNonFatal(
+          error,
+          stackTrace,
+          operation: operation,
+        );
+      }
+    } catch (_) {}
   }
 
   @override
@@ -354,7 +424,9 @@ class _OTLAppState extends State<OTLApp> {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       title: "OTL",
-      home: authModel.isLogined ? OTLHome() : LoginPage(),
+      home:
+          widget.homeOverride ??
+          (authModel.isLogined ? OTLHome() : LoginPage()),
       routes: {
         LikedReviewPage.route: (_) => LikedReviewPage(),
         MyReviewPage.route: (_) => MyReviewPage(),
