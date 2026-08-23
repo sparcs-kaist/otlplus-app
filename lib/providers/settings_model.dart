@@ -100,8 +100,8 @@ class SettingsModel extends ChangeNotifier {
     _sendCrashlytics = newValue;
     _onCrashReportingChanged?.call(newValue);
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kSendCrashlytics, newValue),
+    unawaited(
+      _guardedPersist('persist_send_crashlytics', _kSendCrashlytics, newValue),
     );
   }
 
@@ -109,8 +109,12 @@ class SettingsModel extends ChangeNotifier {
   void setSendCrashlyticsAnonymously(bool newValue) {
     _sendCrashlyticsAnonymously = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kSendCrashlyticsAnonymously, newValue),
+    unawaited(
+      _guardedPersist(
+        'persist_send_crashlytics_anonymously',
+        _kSendCrashlyticsAnonymously,
+        newValue,
+      ),
     );
   }
 
@@ -128,8 +132,12 @@ class SettingsModel extends ChangeNotifier {
   void setShowsChannelTalkButton(bool newValue) {
     _showsChannelTalkButton = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kShowsChannelTalkButton, newValue),
+    unawaited(
+      _guardedPersist(
+        'persist_shows_channel_talk_button',
+        _kShowsChannelTalkButton,
+        newValue,
+      ),
     );
   }
 
@@ -165,13 +173,20 @@ class SettingsModel extends ChangeNotifier {
 
     _sendAlarm = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kSendAlarm, newValue),
-    );
+    unawaited(_guardedPersist('persist_send_alarm', _kSendAlarm, newValue));
 
     _setPromotionAlarm(newValue);
     _setInformationAlarm(newValue);
     _setSubjectSuggestionAlarm(newValue);
+  }
+
+  Future<void> _guardedPersist(String operation, String key, bool value) async {
+    try {
+      final instance = await SharedPreferences.getInstance();
+      await instance.setBool(key, value);
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(error, stackTrace, operation: operation);
+    }
   }
 
   Future<void> _guardedTopic(
@@ -190,8 +205,8 @@ class SettingsModel extends ChangeNotifier {
   void _setPromotionAlarm(bool newValue) {
     _promotionAlarm = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kPromotionAlarm, newValue),
+    unawaited(
+      _guardedPersist('persist_promotion_alarm', _kPromotionAlarm, newValue),
     );
     if (newValue) {
       unawaited(
@@ -215,8 +230,12 @@ class SettingsModel extends ChangeNotifier {
   void _setInformationAlarm(bool newValue) {
     _informationAlarm = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kInformationAlarm, newValue),
+    unawaited(
+      _guardedPersist(
+        'persist_information_alarm',
+        _kInformationAlarm,
+        newValue,
+      ),
     );
     if (newValue) {
       unawaited(
@@ -241,8 +260,12 @@ class SettingsModel extends ChangeNotifier {
   void _setSubjectSuggestionAlarm(bool newValue) {
     _subjectSuggestionAlarm = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kSubjectSuggestionAlarm, newValue),
+    unawaited(
+      _guardedPersist(
+        'persist_subject_suggestion_alarm',
+        _kSubjectSuggestionAlarm,
+        newValue,
+      ),
     );
     if (newValue) {
       unawaited(
