@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/models/course.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/pages/course_search_page.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -28,6 +29,8 @@ class _DictionaryPageState extends State<DictionaryPage> {
   @override
   Widget build(BuildContext context) {
     final searchModel = context.watch<CourseSearchModel>();
+    final courseSnapshot = searchModel.courses;
+    final courses = courseSnapshot ?? const <Course>[];
 
     return OTLLayout(
       middle: Padding(
@@ -66,9 +69,9 @@ class _DictionaryPageState extends State<DictionaryPage> {
           builder: (context) {
             if (searchModel.isSearching) {
               return const Center(child: CircularProgressIndicator());
-            } else if (searchModel.courses == null) {
+            } else if (courseSnapshot == null) {
               return Center(child: _buildCopyRight());
-            } else if (searchModel.courses!.isEmpty) {
+            } else if (courses.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -86,12 +89,12 @@ class _DictionaryPageState extends State<DictionaryPage> {
                 child: ListView.separated(
                   controller: _scrollController,
                   padding: EdgeInsets.all(12.0),
-                  itemCount: searchModel.courses?.length ?? 0,
+                  itemCount: courses.length,
                   itemBuilder: (context, index) => CourseBlock(
-                    course: searchModel.courses![index],
+                    course: courses[index],
                     onTap: () {
                       context.read<CourseDetailModel>().loadCourse(
-                        searchModel.courses![index].id,
+                        courses[index].id,
                       );
                       OTLNavigator.push(context, CourseDetailPage());
                     },
