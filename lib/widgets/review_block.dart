@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
@@ -9,11 +11,25 @@ import 'package:otlplus/extensions/semester.dart';
 import 'package:otlplus/models/review.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/repositories/review_repository.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/widgets/expandable_text.dart';
+import 'package:otlplus/widgets/telemetry_synchronizer.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mailto/mailto.dart';
+
+Future<void> _guardReviewBlockCallback<T>(
+  Future<T> Function() action,
+  TelemetryCoordinator? telemetry, {
+  required String operation,
+}) async {
+  try {
+    await action();
+  } catch (error, stackTrace) {
+    await telemetry?.recordNonFatal(error, stackTrace, operation: operation);
+  }
+}
 
 class ReviewBlock extends StatefulWidget {
   final Review review;
@@ -217,21 +233,29 @@ class _ReviewBlockState extends State<ReviewBlock> {
   void _report() {
     final lecture = widget.review.lecture;
     final isKo = context.locale == Locale('ko');
-    launchUrl(
-      Uri.parse(
-        '${Mailto(
-          to: [CONTACT],
-          subject: 'review.mailto.subject'.tr(),
-          body: 'review.mailto.body_reason'.tr() + 'review.mailto.body_info'.tr(
-                namedArgs: {
-                  'title': isKo ? lecture.title : lecture.titleEn,
-                  'oldCode': lecture.oldCode,
-                  'semesterTitle': Semester(year: lecture.year, semester: lecture.semester, beginning: DateTime(0), end: DateTime(0)).title,
-                  'professors': lecture.professors.map((e) => isKo ? e.name : e.nameEn).join(', '),
-                  'content': widget.review.content,
-                },
-              ),
-        )}',
+    final telemetry = context
+        .findAncestorWidgetOfExactType<TelemetrySynchronizer>()
+        ?.telemetry;
+    final uri = Uri.parse(
+      '${Mailto(
+        to: [CONTACT],
+        subject: 'review.mailto.subject'.tr(),
+        body: 'review.mailto.body_reason'.tr() + 'review.mailto.body_info'.tr(
+              namedArgs: {
+                'title': isKo ? lecture.title : lecture.titleEn,
+                'oldCode': lecture.oldCode,
+                'semesterTitle': Semester(year: lecture.year, semester: lecture.semester, beginning: DateTime(0), end: DateTime(0)).title,
+                'professors': lecture.professors.map((e) => isKo ? e.name : e.nameEn).join(', '),
+                'content': widget.review.content,
+              },
+            ),
+      )}',
+    );
+    unawaited(
+      _guardReviewBlockCallback(
+        () => launchUrl(uri),
+        telemetry,
+        operation: 'launch_review_report_email',
       ),
     );
   }

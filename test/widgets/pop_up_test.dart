@@ -1,155 +1,116 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:otlplus/models/review.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
-import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
-import 'package:otlplus/widgets/expandable_text.dart';
-import 'package:otlplus/widgets/review_block.dart';
+import 'package:otlplus/utils/navigator.dart';
+import 'package:otlplus/widgets/pop_up.dart';
+import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/widgets/telemetry_synchronizer.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
-import '../utils/extensions.dart';
-import '../utils/samples.dart';
-
-class _FakeReviewRepository extends ReviewRepository {
-  _FakeReviewRepository() : super(Dio());
-
-  ReviewLikeAction? action;
-  int? reviewId;
-
-  @override
-  Future<int> updateLiked({
-    required int reviewId,
-    required ReviewLikeAction action,
-  }) async {
-    this.reviewId = reviewId;
-    this.action = action;
-    return reviewId;
-  }
-}
-
 void main() {
   setUpAll(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(<String, Object>{});
     WidgetsFlutterBinding.ensureInitialized();
     await EasyLocalization.ensureInitialized();
   });
 
+  late SharedPreferencesStorePlatform originalPreferencesStore;
   late UrlLauncherPlatform originalUrlLauncher;
   late _FakeUrlLauncherPlatform urlLauncher;
 
   setUp(() {
+    originalPreferencesStore = SharedPreferencesStorePlatform.instance;
+    SharedPreferencesStorePlatform.instance =
+        InMemorySharedPreferencesStore.empty();
+    SharedPreferences.resetStatic();
     originalUrlLauncher = UrlLauncherPlatform.instance;
     urlLauncher = _FakeUrlLauncherPlatform();
     UrlLauncherPlatform.instance = urlLauncher;
   });
 
   tearDown(() {
+    SharedPreferencesStorePlatform.instance = originalPreferencesStore;
+    SharedPreferences.resetStatic();
     UrlLauncherPlatform.instance = originalUrlLauncher;
   });
 
-  testWidgets('pump ReviewBlock', (WidgetTester tester) async {
-    await tester.pumpWidget(ReviewBlock(review: SampleReview.shared).material);
-  });
-
-  testWidgets('test buttons in ReviewBlock', (WidgetTester tester) async {
-    await tester.pumpWidget(ReviewBlock(review: SampleReview.shared).material);
-
-    // final likeFinder = find.text('좋아요');
-    final reportFinder = find.text('신고하기');
-
-    // expect(likeFinder, findsOneWidget);
-    expect(reportFinder, findsOneWidget);
-  });
-
-  testWidgets('unlikes a review through the v2 repository', (
-    WidgetTester tester,
+  testWidgets('hide checkbox persists popup preference and links launch', (
+    tester,
   ) async {
-    final repository = _FakeReviewRepository();
-    await tester.pumpWidget(
-      Provider<ReviewRepository>.value(
-        value: repository,
-        child: ReviewBlock(review: SampleReview.shared).material,
-      ),
-    );
-
-    await tester.tap(find.byIcon(Icons.thumb_up_alt));
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(repository.reviewId, SampleReview.id);
-    expect(repository.action, ReviewLikeAction.unlike);
-  });
-
-  testWidgets('report review triggers mailto launch', (tester) async {
     final telemetry = _RecordingTelemetryCoordinator();
-    final review = _reviewWithContent('reportable review content');
-    await _pumpReviewBlock(tester, review, telemetry);
+    await _pumpPopUpHarness(tester, telemetry);
 
-    await tester.tap(find.text('신고하기'));
+    await tester.tap(find.text('다시 보지 않기'));
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.tap(find.text('지원하러 가기'));
     await tester.pump(const Duration(milliseconds: 700));
 
-    expect(urlLauncher.urls, hasLength(1));
-    expect(urlLauncher.urls.single, startsWith('mailto:'));
+    SharedPreferences.resetStatic();
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getBool('popup'), isFalse);
+    expect(urlLauncher.urls, <String>['https://apply.sparcs.org/']);
     expect(telemetry.operations, isEmpty);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('failing report mailto launch is observed and does not escape', (
+  testWidgets('failing popup preference write does not escape the zone', (
+    tester,
+  ) async {
+    SharedPreferencesStorePlatform.instance = _ThrowingPrefsStore();
+    SharedPreferences.resetStatic();
+    final telemetry = _RecordingTelemetryCoordinator();
+    final escapedErrors = <Object>[];
+    await _pumpPopUpHarness(tester, telemetry);
+
+    await runZonedGuarded<Future<void>>(() async {
+      await tester.tap(find.text('다시 보지 않기'));
+      await tester.pump(const Duration(milliseconds: 700));
+    }, (error, stackTrace) => escapedErrors.add(error));
+
+    expect(escapedErrors, isEmpty);
+    expect(telemetry.operations, <String>['persist_popup_visibility']);
+  });
+
+  testWidgets('failing launch url from popup is observed and does not escape', (
     tester,
   ) async {
     urlLauncher.throwOnLaunch = true;
     final telemetry = _RecordingTelemetryCoordinator();
     final escapedErrors = <Object>[];
-    final review = _reviewWithContent('reportable review content');
-    await _pumpReviewBlock(tester, review, telemetry);
+    await _pumpPopUpHarness(tester, telemetry);
 
     await runZonedGuarded<Future<void>>(() async {
-      await tester.tap(find.text('신고하기'));
+      await tester.tap(find.text('지원하러 가기'));
       await tester.pump(const Duration(milliseconds: 700));
     }, (error, stackTrace) => escapedErrors.add(error));
 
     expect(escapedErrors, isEmpty);
-    expect(telemetry.operations, <String>['launch_review_report_email']);
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is ExpandableText &&
-            widget.text == 'reportable review content',
-      ),
-      findsOneWidget,
+    expect(telemetry.operations, <String>['launch_popup_recruiting_url']);
+    expect(find.byType(PopUp), findsOneWidget);
+
+    final closeButton = find.byWidgetPredicate(
+      (widget) => widget is IconTextButton && widget.icon == Icons.close,
     );
+    await tester.tap(closeButton);
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+    expect(find.byType(PopUp), findsNothing);
   });
 }
 
-Review _reviewWithContent(String content) {
-  return Review(
-    id: SampleReview.id,
-    course: SampleReview.course,
-    lecture: SampleReview.lecture,
-    content: content,
-    like: SampleReview.like,
-    isDeleted: SampleReview.isDeleted,
-    grade: SampleReview.grade,
-    load: SampleReview.load,
-    speech: SampleReview.speech,
-    userspecificIsLiked: SampleReview.userspecificIsLiked,
-  );
-}
-
-Future<void> _pumpReviewBlock(
+Future<void> _pumpPopUpHarness(
   WidgetTester tester,
-  Review review,
   TelemetryCoordinator telemetry,
 ) async {
   await tester.pumpWidget(
@@ -167,14 +128,33 @@ Future<void> _pumpReviewBlock(
         path: 'assets/translations',
         child: TelemetrySynchronizer(
           telemetry: telemetry,
-          child: MaterialApp(
-            home: Scaffold(body: ReviewBlock(review: review)),
-          ),
+          child: const MaterialApp(home: _PopUpHarness()),
         ),
       ),
     ),
   );
+  await tester.tap(find.text('open popup'));
   await tester.pumpAndSettle();
+  expect(find.byType(PopUp), findsOneWidget);
+}
+
+class _PopUpHarness extends StatelessWidget {
+  const _PopUpHarness();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: TextButton(
+          onPressed: () => OTLNavigator.pushDialog<void>(
+            context: context,
+            builder: (_) => const PopUp(),
+          ),
+          child: const Text('open popup'),
+        ),
+      ),
+    );
+  }
 }
 
 class _FakeUrlLauncherPlatform extends UrlLauncherPlatform {
@@ -191,6 +171,22 @@ class _FakeUrlLauncherPlatform extends UrlLauncherPlatform {
       throw PlatformException(code: 'no_handler');
     }
     return true;
+  }
+}
+
+class _ThrowingPrefsStore extends SharedPreferencesStorePlatform {
+  @override
+  Future<bool> clear() async => true;
+
+  @override
+  Future<Map<String, Object>> getAll() async => <String, Object>{};
+
+  @override
+  Future<bool> remove(String key) async => true;
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async {
+    throw StateError('preferences write failed');
   }
 }
 
