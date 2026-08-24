@@ -81,10 +81,20 @@ class SsoClient {
       final body = response.data is String ? response.data! as String : '';
 
       if (request.isCredentialPost && response.statusCode == HttpStatus.ok) {
-        if (body.contains('alert-invalid-account') || location == null) {
+        if (body.contains('alert-invalid-account')) {
           throw const SsoLoginException(
             'credential-post',
-            'SPARCS SSO rejected the credentials or the login page markup changed',
+            'SPARCS SSO reported invalid credentials — verify TEST_SSO_EMAIL '
+                'and TEST_SSO_PASSWORD in Doppler and that the test account '
+                'is not locked',
+          );
+        }
+        if (location == null) {
+          throw SsoLoginException(
+            'credential-post',
+            'SPARCS SSO returned an unexpected page after the credential '
+                'post at ${sanitizeUri(request.uri.toString())} — the login '
+                'markup or flow may have changed',
           );
         }
       }

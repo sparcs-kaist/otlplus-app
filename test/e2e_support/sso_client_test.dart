@@ -244,10 +244,7 @@ void main() {
     expect(thrown, isA<SsoLoginException>());
     final exception = thrown! as SsoLoginException;
     expect(exception.stage, 'credential-post');
-    expect(
-      exception.message,
-      'SPARCS SSO rejected the credentials or the login page markup changed',
-    );
+    expect(exception.message, contains('invalid credentials'));
     expect(exception.message, isNot(contains(password)));
     expect(exception.message, isNot(contains(email)));
   });
