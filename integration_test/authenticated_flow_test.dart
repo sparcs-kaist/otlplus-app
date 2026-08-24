@@ -362,13 +362,11 @@ void main() {
           return tester.tap(find.byKey(const Key('user_liked_review_button')));
         });
         openRoutes += 1;
-        final likedTitleFinder = _firstPresent(tester, [
-          find.textContaining('좋아요한 후기'),
-          find.textContaining('Liked Reviews'),
-        ]);
         await waitForAny(
           tester,
-          <String, Finder>{'liked': likedTitleFinder!},
+          <String, Finder>{
+            'liked': anyText(<String>['좋아요한 후기', 'Liked Reviews']),
+          },
           stage: 'liked-reviews',
           timeout: const Duration(seconds: 30),
         );
