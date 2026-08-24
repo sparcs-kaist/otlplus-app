@@ -13,9 +13,6 @@ void main() {
     expect(credentialsAvailable('', ''), isFalse);
     expect(credentialsAvailable('someone@example.com', ''), isFalse);
     expect(credentialsAvailable('', 'secret'), isFalse);
-    expect(
-      credentialsAvailable('someone@example.com', 'secret'),
-      isTrue,
-    );
+    expect(credentialsAvailable('someone@example.com', 'secret'), isTrue);
   });
 }
