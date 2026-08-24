@@ -21,8 +21,9 @@ import 'support/wait_for.dart';
 /// The only mutation (updating an existing review) is self-restoring: the
 /// original content is written back in a `finally` block and verified through
 /// the API. If the account has no review-writable lecture with an existing
-/// review, that stage is skipped because creating a review could not be
-/// undone (the repository exposes no delete).
+/// review, the mutation stage is skipped with a loud log because creating a
+/// review could not be undone (the repository exposes no delete); every other
+/// stage still asserts.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -59,7 +60,9 @@ void main() {
         await prefs.remove('hasAccount');
       });
 
-      app.main();
+      await step('launch', () async {
+        app.main();
+      });
 
       final launchOutcome = await waitForAny(
         tester,
@@ -79,16 +82,25 @@ void main() {
         matching: find.byIcon(icon),
       );
 
+      // IndexedStack keeps every tab mounted, so taps must be followed by a
+      // pump before the freshly active tab is hit-testable.
+      Future<void> switchTab(IconData icon) async {
+        await tester.tap(navIcon(icon));
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
       // The home dashboard renders user-dependent content only after
       // semesters and session info have loaded.
       final infoModel = Provider.of<InfoModel>(
         tester.element(find.byKey(const Key('home_bottom_nav'))),
         listen: false,
       );
-      var infoDeadline = DateTime.now().add(const Duration(seconds: 30));
-      while (!infoModel.hasData && DateTime.now().isBefore(infoDeadline)) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await step('user-info', () async {
+        final deadline = DateTime.now().add(const Duration(seconds: 30));
+        while (!infoModel.hasData && DateTime.now().isBefore(deadline)) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+      });
       expect(infoModel.hasData, isTrue, reason: '[user-info] never loaded');
 
       expect(
@@ -97,7 +109,7 @@ void main() {
         reason: '[home] account entry point missing',
       );
 
-      await tester.tap(navIcon(Icons.table_chart_outlined));
+      await step('timetable-open', () => switchTab(Icons.table_chart_outlined));
       final timetableOutcome = await waitForAny(
         tester,
         <String, Finder>{
@@ -109,7 +121,10 @@ void main() {
       );
       expect(timetableOutcome, 'loaded');
 
-      await tester.tap(navIcon(Icons.library_books_outlined));
+      await step(
+        'dictionary-open',
+        () => switchTab(Icons.library_books_outlined),
+      );
       final hintFinder = _firstPresent(tester, [
         find.textContaining('과목명, 교수님 성함 등을 검색해 보세요.'),
         find.textContaining('Search by course title'),
@@ -117,42 +132,18 @@ void main() {
       await waitForAny(
         tester,
         <String, Finder>{'hint': hintFinder!},
-        stage: 'dictionary-open',
+        stage: 'dictionary-hint',
         timeout: const Duration(seconds: 30),
       );
 
-      Review? originalReview;
-
-      final writable = infoModel.user.reviewWritableLectures;
-      for (final lecture in writable) {
-        for (final review in infoModel.user.reviews) {
-          if (review.lecture.id == lecture.id) {
-            originalReview = review;
-            break;
-          }
-        }
-        if (originalReview != null) break;
-      }
-      final targetLecture = writable
-          .where((lecture) => lecture.id == originalReview?.lecture.id)
-          .firstOrNull;
-      final canMutate = originalReview != null && targetLecture != null;
-      if (!canMutate) {
-        debugPrint(
-          '[review-write] skipped: no review-writable lecture with an '
-          'existing review on this account; creating one would not be '
-          'self-restoring.',
-        );
-      }
-
-      if (canMutate) {
-        await tester.tap(hintFinder);
-        await waitForAny(
-          tester,
-          <String, Finder>{'field': find.byType(TextField).first},
-          stage: 'search-open',
-          timeout: const Duration(seconds: 30),
-        );
+      await step('search-open', () => tester.tap(hintFinder));
+      await waitForAny(
+        tester,
+        <String, Finder>{'field': find.byType(TextField).first},
+        stage: 'search-field',
+        timeout: const Duration(seconds: 30),
+      );
+      await step('search-submit', () async {
         await tester.enterText(find.byType(TextField).first, 'CS320');
         await tester.pump();
 
@@ -173,121 +164,194 @@ void main() {
           stage: 'search-close',
           timeout: const Duration(seconds: 60),
         );
+      });
 
-        await waitForAny(
-          tester,
-          <String, Finder>{
-            'results': find.byKey(const Key('dictionary_list')),
-            'empty': _firstPresent(tester, [
-              find.text('No result.'),
-              find.text('검색 결과가 없습니다.'),
-            ])!,
-          },
-          stage: 'search-results',
-          timeout: const Duration(seconds: 60),
+      final searchOutcome = await waitForAny(
+        tester,
+        <String, Finder>{
+          'results': find.byKey(const Key('dictionary_list')),
+          'empty': _firstPresent(tester, [
+            find.text('No result.'),
+            find.text('검색 결과가 없습니다.'),
+          ])!,
+        },
+        stage: 'search-results',
+        timeout: const Duration(seconds: 60),
+      );
+      debugPrint('[search-results] $searchOutcome');
+
+      await step(
+        'review-feed-open',
+        () => switchTab(Icons.rate_review_outlined),
+      );
+      await waitForAny(
+        tester,
+        <String, Finder>{'list': find.byKey(const Key('review_list'))},
+        stage: 'review-feed',
+        timeout: const Duration(seconds: 60),
+      );
+
+      await switchTab(Icons.home_outlined);
+      await step('user-page-open', () {
+        return tester.tap(find.byKey(const Key('main_user_button')));
+      });
+      var openRoutes = 1;
+      await waitForAny(
+        tester,
+        <String, Finder>{
+          'user': find.byKey(const Key('user_my_review_button')),
+        },
+        stage: 'user-page',
+        timeout: const Duration(seconds: 30),
+      );
+
+      Review? originalReview;
+      for (final lecture in infoModel.user.reviewWritableLectures) {
+        for (final review in infoModel.user.reviews) {
+          if (review.lecture.id == lecture.id) {
+            originalReview = review;
+            break;
+          }
+        }
+        if (originalReview != null) break;
+      }
+      final targetLecture = infoModel.user.reviewWritableLectures.where((
+        lecture,
+      ) {
+        return lecture.id == originalReview?.lecture.id;
+      }).firstOrNull;
+      final canMutate = originalReview != null && targetLecture != null;
+      if (!canMutate) {
+        debugPrint(
+          '[review-write] skipped: no review-writable lecture with an '
+          'existing review on this account; creating one would not be '
+          'self-restoring.',
         );
+      }
 
-        await tester.tap(navIcon(Icons.home_outlined));
-
-        await tester.tap(find.byKey(const Key('main_user_button')));
+      if (canMutate) {
+        await step('my-reviews-open', () {
+          return tester.tap(find.byKey(const Key('user_my_review_button')));
+        });
+        openRoutes += 1;
+        final lectureBlockFinder = find.textContaining(targetLecture.title);
         await waitForAny(
           tester,
-          <String, Finder>{
-            'user': find.byKey(const Key('user_my_review_button')),
-          },
-          stage: 'user-page',
-          timeout: const Duration(seconds: 30),
-        );
-
-        await tester.tap(find.byKey(const Key('user_my_review_button')));
-        await waitForAny(
-          tester,
-          <String, Finder>{'lecture': find.textContaining(targetLecture.title)},
+          <String, Finder>{'lecture': lectureBlockFinder.first},
           stage: 'my-reviews',
           timeout: const Duration(seconds: 60),
         );
+        await step('lecture-detail-open', () async {
+          await tester.ensureVisible(lectureBlockFinder.first);
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(lectureBlockFinder.first);
+        });
+        openRoutes += 1;
 
-        final lectureBlock = find.textContaining(targetLecture.title).first;
-        await tester.ensureVisible(lectureBlock);
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(lectureBlock);
-
-        var fieldDeadline = DateTime.now().add(const Duration(seconds: 45));
-        while (find.byKey(const Key('review_write_field')).evaluate().isEmpty &&
-            DateTime.now().isBefore(fieldDeadline)) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
+        await step('review-editor-wait', () async {
+          final field = find.byKey(const Key('review_write_field'));
+          final deadline = DateTime.now().add(const Duration(seconds: 45));
+          while (field.evaluate().isEmpty &&
+              DateTime.now().isBefore(deadline)) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+        });
         expect(
           find.byKey(const Key('review_write_field')).evaluate(),
           isNotEmpty,
           reason: '[review-write] editor never appeared',
         );
 
-        final field = find.byKey(const Key('review_write_field')).first;
-        await tester.ensureVisible(field);
-        await tester.enterText(field, marker);
-        await tester.pump();
+        try {
+          await step('review-write-submit', () async {
+            final field = find.byKey(const Key('review_write_field')).first;
+            await tester.ensureVisible(field);
+            await tester.enterText(field, marker);
+            await tester.pump();
 
-        final submit = find.byKey(const Key('review_write_submit')).first;
-        await tester.ensureVisible(submit);
-        await tester.tap(submit);
+            final submit = find.byKey(const Key('review_write_submit')).first;
+            await tester.ensureVisible(submit);
+            await tester.tap(submit);
+          });
 
-        final uploadOutcome = await waitForAny(
-          tester,
-          <String, Finder>{
-            'updated': find.textContaining(marker),
-            'failed': find.textContaining('저장하지 못했습니다'),
-            'failed-en': find.textContaining('Failed to save review'),
-          },
-          stage: 'review-upload',
-          timeout: const Duration(seconds: 60),
-        );
-        expect(uploadOutcome, 'updated');
-
-        // Restore the original review no matter what happened above.
-        final restoredOriginal = originalReview;
-        await step('review-restore', () {
-          return ReviewRepository(DioProvider().dio).update(
-            reviewId: restoredOriginal.id,
-            content: restoredOriginal.content,
-            grade: restoredOriginal.grade,
-            load: restoredOriginal.load,
-            speech: restoredOriginal.speech,
+          final uploadOutcome = await waitForAny(
+            tester,
+            <String, Finder>{
+              'updated': find.textContaining(marker),
+              'failed': find.textContaining('저장하지 못했습니다'),
+              'failed-en': find.textContaining('Failed to save review'),
+            },
+            stage: 'review-upload',
+            timeout: const Duration(seconds: 60),
           );
-        });
-        final detailResponse = await step(
-          'review-restore-verify',
-          () => DioProvider().dio.get('api/v2/reviews/${restoredOriginal.id}'),
-        );
-        final detail =
-            (detailResponse.data ?? <String, dynamic>{})
-                as Map<String, dynamic>;
-        expect(detail['content'], restoredOriginal.content);
-        expect(detail['grade'], restoredOriginal.grade);
-        expect(detail['load'], restoredOriginal.load);
-        expect(detail['speech'], restoredOriginal.speech);
+          expect(uploadOutcome, 'updated');
+        } finally {
+          // Restore the original review whenever submission may have
+          // happened; an update with identical values is harmless.
+          final restoredOriginal = originalReview;
+          await step('review-restore', () {
+            return ReviewRepository(DioProvider().dio).update(
+              reviewId: restoredOriginal.id,
+              content: restoredOriginal.content,
+              grade: restoredOriginal.grade,
+              load: restoredOriginal.load,
+              speech: restoredOriginal.speech,
+            );
+          });
+          final detailResponse = await step(
+            'review-restore-verify',
+            () =>
+                DioProvider().dio.get('api/v2/reviews/${restoredOriginal.id}'),
+          );
+          final detail =
+              (detailResponse.data ?? <String, dynamic>{})
+                  as Map<String, dynamic>;
+          expect(detail['content'], restoredOriginal.content);
+          expect(detail['grade'], restoredOriginal.grade);
+          expect(detail['load'], restoredOriginal.load);
+          expect(detail['speech'], restoredOriginal.speech);
+        }
       }
 
-      // Return to the root of the stack: LectureDetail <- MyReviews <-
-      // UserPage <- home, or just UserPage <- home when the mutation stage
-      // was skipped.
-      final stackDepth = canMutate ? 3 : 1;
-      final navState = tester.state<NavigatorState>(
-        find.byType(Navigator).first,
-      );
-      for (var i = 0; i < stackDepth; i++) {
-        navState.pop();
+      // Visit liked reviews from the account page.
+      while (openRoutes > 1) {
+        tester.state<NavigatorState>(find.byType(Navigator).first).pop();
         await tester.pump(const Duration(milliseconds: 500));
+        openRoutes -= 1;
+      }
+      await step('liked-reviews-open', () {
+        return tester.tap(find.byKey(const Key('user_liked_review_button')));
+      });
+      openRoutes += 1;
+      final likedTitleFinder = _firstPresent(tester, [
+        find.textContaining('좋아요한 후기'),
+        find.textContaining('Liked Reviews'),
+      ]);
+      await waitForAny(
+        tester,
+        <String, Finder>{'liked': likedTitleFinder!},
+        stage: 'liked-reviews',
+        timeout: const Duration(seconds: 30),
+      );
+
+      while (openRoutes > 0) {
+        tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+        await tester.pump(const Duration(milliseconds: 500));
+        openRoutes -= 1;
       }
 
-      await tester.tap(find.byKey(const Key('main_user_button')));
+      await step('logout-open', () {
+        return tester.tap(find.byKey(const Key('main_user_button')));
+      });
       await waitForAny(
         tester,
         <String, Finder>{'logout': find.byKey(const Key('user_logout_button'))},
-        stage: 'logout-open',
+        stage: 'logout-button',
         timeout: const Duration(seconds: 30),
       );
-      await tester.tap(find.byKey(const Key('user_logout_button')));
+      await step('logout-tap', () {
+        return tester.tap(find.byKey(const Key('user_logout_button')));
+      });
 
       final logoutOutcome = await waitForAny(
         tester,
