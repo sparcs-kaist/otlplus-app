@@ -588,7 +588,14 @@ jobs:
           validate_profile "Main" "$MAIN_NAME" "$MAIN_UUID" "$MAIN_EXPIRATION"
           validate_profile "Widget" "$WIDGET_NAME" "$WIDGET_UUID" "$WIDGET_EXPIRATION"
           validate_profile "Intents" "$INTENTS_NAME" "$INTENTS_UUID" "$INTENTS_EXPIRATION"
-          validate_profile "Watch" "$WATCH_NAME" "$WATCH_UUID" "$WATCH_EXPIRATION"
+          # Watch profile is optional: when any profile is absent the
+          # Fastfile intentionally falls back to legacy code signing, so a
+          # missing watch profile must not fail the whole deployment.
+          if [ -n "$WATCH_NAME" ]; then
+            validate_profile "Watch" "$WATCH_NAME" "$WATCH_UUID" "$WATCH_EXPIRATION"
+          else
+            echo "⚠️  Watch provisioning profile not set; Fastfile will fall back to legacy signing"
+          fi
 
           {
             echo "IOS_PROFILE_NAME=$MAIN_NAME"
