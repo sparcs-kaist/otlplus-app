@@ -21,6 +21,7 @@ import 'package:otlplus/widgets/timetable_block.dart';
 import 'package:otlplus/widgets/timetable_summary.dart';
 import 'package:otlplus/widgets/timetable_tabs.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 class TimetablePage extends StatefulWidget {
   static String route = 'timetable_page';
@@ -39,7 +40,7 @@ class _TimetablePageState extends State<TimetablePage> {
 
     if (timetableModel.isLoaded) return _buildBody(context);
     if (timetableModel.loadFailed) {
-      final isEn = context.locale == const Locale('en');
+      final isEn = context.isEn;
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -5,6 +5,7 @@ import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/extensions/course.dart';
 import 'package:otlplus/models/course.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 class CourseBlock extends StatelessWidget {
   final Course course;
@@ -14,7 +15,7 @@ class CourseBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(4.0),

@@ -18,6 +18,7 @@ import 'package:otlplus/widgets/telemetry_synchronizer.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mailto/mailto.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 Future<void> _guardReviewBlockCallback<T>(
   Future<T> Function() action,
@@ -57,7 +58,7 @@ class _ReviewBlockState extends State<ReviewBlock> {
   @override
   Widget build(BuildContext context) {
     String content = widget.review.content;
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
     final season = Season.fromCode(widget.review.lecture.semester);
 
     return Padding(

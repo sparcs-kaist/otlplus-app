@@ -13,12 +13,13 @@ import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:provider/provider.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 class UserPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<InfoModel>().user;
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return OTLScaffold(
       child: OTLLayout(
