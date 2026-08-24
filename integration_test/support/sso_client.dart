@@ -43,7 +43,13 @@ class SsoClient {
               status != null && status >= 200 && status < 400,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
-          headers: <String, Object>{HttpHeaders.userAgentHeader: 'otl-app'},
+          headers: <String, Object>{
+            HttpHeaders.userAgentHeader: 'otl-app',
+            // Match a browser-like Accept so Django content negotiation
+            // behaves as it does inside the real WebView.
+            HttpHeaders.acceptHeader:
+                'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
         ),
       ) {
     if (adapter != null) {
@@ -72,11 +78,18 @@ class SsoClient {
     final stopwatch = Stopwatch()..start();
     var request = _RequestState.get(_startUri);
     var redirectHops = 0;
+    // Hop-by-hop trace (status + scheme://host/path only, never query) so
+    // failures pinpoint exactly where the chain deviates from the app flow.
+    final trail = <String>[];
 
     while (true) {
       _ensureWithinBudget(stopwatch);
       final response = await _sendWithRetry(request, stopwatch);
       _ensureWithinBudget(stopwatch);
+      trail.add(
+        '${response.statusCode} ${request.method} '
+        '${sanitizeUri(request.uri.toString())}',
+      );
 
       final location = response.headers.value(HttpHeaders.locationHeader);
       final rawBody = response.data;
@@ -159,7 +172,8 @@ class SsoClient {
       throw SsoLoginException(
         'form-parse',
         'No recognizable SPARCS SSO login form at '
-            '${sanitizeUri(request.uri.toString())}. Page fingerprint: '
+            '${sanitizeUri(request.uri.toString())}. Trail: '
+            '${trail.join(' | ')}. Page fingerprint: '
             '${_describeUnknownPage(body)}',
       );
     }
