@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
@@ -78,7 +79,12 @@ class SsoClient {
       _ensureWithinBudget(stopwatch);
 
       final location = response.headers.value(HttpHeaders.locationHeader);
-      final body = response.data is String ? response.data! as String : '';
+      final rawBody = response.data;
+      final body = switch (rawBody) {
+        final String text => text,
+        null => '',
+        _ => jsonEncode(rawBody),
+      };
 
       if (request.isCredentialPost &&
           response.statusCode == HttpStatus.ok &&
@@ -153,7 +159,8 @@ class SsoClient {
       throw SsoLoginException(
         'form-parse',
         'No recognizable SPARCS SSO login form at '
-            '${sanitizeUri(request.uri.toString())}',
+            '${sanitizeUri(request.uri.toString())}. Page fingerprint: '
+            '${_describeUnknownPage(body)}',
       );
     }
   }
@@ -271,6 +278,31 @@ class SsoClient {
 
   /// Extracts a client-side redirect target from an HTML page: a
   /// `<meta http-equiv="refresh">` first, then a bare custom-scheme URL.
+  /// Builds a leak-safe fingerprint of an unrecognized page: structural
+  /// markers plus a snippet where every long token-like run is redacted, so
+  /// CI logs can never carry access or refresh tokens.
+  static String _describeUnknownPage(String body) {
+    final flattened = body.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final redacted = flattened.replaceAllMapped(
+      RegExp(r'[A-Za-z0-9_\-]{16,}'),
+      (match) => '<redacted>',
+    );
+    final markers = <String>[
+      'len=${flattened.length}',
+      'meta-refresh=${RegExp(r'http-equiv\s*=\s*["'
+      ']?refresh', caseSensitive: false).hasMatch(flattened)}',
+      'custom-scheme=${flattened.contains('org.sparcs.otl')}',
+      'accessToken-key=${flattened.contains('accessToken')}',
+      'js-redirect=${RegExp(r'window\.location|location\.(href|replace|assign)', caseSensitive: false).hasMatch(flattened)}',
+      'script-tags=${RegExp(r'<script', caseSensitive: false).allMatches(flattened).length}',
+      'form-tags=${RegExp(r'<form', caseSensitive: false).allMatches(flattened).length}',
+    ];
+    final head = redacted.length > 300
+        ? '${redacted.substring(0, 300)}…'
+        : redacted;
+    return '${markers.join(', ')} | head: $head';
+  }
+
   static Uri? _extractPageRedirect(String body, Uri pageUri) {
     final meta = RegExp(
       r'<meta[^>]+http-equiv\s*=\s*["'

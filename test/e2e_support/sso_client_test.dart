@@ -315,6 +315,39 @@ void main() {
     );
   });
 
+  test('unknown page fingerprints redact long tokens', () async {
+    final adapter = ScriptedHttpClientAdapter(<ScriptedStep>[
+      (_) => ResponseBody.fromString(
+        '{"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ999999",'
+        '"refreshToken":"zzzz9999yyyy8888xxxx7777"}',
+        HttpStatus.ok,
+        headers: <String, List<String>>{
+          HttpHeaders.contentTypeHeader: <String>['application/json'],
+        },
+      ),
+    ]);
+
+    Object? thrown;
+    try {
+      await SsoClient(
+        adapter: adapter,
+      ).login(email: 'fixture@example.com', password: 'fixture-password');
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown, isA<SsoLoginException>());
+    final exception = thrown! as SsoLoginException;
+    expect(exception.stage, 'form-parse');
+    expect(exception.message, contains('accessToken-key=true'));
+    expect(
+      exception.message,
+      isNot(contains('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ999999')),
+    );
+    expect(exception.message, isNot(contains('zzzz9999yyyy8888xxxx7777')));
+    expect(exception.message, contains('<redacted>'));
+  });
+
   test('follows a meta-refresh page redirect to the custom scheme', () async {
     final loginForm = await _fixture('login_form.html');
     final successPage = await _fixture('login_success.html');
