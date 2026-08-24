@@ -315,6 +315,36 @@ void main() {
     );
   });
 
+  test('captures tokens from the login success url fragment', () async {
+    final loginForm = await _fixture('login_form.html');
+    var fetchedSuccessPage = false;
+    final adapter = ScriptedHttpClientAdapter(<ScriptedStep>[
+      (_) => _redirect(_ssoRequireUrl),
+      (_) => _redirect(_loginPageLocation),
+      (_) => _html(loginForm),
+      (request) {
+        expect(request.method, 'POST');
+        return _redirect('/login/success#accessToken=FG-AT&refreshToken=FG-RT');
+      },
+      (request) async {
+        fetchedSuccessPage = true;
+        return _html('<!doctype html><html><body>shell</body></html>');
+      },
+    ]);
+
+    final tokens = await SsoClient(
+      adapter: adapter,
+    ).login(email: 'fixture@example.com', password: 'fixture-password');
+
+    expect(
+      fetchedSuccessPage,
+      isFalse,
+      reason: 'the fragment carries the tokens; no page fetch is needed',
+    );
+    expect(tokens.accessToken, 'FG-AT');
+    expect(tokens.refreshToken, 'FG-RT');
+  });
+
   test('unknown page fingerprints redact long tokens', () async {
     final adapter = ScriptedHttpClientAdapter(<ScriptedStep>[
       (_) => ResponseBody.fromString(

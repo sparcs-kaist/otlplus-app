@@ -368,22 +368,46 @@ class SsoClient {
   }
 
   static bool _isTerminalUri(Uri uri) {
-    return uri.scheme == 'org.sparcs.otl' && uri.host == 'login';
+    if (uri.scheme == 'org.sparcs.otl' && uri.host == 'login') {
+      return true;
+    }
+    // The OTL backend hands tokens to the SPA through a URL fragment:
+    // /login/success#accessToken=...&refreshToken=... Fragments are never
+    // sent to the server, so they must be captured from the redirect target
+    // itself instead of fetching the page.
+    return _tokenParams(uri) != null;
+  }
+
+  static ({String accessToken, String refreshToken})? _tokenParams(Uri uri) {
+    final sources = <Map<String, String>>[
+      uri.queryParameters,
+      Uri.splitQueryString(uri.fragment),
+    ];
+    for (final source in sources) {
+      final accessToken = source['accessToken'];
+      final refreshToken = source['refreshToken'];
+      if (accessToken != null &&
+          accessToken.isNotEmpty &&
+          refreshToken != null &&
+          refreshToken.isNotEmpty) {
+        return (accessToken: accessToken, refreshToken: refreshToken);
+      }
+    }
+    return null;
   }
 
   static SsoTokenPair _extractTokens(Uri uri) {
-    final accessToken = uri.queryParameters['accessToken'];
-    final refreshToken = uri.queryParameters['refreshToken'];
-    if (accessToken == null ||
-        accessToken.isEmpty ||
-        refreshToken == null ||
-        refreshToken.isEmpty) {
+    final params = _tokenParams(uri);
+    if (params == null) {
       throw SsoLoginException(
         'token-extract',
         'Missing SSO tokens in ${sanitizeUri(uri.toString())}',
       );
     }
-    return SsoTokenPair(accessToken: accessToken, refreshToken: refreshToken);
+    return SsoTokenPair(
+      accessToken: params.accessToken,
+      refreshToken: params.refreshToken,
+    );
   }
 
   static bool _isRetryableTransportError(DioException error) {
