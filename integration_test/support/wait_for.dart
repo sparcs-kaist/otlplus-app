@@ -76,6 +76,23 @@ Future<void> waitUntilGone(
   );
 }
 
+/// Pumps a single frame and fails fast when the frame throws.
+///
+/// Bare [WidgetTester.pump] calls let widget exceptions escape into the test
+/// zone where they poison the binding and stall the journey; this keeps the
+/// [stage] name attached to the failure instead.
+Future<void> pumpStage(
+  WidgetTester tester, {
+  required String stage,
+  Duration duration = const Duration(milliseconds: 300),
+}) async {
+  await tester.pump(duration);
+  final exception = tester.takeException();
+  if (exception != null) {
+    fail('[$stage] Flutter exception: $exception');
+  }
+}
+
 /// Runs [body] under a named stage so integration-test failures report which
 /// step of the journey broke. Failures are re-thrown with a
 /// `` `[step:name]` `` prefix; other errors keep their original stack.

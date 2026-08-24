@@ -31,12 +31,17 @@ void main() {
     'logged-in user journey with self-restoring review write',
     (tester) async {
       final marker = 'e2e-${DateTime.now().millisecondsSinceEpoch}';
+      var currentStage = 'init';
+      Future<T> journey<T>(String name, Future<T> Function() body) async {
+        currentStage = name;
+        return step(name, body);
+      }
 
-      await step('sso-clear-vault', () async {
+      await journey('sso-clear-vault', () async {
         await StorageService().deleteTokens();
       });
 
-      final tokens = await step(
+      final tokens = await journey(
         'sso-login',
         () => SsoClient().login(
           email: TestCredentials.email,
@@ -44,7 +49,7 @@ void main() {
         ),
       );
 
-      await step('seed-state', () async {
+      await journey('seed-state', () async {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('notification_consent_shown', true);
         await prefs.setBool('hasAccount', true);
@@ -60,7 +65,7 @@ void main() {
         await prefs.remove('hasAccount');
       });
 
-      await step('launch', () async {
+      await journey('launch', () async {
         app.main();
       });
 
@@ -84,9 +89,9 @@ void main() {
 
       // IndexedStack keeps every tab mounted, so taps must be followed by a
       // pump before the freshly active tab is hit-testable.
-      Future<void> switchTab(IconData icon) async {
+      Future<void> switchTab(IconData icon, String stage) async {
         await tester.tap(navIcon(icon));
-        await tester.pump(const Duration(milliseconds: 300));
+        await pumpStage(tester, stage: stage);
       }
 
       // The home dashboard renders user-dependent content only after
@@ -95,10 +100,14 @@ void main() {
         tester.element(find.byKey(const Key('home_bottom_nav'))),
         listen: false,
       );
-      await step('user-info', () async {
+      await journey('user-info', () async {
         final deadline = DateTime.now().add(const Duration(seconds: 30));
         while (!infoModel.hasData && DateTime.now().isBefore(deadline)) {
-          await tester.pump(const Duration(milliseconds: 100));
+          await pumpStage(
+            tester,
+            stage: 'user-info',
+            duration: const Duration(milliseconds: 100),
+          );
         }
       });
       expect(infoModel.hasData, isTrue, reason: '[user-info] never loaded');
@@ -109,7 +118,10 @@ void main() {
         reason: '[home] account entry point missing',
       );
 
-      await step('timetable-open', () => switchTab(Icons.table_chart_outlined));
+      await journey(
+        'timetable-open',
+        () => switchTab(Icons.table_chart_outlined, 'timetable-open'),
+      );
       final timetableOutcome = await waitForAny(
         tester,
         <String, Finder>{
@@ -121,9 +133,9 @@ void main() {
       );
       expect(timetableOutcome, 'loaded');
 
-      await step(
+      await journey(
         'dictionary-open',
-        () => switchTab(Icons.library_books_outlined),
+        () => switchTab(Icons.library_books_outlined, 'dictionary-open'),
       );
       final hintFinder = _firstPresent(tester, [
         find.textContaining('과목명, 교수님 성함 등을 검색해 보세요.'),
@@ -136,16 +148,16 @@ void main() {
         timeout: const Duration(seconds: 30),
       );
 
-      await step('search-open', () => tester.tap(hintFinder));
+      await journey('search-open', () => tester.tap(hintFinder));
       await waitForAny(
         tester,
         <String, Finder>{'field': find.byType(TextField).first},
         stage: 'search-field',
         timeout: const Duration(seconds: 30),
       );
-      await step('search-submit', () async {
+      await journey('search-submit', () async {
         await tester.enterText(find.byType(TextField).first, 'CS320');
-        await tester.pump();
+        await pumpStage(tester, stage: currentStage);
 
         final searchButton = _firstPresent(tester, [
           find.text('Search'),
@@ -153,7 +165,7 @@ void main() {
         ]);
         expect(searchButton, isNotNull, reason: '[search] button not found');
         await tester.tap(searchButton!);
-        await tester.pump();
+        await pumpStage(tester, stage: currentStage);
 
         // The dictionary list lives in an IndexedStack below the pushed
         // search page, so it can become findable before the page closes;
@@ -180,9 +192,9 @@ void main() {
       );
       debugPrint('[search-results] $searchOutcome');
 
-      await step(
+      await journey(
         'review-feed-open',
-        () => switchTab(Icons.rate_review_outlined),
+        () => switchTab(Icons.rate_review_outlined, 'review-feed-open'),
       );
       await waitForAny(
         tester,
@@ -191,8 +203,8 @@ void main() {
         timeout: const Duration(seconds: 60),
       );
 
-      await switchTab(Icons.home_outlined);
-      await step('user-page-open', () {
+      await switchTab(Icons.home_outlined, 'home-tab');
+      await journey('user-page-open', () {
         return tester.tap(find.byKey(const Key('main_user_button')));
       });
       var openRoutes = 1;
@@ -230,7 +242,7 @@ void main() {
       }
 
       if (canMutate) {
-        await step('my-reviews-open', () {
+        await journey('my-reviews-open', () {
           return tester.tap(find.byKey(const Key('user_my_review_button')));
         });
         openRoutes += 1;
@@ -241,19 +253,23 @@ void main() {
           stage: 'my-reviews',
           timeout: const Duration(seconds: 60),
         );
-        await step('lecture-detail-open', () async {
+        await journey('lecture-detail-open', () async {
           await tester.ensureVisible(lectureBlockFinder.first);
-          await tester.pump(const Duration(milliseconds: 300));
+          await pumpStage(tester, stage: currentStage);
           await tester.tap(lectureBlockFinder.first);
         });
         openRoutes += 1;
 
-        await step('review-editor-wait', () async {
+        await journey('review-editor-wait', () async {
           final field = find.byKey(const Key('review_write_field'));
           final deadline = DateTime.now().add(const Duration(seconds: 45));
           while (field.evaluate().isEmpty &&
               DateTime.now().isBefore(deadline)) {
-            await tester.pump(const Duration(milliseconds: 100));
+            await pumpStage(
+              tester,
+              stage: 'review-editor',
+              duration: const Duration(milliseconds: 100),
+            );
           }
         });
         expect(
@@ -263,11 +279,11 @@ void main() {
         );
 
         try {
-          await step('review-write-submit', () async {
+          await journey('review-write-submit', () async {
             final field = find.byKey(const Key('review_write_field')).first;
             await tester.ensureVisible(field);
             await tester.enterText(field, marker);
-            await tester.pump();
+            await pumpStage(tester, stage: currentStage);
 
             final submit = find.byKey(const Key('review_write_submit')).first;
             await tester.ensureVisible(submit);
@@ -289,7 +305,7 @@ void main() {
           // Restore the original review whenever submission may have
           // happened; an update with identical values is harmless.
           final restoredOriginal = originalReview;
-          await step('review-restore', () {
+          await journey('review-restore', () {
             return ReviewRepository(DioProvider().dio).update(
               reviewId: restoredOriginal.id,
               content: restoredOriginal.content,
@@ -298,7 +314,7 @@ void main() {
               speech: restoredOriginal.speech,
             );
           });
-          final detailResponse = await step(
+          final detailResponse = await journey(
             'review-restore-verify',
             () =>
                 DioProvider().dio.get('api/v2/reviews/${restoredOriginal.id}'),
@@ -316,10 +332,10 @@ void main() {
       // Visit liked reviews from the account page.
       while (openRoutes > 1) {
         tester.state<NavigatorState>(find.byType(Navigator).first).pop();
-        await tester.pump(const Duration(milliseconds: 500));
+        await pumpStage(tester, stage: currentStage);
         openRoutes -= 1;
       }
-      await step('liked-reviews-open', () {
+      await journey('liked-reviews-open', () {
         return tester.tap(find.byKey(const Key('user_liked_review_button')));
       });
       openRoutes += 1;
@@ -336,11 +352,11 @@ void main() {
 
       while (openRoutes > 0) {
         tester.state<NavigatorState>(find.byType(Navigator).first).pop();
-        await tester.pump(const Duration(milliseconds: 500));
+        await pumpStage(tester, stage: currentStage);
         openRoutes -= 1;
       }
 
-      await step('logout-open', () {
+      await journey('logout-open', () {
         return tester.tap(find.byKey(const Key('main_user_button')));
       });
       await waitForAny(
@@ -349,7 +365,7 @@ void main() {
         stage: 'logout-button',
         timeout: const Duration(seconds: 30),
       );
-      await step('logout-tap', () {
+      await journey('logout-tap', () {
         return tester.tap(find.byKey(const Key('user_logout_button')));
       });
 

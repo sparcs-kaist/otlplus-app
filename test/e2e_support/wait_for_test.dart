@@ -154,6 +154,22 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  testWidgets('pumpStage fails fast with the stage name on widget exceptions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const _ThrowingWidget());
+
+    var returned = false;
+    try {
+      await pumpStage(tester, stage: 'pump-boom-stage');
+      returned = true;
+    } on TestFailure catch (failure) {
+      expect(failure.message, contains('[pump-boom-stage]'));
+      expect(failure.message, contains('deliberate build failure'));
+    }
+    expect(returned, isFalse);
+  });
 }
 
 class _FramesLaterWidget extends StatefulWidget {
