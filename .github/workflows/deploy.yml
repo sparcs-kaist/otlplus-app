@@ -252,9 +252,9 @@ jobs:
           echo "org.gradle.daemon=false" >> android/gradle.properties
           echo "org.gradle.parallel=false" >> android/gradle.properties
 
-      - name: Deploy to Google Play Alpha
+      - name: Deploy to Google Play Production
         working-directory: android
-        run: bundle exec fastlane alpha
+        run: bundle exec fastlane production
 
       - name: Clean up sensitive files
         if: always()
