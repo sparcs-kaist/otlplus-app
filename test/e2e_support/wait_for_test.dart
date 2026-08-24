@@ -121,6 +121,39 @@ void main() {
     }
     expect(returned, isFalse);
   });
+
+  testWidgets(
+    'waitUntilGone rethrows widget exceptions with the stage prefix',
+    (tester) async {
+      await tester.pumpWidget(const _ThrowingWidget());
+
+      var returned = false;
+      try {
+        await waitUntilGone(
+          tester,
+          find.byType(SizedBox),
+          stage: 'gone-boom-stage',
+          timeout: const Duration(seconds: 5),
+        );
+        returned = true;
+      } on TestFailure catch (failure) {
+        expect(failure.message, contains('[gone-boom-stage]'));
+        expect(failure.message, contains('deliberate build failure'));
+      }
+      expect(returned, isFalse);
+    },
+  );
+
+  testWidgets('waitForAny rejects empty outcome maps immediately', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    expect(
+      () => waitForAny(tester, const <String, Finder>{}, stage: 'empty'),
+      throwsArgumentError,
+    );
+  });
 }
 
 class _FramesLaterWidget extends StatefulWidget {

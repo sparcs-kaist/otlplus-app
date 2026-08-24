@@ -31,7 +31,10 @@ Future<String> waitForAny(
     }
 
     for (final outcome in outcomes.entries) {
-      if (tester.any(outcome.value)) return outcome.key;
+      if (tester.any(outcome.value)) {
+        debugPrint('✔ $stage -> ${outcome.key}');
+        return outcome.key;
+      }
     }
   }
 
@@ -61,7 +64,10 @@ Future<void> waitUntilGone(
       fail('[$stage] Flutter exception: $exception');
     }
 
-    if (!tester.any(finder)) return;
+    if (!tester.any(finder)) {
+      debugPrint('✔ $stage -> gone');
+      return;
+    }
   }
 
   fail(
