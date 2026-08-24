@@ -103,6 +103,18 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch SSO test credentials
+        uses: dopplerhq/secrets-fetch-action@v2.0.0
+        id: doppler
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
+          inject-env-vars: true
+      - name: Preflight credentials
+        run: |
+          if [ -z "${TEST_SSO_EMAIL:-}" ] || [ -z "${TEST_SSO_PASSWORD:-}" ]; then
+            echo "::error::TEST_SSO_EMAIL / TEST_SSO_PASSWORD are not present in the Doppler config referenced by DOPPLER_TOKEN"
+            exit 1
+          fi
       - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
@@ -117,18 +129,6 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Fetch SSO test credentials
-        uses: dopplerhq/secrets-fetch-action@v2.0.0
-        id: doppler
-        with:
-          doppler-token: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
-          inject-env-vars: true
-      - name: Preflight credentials
-        run: |
-          if [ -z "${TEST_SSO_EMAIL:-}" ] || [ -z "${TEST_SSO_PASSWORD:-}" ]; then
-            echo "::error::TEST_SSO_EMAIL / TEST_SSO_PASSWORD are not present in the Doppler config referenced by DOPPLER_TOKEN"
-            exit 1
-          fi
       - name: Authenticated integration test
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -149,18 +149,6 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode
-        run: sudo xcode-select -s "/Applications/${{ env.XCODE_VERSION }}.app/Contents/Developer"
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-      - run: flutter pub get
-      - name: Boot simulator
-        run: |
-          UDID=$(xcrun xctrace list devices 2>&1 | awk '/${{ env.IOS_DEVICE }}/ {print $NF; exit}' | tr -d '()')
-          echo "UDID=$UDID" >> "$GITHUB_ENV"
-          xcrun simctl boot "$UDID"
       - name: Fetch SSO test credentials
         uses: dopplerhq/secrets-fetch-action@v2.0.0
         id: doppler
@@ -173,6 +161,18 @@ jobs:
             echo "::error::TEST_SSO_EMAIL / TEST_SSO_PASSWORD are not present in the Doppler config referenced by DOPPLER_TOKEN"
             exit 1
           fi
+      - name: Select Xcode
+        run: sudo xcode-select -s "/Applications/${{ env.XCODE_VERSION }}.app/Contents/Developer"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - name: Boot simulator
+        run: |
+          UDID=$(xcrun xctrace list devices 2>&1 | awk '/${{ env.IOS_DEVICE }}/ {print $NF; exit}' | tr -d '()')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
       - name: Warm up simulator build
         run: flutter build ios --simulator --debug -d "$UDID" --dart-define=APP_SMOKE_TEST=true --dart-define=TEST_SSO_EMAIL="$TEST_SSO_EMAIL" --dart-define=TEST_SSO_PASSWORD="$TEST_SSO_PASSWORD"
       - name: Authenticated integration test
