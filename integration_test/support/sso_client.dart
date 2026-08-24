@@ -107,7 +107,17 @@ class SsoClient {
         continue;
       }
 
-      if (response.statusCode == HttpStatus.ok && body.isNotEmpty) {
+      if ((response.statusCode == HttpStatus.ok ||
+              response.statusCode == HttpStatus.created) &&
+          body.contains('<form')) {
+        if (request.isCredentialPost) {
+          // The server bounced us back to the login form after submitting
+          // credentials: an invalid-account rejection, not a fresh flow.
+          throw const SsoLoginException(
+            'credential-post',
+            'SPARCS SSO rejected the credentials or the login page markup changed',
+          );
+        }
         request = _buildCredentialPost(
           pageUri: request.uri,
           body: body,
@@ -294,8 +304,12 @@ class _RequestState {
     this.isCredentialPost = false,
   });
 
-  factory _RequestState.get(Uri uri) {
-    return _RequestState(uri: uri, method: 'GET');
+  factory _RequestState.get(Uri uri, {bool isCredentialPost = false}) {
+    return _RequestState(
+      uri: uri,
+      method: 'GET',
+      isCredentialPost: isCredentialPost,
+    );
   }
 
   final Uri uri;
@@ -306,8 +320,12 @@ class _RequestState {
   final bool isCredentialPost;
 
   _RequestState followRedirect(int? statusCode, Uri target) {
-    if (statusCode == HttpStatus.found || statusCode == HttpStatus.seeOther) {
-      return _RequestState.get(target);
+    // 301/302/303 downgrade to a plain GET (the OAuth chain never relies on
+    // method preservation); 307/308 keep method and body verbatim.
+    if (statusCode == HttpStatus.movedPermanently ||
+        statusCode == HttpStatus.found ||
+        statusCode == HttpStatus.seeOther) {
+      return _RequestState.get(target, isCredentialPost: isCredentialPost);
     }
     return _RequestState(
       uri: target,

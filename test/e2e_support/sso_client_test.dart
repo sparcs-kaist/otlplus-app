@@ -317,4 +317,74 @@ void main() {
       ),
     );
   });
+
+  test('301 redirects downgrade the credential post to a plain GET', () async {
+    final loginForm = await _fixture('login_form.html');
+    var sawPostRedirect = false;
+    final adapter = ScriptedHttpClientAdapter(<ScriptedStep>[
+      (_) => _redirect(_ssoRequireUrl),
+      (_) => _redirect(_loginPageLocation),
+      (_) => _html(loginForm),
+      (request) {
+        expect(request.method, 'POST');
+        return _redirect(
+          '/api/v2/token/require/?client_id=otlplus&state=abc',
+          statusCode: HttpStatus.movedPermanently,
+        );
+      },
+      (request) async {
+        sawPostRedirect = true;
+        expect(request.method, 'GET');
+        expect(request.body, isEmpty);
+        return _redirect(
+          'org.sparcs.otl://login/'
+          '?accessToken=AT-301&refreshToken=RT-301',
+        );
+      },
+    ]);
+
+    final tokens = await SsoClient(
+      adapter: adapter,
+    ).login(email: 'fixture@example.com', password: 'fixture-password');
+
+    expect(sawPostRedirect, isTrue);
+    expect(tokens.accessToken, 'AT-301');
+    expect(tokens.refreshToken, 'RT-301');
+  });
+
+  test(
+    'a redirect back to the login form after submit is a rejection',
+    () async {
+      final loginForm = await _fixture('login_form.html');
+      const password = 'super-secret-fixture-password';
+      final adapter = ScriptedHttpClientAdapter(<ScriptedStep>[
+        (_) => _redirect(_ssoRequireUrl),
+        (_) => _redirect(_loginPageLocation),
+        (_) => _html(loginForm),
+        // Server bounces back to the login page instead of continuing the
+        // OAuth chain: an invalid-account rejection that must not loop.
+        (_) => _redirect(_loginPageLocation),
+        (_) => _html(loginForm),
+      ]);
+
+      Object? thrown;
+      try {
+        await SsoClient(
+          adapter: adapter,
+        ).login(email: 'fixture@example.com', password: password);
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown, isA<SsoLoginException>());
+      final exception = thrown! as SsoLoginException;
+      expect(exception.stage, 'credential-post');
+      expect(exception.message, isNot(contains(password)));
+      // The form must not have been submitted twice.
+      expect(
+        adapter.requests.where((request) => request.method == 'POST'),
+        hasLength(1),
+      );
+    },
+  );
 }
