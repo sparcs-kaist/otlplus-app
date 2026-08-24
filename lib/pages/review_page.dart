@@ -163,6 +163,7 @@ class LatestReviewsPage extends StatelessWidget {
         child: Scrollbar(
           controller: scrollController,
           child: CustomScrollView(
+            key: const Key('review_list'),
             controller: scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -204,6 +205,7 @@ class HallOfFamePage extends StatelessWidget {
         child: Scrollbar(
           controller: scrollController,
           child: CustomScrollView(
+            key: const Key('review_list'),
             controller: scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [

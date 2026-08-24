@@ -58,21 +58,28 @@ class UserPage extends StatelessWidget {
                   'assets/icons/my_review.svg',
                   'user.my_review'.tr(),
                   () => OTLNavigator.push(context, MyReviewPage()),
+                  key: const Key('user_my_review_button'),
                 ),
                 _buildNavigateArrowButton(
                   context,
                   'assets/icons/liked_review.svg',
                   'user.liked_review'.tr(),
                   () => OTLNavigator.push(context, LikedReviewPage()),
+                  key: const Key('user_liked_review_button'),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: _buildDivider(),
                 ),
-                _buildAccount('assets/icons/logout.svg', () {
-                  context.read<AuthModel>().logout();
-                  OTLNavigator.pop(context);
-                }, 'user.logout'.tr()),
+                _buildAccount(
+                  'assets/icons/logout.svg',
+                  () {
+                    context.read<AuthModel>().logout();
+                    OTLNavigator.pop(context);
+                  },
+                  'user.logout'.tr(),
+                  key: const Key('user_logout_button'),
+                ),
                 if (Platform.isIOS)
                   _buildAccount(Icons.highlight_off, () {
                     OTLNavigator.pushDialog(
@@ -116,9 +123,11 @@ class UserPage extends StatelessWidget {
     BuildContext context,
     String icon,
     String text,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    Key? key,
+  }) {
     return RawResponsiveButton(
+      key: key,
       data: {
         'Padding': {
           'padding': EdgeInsets.symmetric(horizontal: 16.0),
@@ -172,10 +181,16 @@ class UserPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAccount(dynamic icon, void Function()? onTap, String? text) {
+  Widget _buildAccount(
+    dynamic icon,
+    void Function()? onTap,
+    String? text, {
+    Key? key,
+  }) {
     return Align(
       alignment: Alignment.centerLeft,
       child: IconTextButton(
+        key: key,
         icon: icon,
         onTap: onTap,
         text: text,
