@@ -1,9 +1,9 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 class LectureSimpleBlock extends StatelessWidget {
   final Lecture lecture;
@@ -18,7 +18,7 @@ class LectureSimpleBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return Container(
       margin: const EdgeInsets.all(3.0),

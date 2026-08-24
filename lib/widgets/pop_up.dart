@@ -11,6 +11,7 @@ import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/telemetry_synchronizer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 Future<void> _guardPopUpCallback<T>(
   Future<T> Function() action,
@@ -175,7 +176,7 @@ Widget _buildImagePopup({
 
 // ignore: unused_element
 Widget _buildAppEvent(BuildContext context) {
-  final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+  final isEn = context.isEn;
 
   return SingleChildScrollView(
     child: _buildImagePopup(

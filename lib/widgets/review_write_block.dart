@@ -8,6 +8,7 @@ import 'package:otlplus/models/review.dart';
 import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:provider/provider.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 class ReviewWriteBlock extends StatefulWidget {
   final Lecture lecture;
@@ -51,7 +52,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
 
   @override
   Widget build(BuildContext context) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8.0),
@@ -203,7 +204,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
     } catch (exception) {
       print(exception);
       if (mounted) {
-        final isEn = context.locale == const Locale('en');
+        final isEn = context.isEn;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(isEn ? 'Failed to save review.' : '후기를 저장하지 못했습니다.'),

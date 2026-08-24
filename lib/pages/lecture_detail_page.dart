@@ -21,6 +21,7 @@ import 'package:otlplus/providers/timetable_model.dart';
 import 'package:otlplus/widgets/custom_header_delegate.dart';
 import 'package:otlplus/widgets/review_block.dart';
 import 'package:otlplus/widgets/review_write_block.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 class LectureDetailPage extends StatelessWidget {
   LectureDetailPage({Key? key, this.fromCourseDetailPage = false})
@@ -50,7 +51,7 @@ class LectureDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final LectureDetailModel lectureDetailModel = context
         .watch<LectureDetailModel>();
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return OTLScaffold(
       child: OTLLayout(
@@ -382,7 +383,7 @@ class LectureDetailPage extends StatelessWidget {
   }
 
   Widget _buildAttributes(BuildContext context, Lecture lecture) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return Column(
       children: [

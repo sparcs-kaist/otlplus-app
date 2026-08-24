@@ -18,6 +18,7 @@ import 'package:otlplus/widgets/custom_header_delegate.dart';
 import 'package:otlplus/widgets/lecture_group_simple_block.dart';
 import 'package:otlplus/widgets/review_block.dart';
 import 'package:otlplus/widgets/review_write_block.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 class CourseDetailPage extends StatelessWidget {
   CourseDetailPage({Key? key}) : super(key: key);
@@ -29,7 +30,7 @@ class CourseDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final CourseDetailModel courseDetailModel = context
         .watch<CourseDetailModel>();
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return OTLScaffold(
       child: OTLLayout(
@@ -152,7 +153,7 @@ class CourseDetailPage extends StatelessWidget {
     String selectedFilter,
     Professor? professor,
   ) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return ChoiceChip(
       selectedColor: OTLColor.pinksSub,
@@ -244,7 +245,7 @@ class CourseDetailPage extends StatelessWidget {
   }
 
   Column _buildAttribute(BuildContext context, Course course) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return Column(
       children: <Widget>[
@@ -288,7 +289,7 @@ class CourseDetailPage extends StatelessWidget {
     final _scrollController = ScrollController();
     final years = context.select<InfoModel, Set<int>>((model) => model.years);
     final courseDetailModel = context.watch<CourseDetailModel>();
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return Scrollbar(
       controller: _scrollController,
@@ -346,7 +347,7 @@ class CourseDetailPage extends StatelessWidget {
     Season season,
     String selectedFilter,
   ) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
 
     return IntrinsicHeight(
       child: Row(

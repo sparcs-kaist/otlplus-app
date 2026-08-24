@@ -11,6 +11,7 @@ import 'package:otlplus/utils/navigator.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/timetable_model.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 class LectureGroupBlockRow extends StatefulWidget {
   const LectureGroupBlockRow({
@@ -30,7 +31,7 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
   RegExp exp = new RegExp(r"[^A-Z]");
   @override
   Widget build(BuildContext context) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
     final alreadyAdded = context.select<TimetableModel, bool>(
       (model) => model.currentTimetable.lectures.any(
         (lec) =>

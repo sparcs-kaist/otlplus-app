@@ -112,28 +112,30 @@ void main() {
                     create: (context) =>
                         InfoModel(telemetry: telemetryCoordinator),
                     update: (context, authModel, infoModel) {
-                      if (authModel.isLogined && infoModel != null) {
+                      final model =
+                          infoModel ??
+                          InfoModel(telemetry: telemetryCoordinator);
+                      if (authModel.isLogined) {
                         // Failures set InfoModel.hasError for retry UI; session
                         // expiry is handled by the Dio interceptor.
-                        unawaited(infoModel.getInfo());
-                      } else if (!authModel.isLogined && infoModel != null) {
-                        infoModel.clearData();
+                        unawaited(model.getInfo());
+                      } else {
+                        model.clearData();
                       }
-                      return infoModel ??
-                          InfoModel(telemetry: telemetryCoordinator);
+                      return model;
                     },
                   ),
                   ChangeNotifierProxyProvider<InfoModel, TimetableModel>(
                     create: (context) => TimetableModel(),
                     update: (context, infoModel, timetableModel) {
-                      if (infoModel.hasData && timetableModel != null) {
-                        timetableModel.loadSemesters(
+                      final model = timetableModel ?? TimetableModel();
+                      if (infoModel.hasData) {
+                        model.loadSemesters(
                           user: infoModel.user,
                           semesters: infoModel.semesters,
                         );
-                      } else if (!infoModel.hasData &&
-                          timetableModel != null) {}
-                      return timetableModel ?? TimetableModel();
+                      }
+                      return model;
                     },
                   ),
                   ChangeNotifierProvider(create: (_) => LectureSearchModel()),

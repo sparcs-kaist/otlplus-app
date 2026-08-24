@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:easy_localization/easy_localization.dart';
+import 'package:otlplus/extensions/locale.dart';
 
 Future<void> _guardSettingsCallback<T>(
   Future<T> Function() action,
@@ -32,7 +33,7 @@ Future<void> _guardSettingsCallback<T>(
 class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final isEn = context.isEn;
     final telemetry = context
         .findAncestorWidgetOfExactType<TelemetrySynchronizer>()
         ?.telemetry;
