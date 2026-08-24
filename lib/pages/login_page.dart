@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:otlplus/constants/color.dart';
@@ -39,17 +41,26 @@ class _LoginPageState extends State<LoginPage> {
     _initializeWebView();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!((await SharedPreferences.getInstance()).getBool('hasAccount') ??
-          true)) {
-        OTLNavigator.pushDialog(
-          context: context,
-          builder: (_) => OTLDialog(
-            type: OTLDialogType.accountDeleted,
-            onTapNeg: () => SystemNavigator.pop(),
-          ),
-        );
+      final hasAccount =
+          (await SharedPreferences.getInstance()).getBool('hasAccount') ?? true;
+      if (!mounted) return;
+
+      if (!hasAccount) {
+        unawaited(_showAccountDeletedDialog());
       }
     });
+  }
+
+  Future<void> _showAccountDeletedDialog() async {
+    try {
+      await OTLNavigator.pushDialog(
+        context: context,
+        builder: (_) => OTLDialog(
+          type: OTLDialogType.accountDeleted,
+          onTapNeg: () => SystemNavigator.pop(),
+        ),
+      );
+    } catch (_) {}
   }
 
   void _initializeWebView() async {

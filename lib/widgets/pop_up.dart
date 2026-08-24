@@ -1,13 +1,34 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/utils/navigator.dart';
+import 'package:otlplus/widgets/telemetry_synchronizer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+Future<void> _guardPopUpCallback<T>(
+  Future<T> Function() action,
+  TelemetryCoordinator? telemetry, {
+  required String operation,
+}) async {
+  try {
+    await action();
+  } catch (error, stackTrace) {
+    await telemetry?.recordNonFatal(error, stackTrace, operation: operation);
+  }
+}
+
+TelemetryCoordinator? _popUpTelemetry(BuildContext context) {
+  return context
+      .findAncestorWidgetOfExactType<TelemetrySynchronizer>()
+      ?.telemetry;
+}
 
 class PopUp extends StatefulWidget {
   const PopUp({Key? key}) : super(key: key);
@@ -43,10 +64,18 @@ class _PopUpState extends State<PopUp> {
                 onTap: () {
                   setState(() {
                     _checked = !_checked;
-                    SharedPreferences.getInstance().then(
-                      (value) => value.setBool('popup', !_checked),
-                    );
                   });
+                  unawaited(
+                    _guardPopUpCallback(
+                      () async {
+                        final preferences =
+                            await SharedPreferences.getInstance();
+                        await preferences.setBool('popup', !_checked);
+                      },
+                      _popUpTelemetry(context),
+                      operation: 'persist_popup_visibility',
+                    ),
+                  );
                 },
                 tapEffect: ButtonTapEffect.none,
                 icon: Icons.check_circle_outline,
@@ -83,7 +112,13 @@ Widget _build23fRecruiting(BuildContext context) {
         style: ButtonStyle(
           backgroundColor: WidgetStatePropertyAll(Color(0xFFEBA12A)),
         ),
-        onPressed: () => launchUrl(Uri.parse('https://apply.sparcs.org/')),
+        onPressed: () => unawaited(
+          _guardPopUpCallback(
+            () => launchUrl(Uri.parse('https://apply.sparcs.org/')),
+            _popUpTelemetry(context),
+            operation: 'launch_popup_recruiting_url',
+          ),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -149,9 +184,15 @@ Widget _buildAppEvent(BuildContext context) {
           ? 'assets/popups/app-event-image-en.png'
           : 'assets/popups/app-event-image.png',
       button: FilledButton(
-        onPressed: () => launchUrl(
-          Uri.parse(
-            'https://docs.google.com/forms/d/e/1FAIpQLSfZbU_TFUPN53De_ihtS4ZK5Tb_nRDazRS7EYQgp3QWAYvyhQ/viewform',
+        onPressed: () => unawaited(
+          _guardPopUpCallback(
+            () => launchUrl(
+              Uri.parse(
+                'https://docs.google.com/forms/d/e/1FAIpQLSfZbU_TFUPN53De_ihtS4ZK5Tb_nRDazRS7EYQgp3QWAYvyhQ/viewform',
+              ),
+            ),
+            _popUpTelemetry(context),
+            operation: 'launch_popup_event_url',
           ),
         ),
         child: Row(
@@ -168,7 +209,7 @@ Widget _buildAppEvent(BuildContext context) {
 }
 
 // ignore: unused_element
-Widget _buildGraduatePlanner() {
+Widget _buildGraduatePlanner(BuildContext context) {
   return SingleChildScrollView(
     child: Column(
       children: [
@@ -189,7 +230,13 @@ Widget _buildGraduatePlanner() {
         Text('웹에서 지금 바로 만나보세요!', style: bodyRegular),
         const SizedBox(height: 8.0),
         FilledButton(
-          onPressed: () => launchUrl(Uri.https("otl.sparcs.org", "planner")),
+          onPressed: () => unawaited(
+            _guardPopUpCallback(
+              () => launchUrl(Uri.https("otl.sparcs.org", "planner")),
+              _popUpTelemetry(context),
+              operation: 'launch_graduate_planner_url',
+            ),
+          ),
           child: Text.rich(
             TextSpan(
               style: titleBold,
