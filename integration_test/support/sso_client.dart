@@ -80,23 +80,15 @@ class SsoClient {
       final location = response.headers.value(HttpHeaders.locationHeader);
       final body = response.data is String ? response.data! as String : '';
 
-      if (request.isCredentialPost && response.statusCode == HttpStatus.ok) {
-        if (body.contains('alert-invalid-account')) {
-          throw const SsoLoginException(
-            'credential-post',
-            'SPARCS SSO reported invalid credentials — verify TEST_SSO_EMAIL '
-                'and TEST_SSO_PASSWORD in Doppler and that the test account '
-                'is not locked',
-          );
-        }
-        if (location == null) {
-          throw SsoLoginException(
-            'credential-post',
-            'SPARCS SSO returned an unexpected page after the credential '
-                'post at ${sanitizeUri(request.uri.toString())} — the login '
-                'markup or flow may have changed',
-          );
-        }
+      if (request.isCredentialPost &&
+          response.statusCode == HttpStatus.ok &&
+          body.contains('alert-invalid-account')) {
+        throw const SsoLoginException(
+          'credential-post',
+          'SPARCS SSO reported invalid credentials — verify TEST_SSO_EMAIL '
+              'and TEST_SSO_PASSWORD in Doppler and that the test account '
+              'is not locked',
+        );
       }
 
       if (location != null && location.isNotEmpty) {
@@ -114,6 +106,27 @@ class SsoClient {
         }
         _ensureAllowedHost(target);
         request = request.followRedirect(response.statusCode, target);
+        continue;
+      }
+
+      // Some OTL pages (e.g. /login/success) forward to the app's custom
+      // scheme through a meta refresh or inline script instead of an HTTP
+      // Location header. Checked before form handling so a success page is
+      // never mistaken for a re-submittable login form.
+      final pageRedirect = _extractPageRedirect(body, request.uri);
+      if (pageRedirect != null) {
+        if (_isTerminalUri(pageRedirect)) {
+          return _extractTokens(pageRedirect);
+        }
+        redirectHops += 1;
+        if (redirectHops > _maximumRedirectHops) {
+          throw SsoLoginException(
+            'redirect-cap',
+            'Redirect cap exceeded at ${sanitizeUri(pageRedirect.toString())}',
+          );
+        }
+        _ensureAllowedHost(pageRedirect);
+        request = _RequestState.get(pageRedirect, isCredentialPost: false);
         continue;
       }
 
@@ -254,6 +267,49 @@ class SsoClient {
         'SSO returned an invalid redirect location',
       );
     }
+  }
+
+  /// Extracts a client-side redirect target from an HTML page: a
+  /// `<meta http-equiv="refresh">` first, then a bare custom-scheme URL.
+  static Uri? _extractPageRedirect(String body, Uri pageUri) {
+    final meta = RegExp(
+      r'<meta[^>]+http-equiv\s*=\s*["'
+      ']?refresh["'
+      ']?[^>]*>',
+      caseSensitive: false,
+    ).firstMatch(body);
+    if (meta != null) {
+      final tag = meta.group(0)!;
+      final content = RegExp(
+        r'content\s*=\s*["'
+        ']([^"'
+        ']+)["'
+        ']',
+        caseSensitive: false,
+      ).firstMatch(tag);
+      if (content != null) {
+        final url = RegExp(
+          r'url\s*=\s*(.+)$',
+          caseSensitive: false,
+        ).firstMatch(content.group(1)!.trim());
+        if (url != null) {
+          final target = url
+              .group(1)!
+              .trim()
+              .replaceAll('"', '')
+              .replaceAll("'", '');
+          return _resolveLocation(pageUri, target);
+        }
+      }
+    }
+
+    final customScheme = RegExp(
+      'org\\.sparcs\\.otl://login/\\?[^\\s"\'<>]+',
+    ).firstMatch(body);
+    if (customScheme != null) {
+      return Uri.parse(customScheme.group(0)!);
+    }
+    return null;
   }
 
   static void _ensureAllowedHost(Uri uri) {

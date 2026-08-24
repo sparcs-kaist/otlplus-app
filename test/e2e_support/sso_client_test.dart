@@ -315,6 +315,34 @@ void main() {
     );
   });
 
+  test('follows a meta-refresh page redirect to the custom scheme', () async {
+    final loginForm = await _fixture('login_form.html');
+    final successPage = await _fixture('login_success.html');
+    var sawSuccessPage = false;
+    final adapter = ScriptedHttpClientAdapter(<ScriptedStep>[
+      (_) => _redirect(_ssoRequireUrl),
+      (_) => _redirect(_loginPageLocation),
+      (_) => _html(loginForm),
+      (request) {
+        expect(request.method, 'POST');
+        return _redirect('https://otl.kaist.ac.kr/login/success?next=%2F');
+      },
+      (request) async {
+        sawSuccessPage = true;
+        expect(request.uri.host, 'otl.kaist.ac.kr');
+        return _html(successPage);
+      },
+    ]);
+
+    final tokens = await SsoClient(
+      adapter: adapter,
+    ).login(email: 'fixture@example.com', password: 'fixture-password');
+
+    expect(sawSuccessPage, isTrue);
+    expect(tokens.accessToken, 'PG-AT');
+    expect(tokens.refreshToken, 'PG-RT');
+  });
+
   test('301 redirects downgrade the credential post to a plain GET', () async {
     final loginForm = await _fixture('login_form.html');
     var sawPostRedirect = false;
