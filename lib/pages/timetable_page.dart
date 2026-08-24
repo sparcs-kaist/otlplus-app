@@ -38,11 +38,17 @@ class _TimetablePageState extends State<TimetablePage> {
   Widget build(BuildContext context) {
     final timetableModel = context.watch<TimetableModel>();
 
-    if (timetableModel.isLoaded) return _buildBody(context);
+    if (timetableModel.isLoaded) {
+      return KeyedSubtree(
+        key: const Key('timetable_loaded'),
+        child: _buildBody(context),
+      );
+    }
     if (timetableModel.loadFailed) {
       final isEn = context.isEn;
       return Center(
         child: Column(
+          key: const Key('timetable_error'),
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(isEn ? 'Unable to load timetable.' : '시간표를 불러오지 못했습니다.'),

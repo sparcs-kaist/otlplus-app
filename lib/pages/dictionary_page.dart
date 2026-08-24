@@ -87,6 +87,7 @@ class _DictionaryPageState extends State<DictionaryPage> {
               return Scrollbar(
                 controller: _scrollController,
                 child: ListView.separated(
+                  key: const Key('dictionary_list'),
                   controller: _scrollController,
                   padding: EdgeInsets.all(12.0),
                   itemCount: courses.length,

@@ -127,6 +127,7 @@ class _MainPageState extends State<MainPage> {
       trailing: Row(
         children: [
           IconTextButton(
+            key: const Key('main_user_button'),
             onTap: () => OTLNavigator.push(
               context,
               UserPage(),
@@ -139,6 +140,7 @@ class _MainPageState extends State<MainPage> {
             padding: EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
           ),
           IconTextButton(
+            key: const Key('main_settings_button'),
             onTap: () => OTLNavigator.push(
               context,
               SettingsPage(),

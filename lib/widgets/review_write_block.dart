@@ -118,6 +118,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
                       vertical: 4.0,
                     ),
                     child: TextField(
+                      key: const Key('review_write_field'),
                       controller: _contentTextController,
                       maxLines: null,
                       style: bodyRegular,
@@ -139,6 +140,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
             Align(
               alignment: Alignment.bottomRight,
               child: IconTextButton(
+                key: const Key('review_write_submit'),
                 padding: EdgeInsets.zero,
                 color: _canUpload() ? OTLColor.pinksMain : OTLColor.grayA,
                 text: (widget.existingReview == null)

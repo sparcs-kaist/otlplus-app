@@ -1,0 +1,475 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio/dio.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:html/parser.dart' as html_parser;
+
+class SsoTokenPair {
+  final String accessToken;
+  final String refreshToken;
+
+  const SsoTokenPair({required this.accessToken, required this.refreshToken});
+}
+
+class SsoLoginException implements Exception {
+  final String stage;
+  final String message;
+
+  const SsoLoginException(this.stage, this.message);
+
+  @override
+  String toString() => 'SsoLoginException($stage): $message';
+}
+
+String sanitizeUri(String value) {
+  final uri = Uri.tryParse(value);
+  if (uri == null || uri.scheme.isEmpty) {
+    return 'invalid-uri';
+  }
+  final path = uri.path.isEmpty ? '/' : uri.path;
+  return '${uri.scheme}://${uri.host}$path';
+}
+
+class SsoClient {
+  SsoClient({HttpClientAdapter? adapter})
+    : _cookieJar = CookieJar(),
+      _dio = Dio(
+        BaseOptions(
+          followRedirects: false,
+          validateStatus: (status) =>
+              status != null && status >= 200 && status < 400,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+          headers: <String, Object>{
+            HttpHeaders.userAgentHeader: 'otl-app',
+            // Match a browser-like Accept so Django content negotiation
+            // behaves as it does inside the real WebView.
+            HttpHeaders.acceptHeader:
+                'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
+        ),
+      ) {
+    if (adapter != null) {
+      _dio.httpClientAdapter = adapter;
+    }
+    _dio.interceptors.add(CookieManager(_cookieJar));
+  }
+
+  static final Uri _startUri = Uri.parse(
+    'https://otl.kaist.ac.kr/session/login/',
+  );
+  static const Set<String> _allowedHosts = <String>{
+    'otl.kaist.ac.kr',
+    'sparcssso.kaist.ac.kr',
+  };
+  static const int _maximumRedirectHops = 12;
+  static const Duration _totalBudget = Duration(seconds: 60);
+
+  final CookieJar _cookieJar;
+  final Dio _dio;
+
+  Future<SsoTokenPair> login({
+    required String email,
+    required String password,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    var request = _RequestState.get(_startUri);
+    var redirectHops = 0;
+    // Hop-by-hop trace (status + scheme://host/path only, never query) so
+    // failures pinpoint exactly where the chain deviates from the app flow.
+    final trail = <String>[];
+
+    while (true) {
+      _ensureWithinBudget(stopwatch);
+      final response = await _sendWithRetry(request, stopwatch);
+      _ensureWithinBudget(stopwatch);
+      trail.add(
+        '${response.statusCode} ${request.method} '
+        '${sanitizeUri(request.uri.toString())}',
+      );
+
+      final location = response.headers.value(HttpHeaders.locationHeader);
+      final rawBody = response.data;
+      final body = switch (rawBody) {
+        final String text => text,
+        null => '',
+        _ => jsonEncode(rawBody),
+      };
+
+      if (request.isCredentialPost &&
+          response.statusCode == HttpStatus.ok &&
+          body.contains('alert-invalid-account')) {
+        throw const SsoLoginException(
+          'credential-post',
+          'SPARCS SSO reported invalid credentials — verify TEST_SSO_EMAIL '
+              'and TEST_SSO_PASSWORD in Doppler and that the test account '
+              'is not locked',
+        );
+      }
+
+      if (location != null && location.isNotEmpty) {
+        final target = _resolveLocation(request.uri, location);
+        redirectHops += 1;
+        if (redirectHops > _maximumRedirectHops) {
+          throw SsoLoginException(
+            'redirect-cap',
+            'Redirect cap exceeded at ${sanitizeUri(target.toString())}',
+          );
+        }
+
+        if (_isTerminalUri(target)) {
+          return _extractTokens(target);
+        }
+        _ensureAllowedHost(target);
+        request = request.followRedirect(response.statusCode, target);
+        continue;
+      }
+
+      // Some OTL pages (e.g. /login/success) forward to the app's custom
+      // scheme through a meta refresh or inline script instead of an HTTP
+      // Location header. Checked before form handling so a success page is
+      // never mistaken for a re-submittable login form.
+      final pageRedirect = _extractPageRedirect(body, request.uri);
+      if (pageRedirect != null) {
+        if (_isTerminalUri(pageRedirect)) {
+          return _extractTokens(pageRedirect);
+        }
+        redirectHops += 1;
+        if (redirectHops > _maximumRedirectHops) {
+          throw SsoLoginException(
+            'redirect-cap',
+            'Redirect cap exceeded at ${sanitizeUri(pageRedirect.toString())}',
+          );
+        }
+        _ensureAllowedHost(pageRedirect);
+        request = _RequestState.get(pageRedirect, isCredentialPost: false);
+        continue;
+      }
+
+      if ((response.statusCode == HttpStatus.ok ||
+              response.statusCode == HttpStatus.created) &&
+          body.contains('<form')) {
+        if (request.isCredentialPost) {
+          // The server bounced us back to the login form after submitting
+          // credentials: an invalid-account rejection, not a fresh flow.
+          throw const SsoLoginException(
+            'credential-post',
+            'SPARCS SSO rejected the credentials or the login page markup changed',
+          );
+        }
+        request = _buildCredentialPost(
+          pageUri: request.uri,
+          body: body,
+          email: email,
+          password: password,
+        );
+        continue;
+      }
+
+      throw SsoLoginException(
+        'form-parse',
+        'No recognizable SPARCS SSO login form at '
+            '${sanitizeUri(request.uri.toString())}. Trail: '
+            '${trail.join(' | ')}. Page fingerprint: '
+            '${_describeUnknownPage(body)}',
+      );
+    }
+  }
+
+  Future<Response<Object?>> _sendWithRetry(
+    _RequestState request,
+    Stopwatch stopwatch,
+  ) async {
+    for (var attempt = 0; attempt < 2; attempt += 1) {
+      final remaining = _remainingBudget(stopwatch);
+      if (remaining <= Duration.zero) {
+        throw SsoLoginException(
+          'timeout',
+          'SSO login timed out at ${sanitizeUri(request.uri.toString())}',
+        );
+      }
+
+      try {
+        return await _dio
+            .requestUri<Object?>(
+              request.uri,
+              data: request.body,
+              options: Options(
+                method: request.method,
+                headers: request.headers,
+                contentType: request.contentType,
+              ),
+            )
+            .timeout(remaining);
+      } on TimeoutException {
+        throw SsoLoginException(
+          'timeout',
+          'SSO login timed out at ${sanitizeUri(request.uri.toString())}',
+        );
+      } on DioException catch (error) {
+        final retryable = _isRetryableTransportError(error);
+        if (retryable && attempt == 0) {
+          continue;
+        }
+        throw SsoLoginException(
+          'transport',
+          'Request failed at ${sanitizeUri(request.uri.toString())}',
+        );
+      }
+    }
+
+    throw SsoLoginException(
+      'transport',
+      'Request failed at ${sanitizeUri(request.uri.toString())}',
+    );
+  }
+
+  _RequestState _buildCredentialPost({
+    required Uri pageUri,
+    required String body,
+    required String email,
+    required String password,
+  }) {
+    final document = html_parser.parse(body);
+    final forms = document.querySelectorAll('form[action]');
+    final form = forms.where((element) {
+      return element.attributes['action'] == '/account/login/';
+    }).firstOrNull;
+    if (form == null) {
+      throw SsoLoginException(
+        'form-parse',
+        'No recognizable SPARCS SSO login form at '
+            '${sanitizeUri(pageUri.toString())}',
+      );
+    }
+
+    final action = form.attributes['action'];
+    if (action == null || action.isEmpty) {
+      throw SsoLoginException(
+        'form-parse',
+        'SPARCS SSO login form has no action at '
+            '${sanitizeUri(pageUri.toString())}',
+      );
+    }
+
+    final fields = <String, String>{};
+    for (final input in form.querySelectorAll('input')) {
+      if (input.attributes['type']?.toLowerCase() != 'hidden') {
+        continue;
+      }
+      final name = input.attributes['name'];
+      if (name == null || name.isEmpty) {
+        continue;
+      }
+      fields[name] = input.attributes['value'] ?? '';
+    }
+    fields['email'] = email;
+    fields['password'] = password;
+
+    return _RequestState(
+      uri: pageUri.resolve(action),
+      method: 'POST',
+      body: fields,
+      headers: <String, Object>{HttpHeaders.refererHeader: pageUri.toString()},
+      contentType: Headers.formUrlEncodedContentType,
+      isCredentialPost: true,
+    );
+  }
+
+  static Uri _resolveLocation(Uri currentUri, String location) {
+    try {
+      return currentUri.resolve(location);
+    } on FormatException {
+      throw const SsoLoginException(
+        'redirect-parse',
+        'SSO returned an invalid redirect location',
+      );
+    }
+  }
+
+  /// Extracts a client-side redirect target from an HTML page: a
+  /// `<meta http-equiv="refresh">` first, then a bare custom-scheme URL.
+  /// Builds a leak-safe fingerprint of an unrecognized page: structural
+  /// markers plus a snippet where every long token-like run is redacted, so
+  /// CI logs can never carry access or refresh tokens.
+  static String _describeUnknownPage(String body) {
+    final flattened = body.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final redacted = flattened.replaceAllMapped(
+      RegExp(r'[A-Za-z0-9_\-]{16,}'),
+      (match) => '<redacted>',
+    );
+    final markers = <String>[
+      'len=${flattened.length}',
+      'meta-refresh=${RegExp(r'http-equiv\s*=\s*["'
+      ']?refresh', caseSensitive: false).hasMatch(flattened)}',
+      'custom-scheme=${flattened.contains('org.sparcs.otl')}',
+      'accessToken-key=${flattened.contains('accessToken')}',
+      'js-redirect=${RegExp(r'window\.location|location\.(href|replace|assign)', caseSensitive: false).hasMatch(flattened)}',
+      'script-tags=${RegExp(r'<script', caseSensitive: false).allMatches(flattened).length}',
+      'form-tags=${RegExp(r'<form', caseSensitive: false).allMatches(flattened).length}',
+    ];
+    final head = redacted.length > 300
+        ? '${redacted.substring(0, 300)}…'
+        : redacted;
+    return '${markers.join(', ')} | head: $head';
+  }
+
+  static Uri? _extractPageRedirect(String body, Uri pageUri) {
+    final meta = RegExp(
+      r'<meta[^>]+http-equiv\s*=\s*["'
+      ']?refresh["'
+      ']?[^>]*>',
+      caseSensitive: false,
+    ).firstMatch(body);
+    if (meta != null) {
+      final tag = meta.group(0)!;
+      final content = RegExp(
+        r'content\s*=\s*["'
+        ']([^"'
+        ']+)["'
+        ']',
+        caseSensitive: false,
+      ).firstMatch(tag);
+      if (content != null) {
+        final url = RegExp(
+          r'url\s*=\s*(.+)$',
+          caseSensitive: false,
+        ).firstMatch(content.group(1)!.trim());
+        if (url != null) {
+          final target = url
+              .group(1)!
+              .trim()
+              .replaceAll('"', '')
+              .replaceAll("'", '');
+          return _resolveLocation(pageUri, target);
+        }
+      }
+    }
+
+    final customScheme = RegExp(
+      'org\\.sparcs\\.otl://login/\\?[^\\s"\'<>]+',
+    ).firstMatch(body);
+    if (customScheme != null) {
+      return Uri.parse(customScheme.group(0)!);
+    }
+    return null;
+  }
+
+  static void _ensureAllowedHost(Uri uri) {
+    if (!_allowedHosts.contains(uri.host)) {
+      throw SsoLoginException(
+        'disallowed-host',
+        'Redirected to disallowed host ${sanitizeUri(uri.toString())}',
+      );
+    }
+  }
+
+  static bool _isTerminalUri(Uri uri) {
+    if (uri.scheme == 'org.sparcs.otl' && uri.host == 'login') {
+      return true;
+    }
+    // The OTL backend hands tokens to the SPA through a URL fragment:
+    // /login/success#accessToken=...&refreshToken=... Fragments are never
+    // sent to the server, so they must be captured from the redirect target
+    // itself instead of fetching the page.
+    return _tokenParams(uri) != null;
+  }
+
+  static ({String accessToken, String refreshToken})? _tokenParams(Uri uri) {
+    final sources = <Map<String, String>>[
+      uri.queryParameters,
+      Uri.splitQueryString(uri.fragment),
+    ];
+    for (final source in sources) {
+      final accessToken = source['accessToken'];
+      final refreshToken = source['refreshToken'];
+      if (accessToken != null &&
+          accessToken.isNotEmpty &&
+          refreshToken != null &&
+          refreshToken.isNotEmpty) {
+        return (accessToken: accessToken, refreshToken: refreshToken);
+      }
+    }
+    return null;
+  }
+
+  static SsoTokenPair _extractTokens(Uri uri) {
+    final params = _tokenParams(uri);
+    if (params == null) {
+      throw SsoLoginException(
+        'token-extract',
+        'Missing SSO tokens in ${sanitizeUri(uri.toString())}',
+      );
+    }
+    return SsoTokenPair(
+      accessToken: params.accessToken,
+      refreshToken: params.refreshToken,
+    );
+  }
+
+  static bool _isRetryableTransportError(DioException error) {
+    return error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.connectionError ||
+        error.type == DioExceptionType.receiveTimeout;
+  }
+
+  static Duration _remainingBudget(Stopwatch stopwatch) {
+    return _totalBudget - stopwatch.elapsed;
+  }
+
+  static void _ensureWithinBudget(Stopwatch stopwatch) {
+    if (stopwatch.elapsed >= _totalBudget) {
+      throw const SsoLoginException(
+        'timeout',
+        'SSO login exceeded the 60 second time budget',
+      );
+    }
+  }
+}
+
+class _RequestState {
+  const _RequestState({
+    required this.uri,
+    required this.method,
+    this.body,
+    this.headers,
+    this.contentType,
+    this.isCredentialPost = false,
+  });
+
+  factory _RequestState.get(Uri uri, {bool isCredentialPost = false}) {
+    return _RequestState(
+      uri: uri,
+      method: 'GET',
+      isCredentialPost: isCredentialPost,
+    );
+  }
+
+  final Uri uri;
+  final String method;
+  final Object? body;
+  final Map<String, Object>? headers;
+  final String? contentType;
+  final bool isCredentialPost;
+
+  _RequestState followRedirect(int? statusCode, Uri target) {
+    // 301/302/303 downgrade to a plain GET (the OAuth chain never relies on
+    // method preservation); 307/308 keep method and body verbatim.
+    if (statusCode == HttpStatus.movedPermanently ||
+        statusCode == HttpStatus.found ||
+        statusCode == HttpStatus.seeOther) {
+      return _RequestState.get(target, isCredentialPost: isCredentialPost);
+    }
+    return _RequestState(
+      uri: target,
+      method: method,
+      body: body,
+      headers: headers,
+      contentType: contentType,
+      isCredentialPost: isCredentialPost,
+    );
+  }
+}

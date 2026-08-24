@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/pages/login_page.dart';
 import 'package:otlplus/providers/auth_model.dart';
@@ -15,9 +16,13 @@ import 'package:webview_flutter_platform_interface/webview_flutter_platform_inte
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  const tokenVaultChannel = MethodChannel('org.sparcs.otlplus/token_vault');
+
   late SharedPreferencesStorePlatform originalPrefsStore;
   late WebViewPlatform? originalWebViewPlatform;
   late _DeferredPrefsStore prefsStore;
+  late _FakeWebViewPlatform webViewPlatform;
+  late _TokenVaultMock tokenVault;
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -28,12 +33,18 @@ void main() {
     originalPrefsStore = SharedPreferencesStorePlatform.instance;
     originalWebViewPlatform = WebViewPlatform.instance;
     prefsStore = _DeferredPrefsStore();
+    webViewPlatform = _FakeWebViewPlatform();
+    tokenVault = _TokenVaultMock();
     SharedPreferencesStorePlatform.instance = prefsStore;
     SharedPreferences.resetStatic();
-    WebViewPlatform.instance = _FakeWebViewPlatform();
+    WebViewPlatform.instance = webViewPlatform;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(tokenVaultChannel, tokenVault.handle);
   });
 
   tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(tokenVaultChannel, null);
     SharedPreferencesStorePlatform.instance = originalPrefsStore;
     SharedPreferences.resetStatic();
     if (originalWebViewPlatform != null) {
@@ -130,6 +141,67 @@ void main() {
     expect(exception, isNull);
     expect(escapedErrors, isEmpty);
   });
+
+  testWidgets('valid token redirect saves tokens and logs in', (tester) async {
+    final storageService = StorageService(
+      tokenVault: const NativeTokenVault(),
+      legacyStorage: _FakeLegacyTokenStorage(),
+    );
+    final authModel = AuthModel(storageService);
+
+    await tester.pumpWidget(
+      _buildApp(storageService: storageService, authModel: authModel),
+    );
+
+    prefsStore.complete(<String, Object>{'hasAccount': true});
+    await _pumpFrames(tester);
+
+    final decision =
+        await webViewPlatform.lastNavigationDelegate!.onNavigationRequest!(
+          const NavigationRequest(
+            url:
+                'org.sparcs.otl://login/?accessToken=access&refreshToken=refresh',
+            isMainFrame: true,
+          ),
+        );
+    await _pumpFrames(tester);
+
+    expect(decision, NavigationDecision.prevent);
+    expect(tokenVault.writtenPair?.accessToken, 'access');
+    expect(tokenVault.writtenPair?.refreshToken, 'refresh');
+    expect(authModel.isLogined, isTrue);
+  });
+
+  testWidgets('redirect missing tokens shows error and does not log in', (
+    tester,
+  ) async {
+    final storageService = StorageService(
+      tokenVault: const NativeTokenVault(),
+      legacyStorage: _FakeLegacyTokenStorage(),
+    );
+    final authModel = AuthModel(storageService);
+
+    await tester.pumpWidget(
+      _buildApp(storageService: storageService, authModel: authModel),
+    );
+
+    prefsStore.complete(<String, Object>{'hasAccount': true});
+    await _pumpFrames(tester);
+
+    final decision =
+        await webViewPlatform.lastNavigationDelegate!.onNavigationRequest!(
+          const NavigationRequest(
+            url: 'org.sparcs.otl://login/?accessToken=access',
+            isMainFrame: true,
+          ),
+        );
+    await _pumpFrames(tester);
+
+    expect(decision, NavigationDecision.prevent);
+    expect(tokenVault.writtenPair, isNull);
+    expect(authModel.isLogined, isFalse);
+    expect(find.textContaining('login.tokenMissingError'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpFrames(WidgetTester tester) async {
@@ -138,12 +210,17 @@ Future<void> _pumpFrames(WidgetTester tester) async {
   }
 }
 
-Widget _buildApp({GlobalKey<_LoginPageHarnessState>? harnessKey}) {
-  final storageService = StorageService();
+Widget _buildApp({
+  GlobalKey<_LoginPageHarnessState>? harnessKey,
+  StorageService? storageService,
+  AuthModel? authModel,
+}) {
+  final resolvedStorageService = storageService ?? StorageService();
+  final resolvedAuthModel = authModel ?? AuthModel(resolvedStorageService);
   return MultiProvider(
     providers: [
-      Provider<StorageService>.value(value: storageService),
-      ChangeNotifierProvider<AuthModel>.value(value: AuthModel(storageService)),
+      Provider<StorageService>.value(value: resolvedStorageService),
+      ChangeNotifierProvider<AuthModel>.value(value: resolvedAuthModel),
     ],
     child: EasyLocalization(
       supportedLocales: const [Locale('ko')],
@@ -203,15 +280,22 @@ class _DeferredPrefsStore extends SharedPreferencesStorePlatform {
 }
 
 class _FakeWebViewPlatform extends WebViewPlatform {
+  _FakePlatformNavigationDelegate? lastNavigationDelegate;
+  _FakePlatformWebViewController? lastController;
+
   @override
   PlatformNavigationDelegate createPlatformNavigationDelegate(
     PlatformNavigationDelegateCreationParams params,
-  ) => _FakePlatformNavigationDelegate(params);
+  ) {
+    return lastNavigationDelegate = _FakePlatformNavigationDelegate(params);
+  }
 
   @override
   PlatformWebViewController createPlatformWebViewController(
     PlatformWebViewControllerCreationParams params,
-  ) => _FakePlatformWebViewController(params);
+  ) {
+    return lastController = _FakePlatformWebViewController(params);
+  }
 
   @override
   PlatformWebViewWidget createPlatformWebViewWidget(
@@ -222,10 +306,14 @@ class _FakeWebViewPlatform extends WebViewPlatform {
 class _FakePlatformNavigationDelegate extends PlatformNavigationDelegate {
   _FakePlatformNavigationDelegate(super.params) : super.implementation();
 
+  NavigationRequestCallback? onNavigationRequest;
+
   @override
   Future<void> setOnNavigationRequest(
     NavigationRequestCallback onNavigationRequest,
-  ) async {}
+  ) async {
+    this.onNavigationRequest = onNavigationRequest;
+  }
 
   @override
   Future<void> setOnPageFinished(PageEventCallback onPageFinished) async {}
@@ -245,6 +333,8 @@ class _FakePlatformNavigationDelegate extends PlatformNavigationDelegate {
 class _FakePlatformWebViewController extends PlatformWebViewController {
   _FakePlatformWebViewController(super.params) : super.implementation();
 
+  PlatformNavigationDelegate? navigationDelegate;
+
   @override
   Future<void> loadRequest(LoadRequestParams params) async {}
 
@@ -254,7 +344,9 @@ class _FakePlatformWebViewController extends PlatformWebViewController {
   @override
   Future<void> setPlatformNavigationDelegate(
     PlatformNavigationDelegate handler,
-  ) async {}
+  ) async {
+    navigationDelegate = handler;
+  }
 
   @override
   Future<void> setUserAgent(String? userAgent) async {}
@@ -265,4 +357,33 @@ class _FakePlatformWebViewWidget extends PlatformWebViewWidget {
 
   @override
   Widget build(BuildContext context) => const SizedBox();
+}
+
+class _TokenVaultMock {
+  TokenPair? writtenPair;
+  bool tokensDeleted = false;
+
+  Future<Object?> handle(MethodCall call) async {
+    if (call.method == 'writeTokenPair') {
+      final arguments = Map<Object?, Object?>.from(call.arguments as Map);
+      writtenPair = TokenPair(
+        accessToken: arguments['accessToken'] as String,
+        refreshToken: arguments['refreshToken'] as String,
+      );
+    } else if (call.method == 'clearTokenPair') {
+      tokensDeleted = true;
+    }
+    return null;
+  }
+}
+
+class _FakeLegacyTokenStorage implements LegacyTokenStorage {
+  @override
+  Future<String?> readAccessToken() async => null;
+
+  @override
+  Future<String?> readRefreshToken() async => null;
+
+  @override
+  Future<void> clear() async {}
 }

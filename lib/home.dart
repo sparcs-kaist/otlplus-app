@@ -166,6 +166,7 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
 
   BottomNavigationBar _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
+      key: const Key('home_bottom_nav'),
       selectedFontSize: 12.0,
       unselectedFontSize: 12.0,
       enableFeedback: false,
