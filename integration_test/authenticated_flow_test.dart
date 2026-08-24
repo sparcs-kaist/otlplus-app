@@ -204,10 +204,7 @@ void main() {
           tester,
           <String, Finder>{
             'results': find.byKey(const Key('dictionary_list')),
-            'empty': _firstPresent(tester, [
-              find.text('No result.'),
-              find.text('검색 결과가 없습니다.'),
-            ])!,
+            'empty': anyText(<String>['No result.', '검색 결과가 없습니다.']),
           },
           stage: 'search-results',
           timeout: const Duration(seconds: 60),
@@ -418,6 +415,14 @@ void main() {
     // credentials; forks without secrets simply skip this journey.
     skip: !TestCredentials.available,
     timeout: const Timeout(Duration(minutes: 12)),
+  );
+}
+
+/// Lazily matches any of [texts] as a rendered [Text] — safe to hand to
+/// waitForAny before the texts exist, unlike eagerly resolved finder lists.
+Finder anyText(List<String> texts) {
+  return find.byWidgetPredicate(
+    (widget) => widget is Text && texts.contains(widget.data),
   );
 }
 
