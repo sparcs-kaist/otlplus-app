@@ -12,6 +12,7 @@ import "package:otlplus/providers/course_detail_model.dart";
 import "package:otlplus/providers/info_model.dart";
 import "package:otlplus/providers/lecture_detail_model.dart";
 import "package:otlplus/providers/timetable_model.dart";
+import "package:otlplus/utils/navigator.dart";
 import "package:otlplus/widgets/lecture_group_block_row.dart";
 import "package:otlplus/widgets/otl_dialog.dart";
 import "package:otlplus/widgets/responsive_button.dart";
@@ -25,6 +26,8 @@ class RecordingTimetableModel extends TimetableModel {
 
   List<Lecture> overlaps = <Lecture>[];
   final replaceOverlapCalls = <bool>[];
+  final removedLectures = <Lecture>[];
+  final tempLectureCalls = <Lecture?>[];
 
   @override
   List<Lecture> overlappingLectures(Lecture lecture) =>
@@ -37,6 +40,18 @@ class RecordingTimetableModel extends TimetableModel {
   }) async {
     replaceOverlapCalls.add(replaceOverlaps);
     return TimetableAddResult.added;
+  }
+
+  @override
+  Future<bool> removeLecture({required Lecture lecture}) async {
+    removedLectures.add(lecture);
+    return true;
+  }
+
+  @override
+  void setTempLecture(Lecture? lecture) {
+    tempLectureCalls.add(lecture);
+    super.setTempLecture(lecture);
   }
 }
 
@@ -172,6 +187,111 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     },
   );
+
+  testWidgets(
+    'remove lecture dialog onTapPos works after the row is disposed',
+    (tester) async {
+      final timetableModel = RecordingTimetableModel();
+      timetableModel.currentTimetable.lectures.add(lecture);
+      final harnessKey = GlobalKey<_LectureGroupBlockRowHarnessState>();
+
+      await tester.pumpWidget(
+        _localizedApp(
+          ChangeNotifierProvider<TimetableModel>.value(
+            value: timetableModel,
+            child: _LectureGroupBlockRowHarness(key: harnessKey),
+          ),
+        ),
+      );
+      await tester.tap(find.byType(LectureGroupBlockRow));
+      await tester.pump();
+      timetableModel.tempLectureCalls.clear();
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) => widget is IconTextButton && widget.icon == Icons.remove,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final dialog = tester.widget<OTLDialog>(find.byType(OTLDialog));
+      harnessKey.currentState!.hideRow();
+      await tester.pump();
+
+      dialog.onTapPos!();
+      OTLNavigator.pop(tester.element(find.byType(OTLDialog)));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(timetableModel.removedLectures, <Lecture>[lecture]);
+      expect(timetableModel.tempLectureCalls, <Lecture?>[null]);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('remove lecture confirms and clears temp lecture', (
+    tester,
+  ) async {
+    final timetableModel = RecordingTimetableModel();
+    timetableModel.currentTimetable.lectures.add(lecture);
+
+    await tester.pumpWidget(
+      _localizedApp(
+        ChangeNotifierProvider<TimetableModel>.value(
+          value: timetableModel,
+          child: Scaffold(body: LectureGroupBlockRow(lecture: lecture)),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(LectureGroupBlockRow));
+    await tester.pump();
+    timetableModel.tempLectureCalls.clear();
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) => widget is IconTextButton && widget.icon == Icons.remove,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final dialog = tester.widget<OTLDialog>(find.byType(OTLDialog));
+    expect(dialog.namedArgs?['lecture'], lecture.title);
+    dialog.onTapPos!();
+    OTLNavigator.pop(tester.element(find.byType(OTLDialog)));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(timetableModel.removedLectures, <Lecture>[lecture]);
+    expect(timetableModel.tempLectureCalls, <Lecture?>[null]);
+  });
+}
+
+class _LectureGroupBlockRowHarness extends StatefulWidget {
+  const _LectureGroupBlockRowHarness({super.key});
+
+  @override
+  State<_LectureGroupBlockRowHarness> createState() =>
+      _LectureGroupBlockRowHarnessState();
+}
+
+class _LectureGroupBlockRowHarnessState
+    extends State<_LectureGroupBlockRowHarness> {
+  bool _showRow = true;
+
+  void hideRow() {
+    setState(() => _showRow = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _showRow
+          ? LectureGroupBlockRow(
+              lecture:
+                  (context.read<TimetableModel>().currentTimetable.lectures)
+                      .single,
+            )
+          : const SizedBox.shrink(),
+    );
+  }
 }
 
 Widget _localizedApp(Widget home) {

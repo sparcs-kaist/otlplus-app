@@ -280,17 +280,19 @@ class LectureDetailPage extends StatelessWidget {
   }
 
   SliverList _buildReviews(BuildContext context, Lecture lecture) {
-    final user = context.watch<InfoModel>().user;
+    final user = context.watch<InfoModel>().userOrNull;
     Review? existingReview;
-    try {
-      existingReview = user.reviews.firstWhere(
-        (review) => review.lecture.id == lecture.id,
-      );
-    } on StateError {}
+    if (user != null) {
+      try {
+        existingReview = user.reviews.firstWhere(
+          (review) => review.lecture.id == lecture.id,
+        );
+      } on StateError {}
+    }
 
     return SliverList(
       delegate: SliverChildListDelegate([
-        if (user.reviewWritableLectures.contains(lecture))
+        if (user != null && user.reviewWritableLectures.contains(lecture))
           ReviewWriteBlock(
             lecture: lecture,
             existingReview: existingReview,

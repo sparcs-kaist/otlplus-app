@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/user.dart';
+import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,9 +23,18 @@ const SCHEDULE_NAME = [
 
 class InfoModel extends ChangeNotifier {
   final TelemetryCoordinator? _telemetry;
+  final ChannelTalkReadiness _channelTalkReadiness;
+  final Duration _channelTalkReadyTimeout;
 
-  InfoModel({bool forTest = false, TelemetryCoordinator? telemetry})
-    : _telemetry = telemetry {
+  InfoModel({
+    bool forTest = false,
+    TelemetryCoordinator? telemetry,
+    ChannelTalkReadiness? channelTalkReadiness,
+    Duration channelTalkReadyTimeout = const Duration(seconds: 30),
+  }) : _telemetry = telemetry,
+       _channelTalkReadiness =
+           channelTalkReadiness ?? sharedChannelTalkReadiness,
+       _channelTalkReadyTimeout = channelTalkReadyTimeout {
     if (forTest) {
       _user = User(
         id: 0,
@@ -60,6 +72,7 @@ class InfoModel extends ChangeNotifier {
 
   User? _user;
   User get user => _user!;
+  User? get userOrNull => _user;
 
   List<Semester> _semesters = <Semester>[];
   List<Semester> get semesters => _semesters;
@@ -70,6 +83,9 @@ class InfoModel extends ChangeNotifier {
   Set<int> _years = <int>{};
   Set<int> get years => _years;
 
+  int _channelTalkUserUpdateGeneration = 0;
+  Future<void> _channelTalkUserUpdates = Future<void>.value();
+
   void clearData() {
     // _user = null;
     _semesters = [];
@@ -78,7 +94,7 @@ class InfoModel extends ChangeNotifier {
     _hasData = false;
     _hasError = false;
     notifyListeners();
-    _updateChannelTalkUser(null);
+    unawaited(_updateChannelTalkUser(null));
   }
 
   /// Discards cached state and fetches the user's info again. Used by retry
@@ -90,24 +106,48 @@ class InfoModel extends ChangeNotifier {
     return getInfo();
   }
 
-  void _updateChannelTalkUser(User? user) {
-    ChannelTalk.isBooted().then((isBooted) {
-      if (isBooted == true) {
-        if (user != null) {
-          ChannelTalk.updateUser(
-            name: "${user.firstName} ${user.lastName}",
-            email: user.email,
-            customAttributes: {"id": user.id, "studentId": user.studentId},
-          );
-        } else {
-          ChannelTalk.updateUser(
-            name: "",
-            email: "",
-            customAttributes: {"id": 0, "studentId": ""},
-          );
-        }
+  Future<void> _updateChannelTalkUser(User? user) async {
+    final generation = ++_channelTalkUserUpdateGeneration;
+
+    try {
+      final isReady = await _channelTalkReadiness.isReady.timeout(
+        _channelTalkReadyTimeout,
+      );
+      if (!isReady) {
+        throw StateError('ChannelTalk is unavailable');
+      }
+
+      await _serializeChannelTalkUserUpdate(user, generation);
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'update_channeltalk_user',
+      );
+    }
+  }
+
+  Future<void> _serializeChannelTalkUserUpdate(User? user, int generation) {
+    final previousUpdate = _channelTalkUserUpdates.catchError((_) {});
+    final update = previousUpdate.then((_) async {
+      if (generation != _channelTalkUserUpdateGeneration) return;
+
+      if (user != null) {
+        await ChannelTalk.updateUser(
+          name: "${user.firstName} ${user.lastName}",
+          email: user.email,
+          customAttributes: {"id": user.id, "studentId": user.studentId},
+        );
+      } else {
+        await ChannelTalk.updateUser(
+          name: "",
+          email: "",
+          customAttributes: {"id": 0, "studentId": ""},
+        );
       }
     });
+    _channelTalkUserUpdates = update;
+    return update;
   }
 
   /// Loads the signed-in user's info. On failure [hasError] is set instead of
@@ -124,7 +164,7 @@ class InfoModel extends ChangeNotifier {
       _user = await getUser();
       _currentSchedule = getCurrentSchedule();
       _hasData = true;
-      _updateChannelTalkUser(_user);
+      unawaited(_updateChannelTalkUser(_user));
       notifyListeners();
     } catch (error, stackTrace) {
       await _telemetry?.recordNonFatal(

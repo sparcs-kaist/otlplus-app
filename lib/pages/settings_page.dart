@@ -1,23 +1,41 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/providers/settings_model.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/widgets/dropdown.dart';
 import 'package:otlplus/widgets/otl_dialog.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/otl_scaffold.dart';
+import 'package:otlplus/widgets/telemetry_synchronizer.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:easy_localization/easy_localization.dart';
-import 'package:channel_talk_flutter/channel_talk_flutter.dart';
+
+Future<void> _guardSettingsCallback<T>(
+  Future<T> Function() action,
+  TelemetryCoordinator? telemetry, {
+  required String operation,
+}) async {
+  try {
+    await action();
+  } catch (error, stackTrace) {
+    await telemetry?.recordNonFatal(error, stackTrace, operation: operation);
+  }
+}
 
 class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEn = EasyLocalization.of(context)?.currentLocale == Locale('en');
+    final telemetry = context
+        .findAncestorWidgetOfExactType<TelemetrySynchronizer>()
+        ?.telemetry;
 
     return OTLScaffold(
       child: OTLLayout(
@@ -90,8 +108,14 @@ class SettingsPage extends StatelessWidget {
                     subtitle: "settings.notification.receive_desc".tr(),
                     trailing: CupertinoSwitch(
                       value: context.watch<SettingsModel>().getSendAlarm(),
-                      onChanged: (value) =>
-                          context.read<SettingsModel>().setSendAlarm(value),
+                      onChanged: (value) => unawaited(
+                        _guardSettingsCallback(
+                          () =>
+                              context.read<SettingsModel>().setSendAlarm(value),
+                          telemetry,
+                          operation: 'set_send_alarm',
+                        ),
+                      ),
                     ),
                   ),
                   Visibility(
@@ -141,8 +165,15 @@ class SettingsPage extends StatelessWidget {
                     subtitle: "settings.send_usage_analytics_desc".tr(),
                     trailing: CupertinoSwitch(
                       value: context.watch<SettingsModel>().getSendAnalytics(),
-                      onChanged: (value) =>
-                          context.read<SettingsModel>().setSendAnalytics(value),
+                      onChanged: (value) => unawaited(
+                        _guardSettingsCallback(
+                          () => context.read<SettingsModel>().setSendAnalytics(
+                            value,
+                          ),
+                          telemetry,
+                          operation: 'set_send_analytics',
+                        ),
+                      ),
                     ),
                   ),
                   _buildListTile(
@@ -180,17 +211,11 @@ class SettingsPage extends StatelessWidget {
                       value: context
                           .watch<SettingsModel>()
                           .getShowsChannelTalkButton(),
-                      onChanged: (value) {
-                        context.read<SettingsModel>().setShowsChannelTalkButton(
-                          value,
-                        );
-
-                        if (!value) {
-                          ChannelTalk.hideChannelButton();
-                        } else {
-                          ChannelTalk.showChannelButton();
-                        }
-                      },
+                      onChanged: (value) => unawaited(
+                        context
+                            .read<SettingsModel>()
+                            .applyChannelButtonVisibility(value),
+                      ),
                     ),
                   ),
                   Visibility(
@@ -208,8 +233,15 @@ class SettingsPage extends StatelessWidget {
                         context: context,
                         builder: (_) => OTLDialog(
                           type: OTLDialogType.resetSettings,
-                          onTapPos: () =>
-                              context.read<SettingsModel>().clearAllValues(),
+                          onTapPos: () => unawaited(
+                            _guardSettingsCallback(
+                              () => context
+                                  .read<SettingsModel>()
+                                  .clearAllValues(),
+                              telemetry,
+                              operation: 'clear_all_settings',
+                            ),
+                          ),
                         ),
                       );
                     },

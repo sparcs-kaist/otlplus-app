@@ -167,17 +167,17 @@ class _LectureGroupBlockRowState extends State<LectureGroupBlockRow> {
   }
 
   Future<void> _removeLecture(Lecture lec) async {
+    final timetableModel = context.read<TimetableModel>();
+    final isKo = context.locale == const Locale('ko');
+
     await OTLNavigator.pushDialog(
       context: context,
       builder: (_) => OTLDialog(
         type: OTLDialogType.deleteLecture,
-        namedArgs: {
-          'lecture': context.locale == Locale('ko') ? lec.title : lec.titleEn,
-        },
-        onTapPos: () =>
-            context.read<TimetableModel>().removeLecture(lecture: lec),
+        namedArgs: {'lecture': isKo ? lec.title : lec.titleEn},
+        onTapPos: () => timetableModel.removeLecture(lecture: lec),
       ),
     );
-    context.read<TimetableModel>().setTempLecture(null);
+    timetableModel.setTempLecture(null);
   }
 }

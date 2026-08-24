@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,7 +30,20 @@ class SettingsModel extends ChangeNotifier {
   SettingsModel({
     bool forTest = false,
     void Function(bool enabled)? onCrashReportingChanged,
-  }) : _onCrashReportingChanged = onCrashReportingChanged {
+    TelemetryCoordinator? telemetry,
+    Future<void> Function(String topic)? subscribeToTopic,
+    Future<void> Function(String topic)? unsubscribeFromTopic,
+    Future<void> Function()? showChannelButton,
+    Future<void> Function()? hideChannelButton,
+    Duration topicTimeout = const Duration(seconds: 10),
+  }) : _onCrashReportingChanged = onCrashReportingChanged,
+       _telemetry = telemetry,
+       _subscribeToTopic = subscribeToTopic ?? _defaultSubscribeToTopic,
+       _unsubscribeFromTopic =
+           unsubscribeFromTopic ?? _defaultUnsubscribeFromTopic,
+       _showChannelButton = showChannelButton ?? _defaultShowChannelButton,
+       _hideChannelButton = hideChannelButton ?? _defaultHideChannelButton,
+       _topicTimeout = topicTimeout {
     if (forTest) {
       _sendCrashlytics = true;
       _sendCrashlyticsAnonymously = false;
@@ -43,7 +60,30 @@ class SettingsModel extends ChangeNotifier {
     }
   }
 
+  static Future<void> _defaultSubscribeToTopic(String topic) {
+    return FirebaseMessaging.instance.subscribeToTopic(topic);
+  }
+
+  static Future<void> _defaultUnsubscribeFromTopic(String topic) {
+    return FirebaseMessaging.instance.unsubscribeFromTopic(topic);
+  }
+
+  static Future<void> _defaultShowChannelButton() {
+    return ChannelTalk.showChannelButton();
+  }
+
+  static Future<void> _defaultHideChannelButton() {
+    return ChannelTalk.hideChannelButton();
+  }
+
   final void Function(bool enabled)? _onCrashReportingChanged;
+  final TelemetryCoordinator? _telemetry;
+  final Future<void> Function(String topic) _subscribeToTopic;
+  final Future<void> Function(String topic) _unsubscribeFromTopic;
+  final Future<void> Function() _showChannelButton;
+  final Future<void> Function() _hideChannelButton;
+  final Duration _topicTimeout;
+
   // Remain fail-closed until preferences are loaded successfully.
   bool _sendCrashlytics = false;
   bool _sendCrashlyticsAnonymously = false;
@@ -60,8 +100,8 @@ class SettingsModel extends ChangeNotifier {
     _sendCrashlytics = newValue;
     _onCrashReportingChanged?.call(newValue);
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kSendCrashlytics, newValue),
+    unawaited(
+      _guardedPersist('persist_send_crashlytics', _kSendCrashlytics, newValue),
     );
   }
 
@@ -69,8 +109,12 @@ class SettingsModel extends ChangeNotifier {
   void setSendCrashlyticsAnonymously(bool newValue) {
     _sendCrashlyticsAnonymously = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kSendCrashlyticsAnonymously, newValue),
+    unawaited(
+      _guardedPersist(
+        'persist_send_crashlytics_anonymously',
+        _kSendCrashlyticsAnonymously,
+        newValue,
+      ),
     );
   }
 
@@ -88,9 +132,30 @@ class SettingsModel extends ChangeNotifier {
   void setShowsChannelTalkButton(bool newValue) {
     _showsChannelTalkButton = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kShowsChannelTalkButton, newValue),
+    unawaited(
+      _guardedPersist(
+        'persist_shows_channel_talk_button',
+        _kShowsChannelTalkButton,
+        newValue,
+      ),
     );
+  }
+
+  Future<void> applyChannelButtonVisibility(bool visible) async {
+    setShowsChannelTalkButton(visible);
+    try {
+      if (visible) {
+        await _showChannelButton();
+      } else {
+        await _hideChannelButton();
+      }
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'update_channeltalk_channel_button',
+      );
+    }
   }
 
   bool getSendAlarm() => _sendAlarm;
@@ -108,13 +173,31 @@ class SettingsModel extends ChangeNotifier {
 
     _sendAlarm = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kSendAlarm, newValue),
-    );
+    unawaited(_guardedPersist('persist_send_alarm', _kSendAlarm, newValue));
 
     _setPromotionAlarm(newValue);
     _setInformationAlarm(newValue);
     _setSubjectSuggestionAlarm(newValue);
+  }
+
+  Future<void> _guardedPersist(String operation, String key, bool value) async {
+    try {
+      final instance = await SharedPreferences.getInstance();
+      await instance.setBool(key, value);
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(error, stackTrace, operation: operation);
+    }
+  }
+
+  Future<void> _guardedTopic(
+    String operation,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action().timeout(_topicTimeout);
+    } catch (error, stackTrace) {
+      await _telemetry?.recordNonFatal(error, stackTrace, operation: operation);
+    }
   }
 
   bool getPromotionAlarm() => _promotionAlarm;
@@ -122,13 +205,23 @@ class SettingsModel extends ChangeNotifier {
   void _setPromotionAlarm(bool newValue) {
     _promotionAlarm = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kPromotionAlarm, newValue),
+    unawaited(
+      _guardedPersist('persist_promotion_alarm', _kPromotionAlarm, newValue),
     );
     if (newValue) {
-      FirebaseMessaging.instance.subscribeToTopic('promotion');
+      unawaited(
+        _guardedTopic(
+          'subscribe_promotion',
+          () => _subscribeToTopic('promotion'),
+        ),
+      );
     } else {
-      FirebaseMessaging.instance.unsubscribeFromTopic('promotion');
+      unawaited(
+        _guardedTopic(
+          'unsubscribe_promotion',
+          () => _unsubscribeFromTopic('promotion'),
+        ),
+      );
     }
   }
 
@@ -137,13 +230,27 @@ class SettingsModel extends ChangeNotifier {
   void _setInformationAlarm(bool newValue) {
     _informationAlarm = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kInformationAlarm, newValue),
+    unawaited(
+      _guardedPersist(
+        'persist_information_alarm',
+        _kInformationAlarm,
+        newValue,
+      ),
     );
     if (newValue) {
-      FirebaseMessaging.instance.subscribeToTopic('information');
+      unawaited(
+        _guardedTopic(
+          'subscribe_information',
+          () => _subscribeToTopic('information'),
+        ),
+      );
     } else {
-      FirebaseMessaging.instance.unsubscribeFromTopic('information');
+      unawaited(
+        _guardedTopic(
+          'unsubscribe_information',
+          () => _unsubscribeFromTopic('information'),
+        ),
+      );
     }
   }
 
@@ -153,13 +260,27 @@ class SettingsModel extends ChangeNotifier {
   void _setSubjectSuggestionAlarm(bool newValue) {
     _subjectSuggestionAlarm = newValue;
     notifyListeners();
-    SharedPreferences.getInstance().then(
-      (instance) => instance.setBool(_kSubjectSuggestionAlarm, newValue),
+    unawaited(
+      _guardedPersist(
+        'persist_subject_suggestion_alarm',
+        _kSubjectSuggestionAlarm,
+        newValue,
+      ),
     );
     if (newValue) {
-      FirebaseMessaging.instance.subscribeToTopic('subject_suggestion');
+      unawaited(
+        _guardedTopic(
+          'subscribe_subject_suggestion',
+          () => _subscribeToTopic('subject_suggestion'),
+        ),
+      );
     } else {
-      FirebaseMessaging.instance.unsubscribeFromTopic('subject_suggestion');
+      unawaited(
+        _guardedTopic(
+          'unsubscribe_subject_suggestion',
+          () => _unsubscribeFromTopic('subject_suggestion'),
+        ),
+      );
     }
   }
 
@@ -213,12 +334,23 @@ class SettingsModel extends ChangeNotifier {
   Future<bool> clearAllValues() async {
     final instance = await SharedPreferences.getInstance();
     final success = await instance.clear();
-
-    FirebaseMessaging.instance.unsubscribeFromTopic('promotion');
-    FirebaseMessaging.instance.unsubscribeFromTopic('information');
-    FirebaseMessaging.instance.unsubscribeFromTopic('subject_suggestion');
-
     getAllValues(instance);
+
+    await Future.wait(<Future<void>>[
+      _guardedTopic(
+        'clear_unsubscribe_promotion',
+        () => _unsubscribeFromTopic('promotion'),
+      ),
+      _guardedTopic(
+        'clear_unsubscribe_information',
+        () => _unsubscribeFromTopic('information'),
+      ),
+      _guardedTopic(
+        'clear_unsubscribe_subject_suggestion',
+        () => _unsubscribeFromTopic('subject_suggestion'),
+      ),
+    ]);
+
     return success;
   }
 }

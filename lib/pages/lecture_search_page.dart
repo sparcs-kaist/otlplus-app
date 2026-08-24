@@ -115,14 +115,18 @@ class _LectureSearchPageState extends State<LectureSearchPage> {
                       ),
                       onPressed: () async {
                         context.read<TimetableModel>().setTempLecture(null);
-                        if (await context
+                        final searchSucceeded = await context
                             .read<LectureSearchModel>()
                             .lectureSearch(
                               context.read<TimetableModel>().selectedSemester,
-                            ))
+                            );
+                        if (!mounted) return;
+
+                        if (searchSucceeded) {
                           OTLNavigator.pop(context);
-                        else
+                        } else {
                           _focusNode.requestFocus();
+                        }
                       },
                       child: Text("common.search".tr(), style: bodyBold),
                     ),

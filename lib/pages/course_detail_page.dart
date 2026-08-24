@@ -382,46 +382,48 @@ class CourseDetailPage extends StatelessWidget {
   }
 
   Widget _buildReviews(BuildContext context, Course course) {
-    final user = context.watch<InfoModel>().user;
+    final user = context.watch<InfoModel>().userOrNull;
     final selectedFilter = context.select<CourseDetailModel, String>(
       (model) => model.selectedFilter,
     );
 
     return SliverList(
       delegate: SliverChildListDelegate([
-        ...user.reviewWritableLectures
-            .where(
-              (lecture) =>
-                  lecture.course == course.id &&
-                  (selectedFilter == "ALL" ||
-                      lecture.professors.any(
-                        (professor) =>
-                            professor.professorId.toString() == selectedFilter,
-                      )),
-            )
-            .map((lecture) {
-              Review? existingReview;
-              try {
-                existingReview = user.reviews.firstWhere(
-                  (review) => review.lecture.id == lecture.id,
-                  orElse: null,
+        if (user != null)
+          ...user.reviewWritableLectures
+              .where(
+                (lecture) =>
+                    lecture.course == course.id &&
+                    (selectedFilter == "ALL" ||
+                        lecture.professors.any(
+                          (professor) =>
+                              professor.professorId.toString() ==
+                              selectedFilter,
+                        )),
+              )
+              .map((lecture) {
+                Review? existingReview;
+                try {
+                  existingReview = user.reviews.firstWhere(
+                    (review) => review.lecture.id == lecture.id,
+                    orElse: null,
+                  );
+                } catch (_) {}
+                return ReviewWriteBlock(
+                  lecture: lecture,
+                  existingReview: existingReview,
+                  isSimple: false,
+                  onUploaded: () async {
+                    final infoModel = context.read<InfoModel>();
+                    final detailModel = context.read<CourseDetailModel>();
+                    await Future.wait<void>(<Future<void>>[
+                      infoModel.reload(),
+                      detailModel.loadCourse(course.id),
+                    ]);
+                  },
                 );
-              } catch (_) {}
-              return ReviewWriteBlock(
-                lecture: lecture,
-                existingReview: existingReview,
-                isSimple: false,
-                onUploaded: () async {
-                  final infoModel = context.read<InfoModel>();
-                  final detailModel = context.read<CourseDetailModel>();
-                  await Future.wait<void>(<Future<void>>[
-                    infoModel.reload(),
-                    detailModel.loadCourse(course.id),
-                  ]);
-                },
-              );
-            })
-            .toList(),
+              })
+              .toList(),
         ...context.select<CourseDetailModel, List<Widget>>((model) {
           final reviews = model.reviews;
           if (reviews.isEmpty) {

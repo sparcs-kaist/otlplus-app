@@ -20,7 +20,10 @@ class CourseSearchModel extends ChangeNotifier {
   final DepartmentRepository _departmentRepository;
 
   List<Course>? _courses;
-  List<Course>? get courses => _courses;
+  List<Course>? get courses {
+    final courses = _courses;
+    return courses == null ? null : List<Course>.unmodifiable(courses);
+  }
 
   String _searchText = "";
   String get searchText => _searchText;

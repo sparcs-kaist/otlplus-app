@@ -106,7 +106,16 @@ class TelemetryCoordinator {
   bool _crashlyticsEnabled = false;
   bool _analyticsEnabled = false;
 
-  Future<void> initialize() => _analytics.initialize();
+  Future<void> initialize({bool crashReportingEnabled = false}) async {
+    await _analytics.initialize();
+    if (!crashReportingEnabled) return;
+
+    try {
+      await _crashReporting.setUserIdentifier('');
+      await _crashReporting.setCollectionEnabled(true);
+      _crashlyticsEnabled = true;
+    } catch (_) {}
+  }
 
   Future<void> synchronize(TelemetryState state) {
     if (!state.isReady || state == _requestedState) return _operations;
