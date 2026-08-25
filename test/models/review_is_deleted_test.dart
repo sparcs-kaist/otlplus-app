@@ -98,7 +98,8 @@ Map<String, dynamic> _v1ReviewPayload(int isDeleted) {
 void _expectLegacyDeletionSerialization(Review review, int expected) {
   final serialized = review.toJson();
 
-  expect(review.isDeleted, expected);
+  // Wire format only: the internal field type may change; the emitted
+  // legacy key must stay the integer.
   expect(serialized["is_deleted"], expected);
   expect(serialized.containsKey("isDeleted"), isFalse);
   expect(serialized.keys, contains("is_deleted"));

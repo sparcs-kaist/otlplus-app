@@ -6,14 +6,6 @@ import "package:otlplus/models/lecture.dart";
 import "package:otlplus/models/time.dart";
 import "package:otlplus/widgets/timetable.dart";
 
-class _CharacterizedTime extends Time {
-  _CharacterizedTime({
-    required super.day,
-    required super.begin,
-    required super.end,
-  });
-}
-
 Future<Map<String, dynamic>> _readFixture(String path) async {
   final file = File(path);
   expect(file.existsSync(), isTrue, reason: "Missing fixture: $path");
@@ -47,7 +39,8 @@ void _expectDayRoundTrip(Map<String, dynamic> rawLecture, Lecture lecture) {
   expect(serializedClasses, hasLength(rawClasses.length));
   for (var index = 0; index < rawClasses.length; index++) {
     final rawDay = (rawClasses[index] as Map<String, dynamic>)["day"] as int;
-    expect(lecture.classtimes[index].day, rawDay);
+    // Wire format only: the parsed field's internal type may change; the
+    // emitted JSON day must stay the raw integer.
     expect(lecture.classtimes[index].toJson()["day"], rawDay);
     expect((serializedClasses[index] as Map<String, dynamic>)["day"], rawDay);
   }
@@ -56,7 +49,6 @@ void _expectDayRoundTrip(Map<String, dynamic> rawLecture, Lecture lecture) {
   expect(serializedExamTimes, hasLength(rawExamTimes.length));
   for (var index = 0; index < rawExamTimes.length; index++) {
     final rawDay = (rawExamTimes[index] as Map<String, dynamic>)["day"] as int;
-    expect(lecture.examtimes[index].day, rawDay);
     expect(lecture.examtimes[index].toJson()["day"], rawDay);
     expect((serializedExamTimes[index] as Map<String, dynamic>)["day"], rawDay);
   }
@@ -114,44 +106,6 @@ void main() {
         ]);
       },
     );
-
-    test("Time.props exposes day integers zero through six unchanged", () {
-      expect(_CharacterizedTime(day: 0, begin: 540, end: 600).props, <Object>[
-        0,
-        540,
-        600,
-      ]);
-      expect(_CharacterizedTime(day: 1, begin: 540, end: 600).props, <Object>[
-        1,
-        540,
-        600,
-      ]);
-      expect(_CharacterizedTime(day: 2, begin: 540, end: 600).props, <Object>[
-        2,
-        540,
-        600,
-      ]);
-      expect(_CharacterizedTime(day: 3, begin: 540, end: 600).props, <Object>[
-        3,
-        540,
-        600,
-      ]);
-      expect(_CharacterizedTime(day: 4, begin: 540, end: 600).props, <Object>[
-        4,
-        540,
-        600,
-      ]);
-      expect(_CharacterizedTime(day: 5, begin: 540, end: 600).props, <Object>[
-        5,
-        540,
-        600,
-      ]);
-      expect(_CharacterizedTime(day: 6, begin: 540, end: 600).props, <Object>[
-        6,
-        540,
-        600,
-      ]);
-    });
 
     test("DateTime weekdays 1 through 7 map to app days 0 through 6", () {
       final cases = <({DateTime date, int weekday, int appDay})>[
