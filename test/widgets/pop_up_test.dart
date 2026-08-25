@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
+import 'package:otlplus/repositories/info_repository.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -120,7 +122,10 @@ Future<void> _pumpPopUpHarness(
           value: SettingsModel(forTest: true),
         ),
         ChangeNotifierProvider<InfoModel>.value(
-          value: InfoModel(forTest: true),
+          value: InfoModel(
+            infoRepository: InfoRepository(Dio()),
+            forTest: true,
+          ),
         ),
       ],
       child: EasyLocalization(

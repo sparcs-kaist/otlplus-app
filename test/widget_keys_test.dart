@@ -7,6 +7,7 @@ import 'package:otlplus/models/user.dart';
 import 'package:otlplus/pages/user_page.dart';
 import 'package:otlplus/providers/auth_model.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/repositories/info_repository.dart';
 import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/services/storage_service.dart';
 import 'package:otlplus/widgets/review_write_block.dart';
@@ -79,6 +80,8 @@ User _sampleUser() {
 }
 
 class _UserInfoModel extends InfoModel {
+  _UserInfoModel() : super(infoRepository: InfoRepository(Dio()));
+
   @override
   User get user => _sampleUser();
 

@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/models/review.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
+import 'package:otlplus/repositories/info_repository.dart';
 import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
@@ -197,7 +198,10 @@ Future<void> _pumpReviewBlock(
           value: SettingsModel(forTest: true),
         ),
         ChangeNotifierProvider<InfoModel>.value(
-          value: InfoModel(forTest: true),
+          value: InfoModel(
+            infoRepository: InfoRepository(Dio()),
+            forTest: true,
+          ),
         ),
       ],
       child: EasyLocalization(
