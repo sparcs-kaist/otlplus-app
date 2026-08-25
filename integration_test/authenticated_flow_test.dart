@@ -179,7 +179,11 @@ void main() {
         );
         await journey('search-submit', () async {
           await tester.enterText(find.byType(TextField).first, 'CS320');
-          await pumpStage(tester, stage: currentStage);
+          await pumpStage(
+            tester,
+            stage: currentStage,
+            duration: const Duration(milliseconds: 700),
+          );
 
           final searchButton = _firstPresent(tester, [
             find.text('Search'),
@@ -187,7 +191,11 @@ void main() {
           ]);
           expect(searchButton, isNotNull, reason: '[search] button not found');
           await tester.tap(searchButton!);
-          await pumpStage(tester, stage: currentStage);
+          await pumpStage(
+            tester,
+            stage: currentStage,
+            duration: const Duration(milliseconds: 700),
+          );
 
           // The dictionary list lives in an IndexedStack below the pushed
           // search page, so it can become findable before the page closes;
@@ -223,8 +231,11 @@ void main() {
         );
 
         await switchTab(Icons.home_outlined, 'home-tab');
-        await journey('user-page-open', () {
-          return tester.tap(find.byKey(const Key('main_user_button')));
+        await journey('user-page-open', () async {
+          await tester.tap(find.byKey(const Key('main_user_button')).first);
+          // Cupertino transitions run longer than Android's; let pushes and
+          // pops finish before probing so taps never hit a mid-animation tree.
+          await tester.pump(const Duration(milliseconds: 800));
         });
         var openRoutes = 1;
         await waitForAny(
@@ -274,7 +285,11 @@ void main() {
           );
           await journey('lecture-detail-open', () async {
             await tester.ensureVisible(lectureBlockFinder.first);
-            await pumpStage(tester, stage: currentStage);
+            await pumpStage(
+              tester,
+              stage: currentStage,
+              duration: const Duration(milliseconds: 700),
+            );
             await tester.tap(lectureBlockFinder.first);
           });
           openRoutes += 1;
@@ -302,7 +317,11 @@ void main() {
               final field = find.byKey(const Key('review_write_field')).first;
               await tester.ensureVisible(field);
               await tester.enterText(field, marker);
-              await pumpStage(tester, stage: currentStage);
+              await pumpStage(
+                tester,
+                stage: currentStage,
+                duration: const Duration(milliseconds: 700),
+              );
 
               final submit = find.byKey(const Key('review_write_submit')).first;
               await tester.ensureVisible(submit);
@@ -352,11 +371,18 @@ void main() {
         // Visit liked reviews from the account page.
         while (openRoutes > 1) {
           tester.state<NavigatorState>(find.byType(Navigator).first).pop();
-          await pumpStage(tester, stage: currentStage);
+          await pumpStage(
+            tester,
+            stage: currentStage,
+            duration: const Duration(milliseconds: 700),
+          );
           openRoutes -= 1;
         }
-        await journey('liked-reviews-open', () {
-          return tester.tap(find.byKey(const Key('user_liked_review_button')));
+        await journey('liked-reviews-open', () async {
+          await tester.tap(
+            find.byKey(const Key('user_liked_review_button')).first,
+          );
+          await tester.pump(const Duration(milliseconds: 800));
         });
         openRoutes += 1;
         await waitForAny(
@@ -370,12 +396,17 @@ void main() {
 
         while (openRoutes > 0) {
           tester.state<NavigatorState>(find.byType(Navigator).first).pop();
-          await pumpStage(tester, stage: currentStage);
+          await pumpStage(
+            tester,
+            stage: currentStage,
+            duration: const Duration(milliseconds: 700),
+          );
           openRoutes -= 1;
         }
 
-        await journey('logout-open', () {
-          return tester.tap(find.byKey(const Key('main_user_button')));
+        await journey('logout-open', () async {
+          await tester.tap(find.byKey(const Key('main_user_button')).first);
+          await tester.pump(const Duration(milliseconds: 800));
         });
         await waitForAny(
           tester,
@@ -386,7 +417,7 @@ void main() {
           timeout: const Duration(seconds: 30),
         );
         await journey('logout-tap', () {
-          return tester.tap(find.byKey(const Key('user_logout_button')));
+          return tester.tap(find.byKey(const Key('user_logout_button')).first);
         });
 
         final logoutOutcome = await waitForAny(
