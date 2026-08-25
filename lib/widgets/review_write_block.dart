@@ -10,13 +10,15 @@ import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:provider/provider.dart';
 import 'package:otlplus/extensions/locale.dart';
 
+enum ScoreCategory { grade, load, speech }
+
 class ReviewWriteBlock extends StatefulWidget {
   final Lecture lecture;
   final Review? existingReview;
   final bool isSimple;
   final Future<void> Function()? onUploaded;
 
-  ReviewWriteBlock({
+  const ReviewWriteBlock({
     required this.lecture,
     this.existingReview,
     this.isSimple = false,
@@ -28,7 +30,11 @@ class ReviewWriteBlock extends StatefulWidget {
 }
 
 class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
-  final _scores = {"성적": 0, "널널": 0, "강의": 0};
+  final Map<ScoreCategory, int> _scores = <ScoreCategory, int>{
+    ScoreCategory.grade: 0,
+    ScoreCategory.load: 0,
+    ScoreCategory.speech: 0,
+  };
   final _contentTextController = TextEditingController();
   bool _isUploading = false;
 
@@ -37,9 +43,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
     super.initState();
 
     if (widget.existingReview != null) {
-      _scores["성적"] = widget.existingReview!.grade;
-      _scores["널널"] = widget.existingReview!.load;
-      _scores["강의"] = widget.existingReview!.speech;
+      _scores[ScoreCategory.grade] = widget.existingReview!.grade;
+      _scores[ScoreCategory.load] = widget.existingReview!.load;
+      _scores[ScoreCategory.speech] = widget.existingReview!.speech;
       _contentTextController.text = widget.existingReview!.content;
     }
   }
@@ -134,9 +140,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
                 ),
               ),
             ),
-            _buildScore("성적"),
-            _buildScore("널널"),
-            _buildScore("강의"),
+            _buildScore(ScoreCategory.grade),
+            _buildScore(ScoreCategory.load),
+            _buildScore(ScoreCategory.speech),
             Align(
               alignment: Alignment.bottomRight,
               child: IconTextButton(
@@ -158,15 +164,15 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
 
   bool _canUpload() {
     if (_isUploading) return false;
-    if ((_scores["성적"] ?? -1) > 0 &&
-        (_scores["널널"] ?? -1) > 0 &&
-        (_scores["강의"] ?? -1) > 0 &&
+    if ((_scores[ScoreCategory.grade] ?? -1) > 0 &&
+        (_scores[ScoreCategory.load] ?? -1) > 0 &&
+        (_scores[ScoreCategory.speech] ?? -1) > 0 &&
         _contentTextController.text.isNotEmpty) {
       if (widget.existingReview != null) {
         return widget.existingReview?.content != _contentTextController.text ||
-            _scores["성적"] != widget.existingReview?.grade ||
-            _scores["널널"] != widget.existingReview?.load ||
-            _scores["강의"] != widget.existingReview?.speech;
+            _scores[ScoreCategory.grade] != widget.existingReview?.grade ||
+            _scores[ScoreCategory.load] != widget.existingReview?.load ||
+            _scores[ScoreCategory.speech] != widget.existingReview?.speech;
       }
       return true;
     }
@@ -180,9 +186,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
 
     try {
       final repository = context.read<ReviewRepository>();
-      final grade = _scores["성적"]!;
-      final load = _scores["널널"]!;
-      final speech = _scores["강의"]!;
+      final grade = _scores[ScoreCategory.grade]!;
+      final load = _scores[ScoreCategory.load]!;
+      final speech = _scores[ScoreCategory.speech]!;
 
       if (widget.existingReview == null) {
         await repository.create(
@@ -204,15 +210,15 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
 
       await widget.onUploaded?.call();
     } catch (exception) {
-      print(exception);
-      if (mounted) {
-        final isEn = context.isEn;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isEn ? 'Failed to save review.' : '후기를 저장하지 못했습니다.'),
-          ),
-        );
-      }
+      debugPrint('Review upload failed: $exception');
+      if (!mounted) return;
+
+      final isEn = context.isEn;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isEn ? 'Failed to save review.' : '후기를 저장하지 못했습니다.'),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -222,17 +228,17 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
     }
   }
 
-  Widget _buildScore(String type) {
+  Widget _buildScore(ScoreCategory category) {
     late String title;
 
-    switch (type) {
-      case "성적":
+    switch (category) {
+      case ScoreCategory.grade:
         title = "review.grade".tr();
         break;
-      case "널널":
+      case ScoreCategory.load:
         title = "review.load".tr();
         break;
-      case "강의":
+      case ScoreCategory.speech:
         title = "review.speech".tr();
         break;
     }
@@ -243,25 +249,27 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
         children: <Widget>[
           Text(title, style: bodyRegular),
           const SizedBox(width: 4.0),
-          _buildOption(type, 5),
-          _buildOption(type, 4),
-          _buildOption(type, 3),
-          _buildOption(type, 2),
-          _buildOption(type, 1),
+          _buildOption(category, 5),
+          _buildOption(category, 4),
+          _buildOption(category, 3),
+          _buildOption(category, 2),
+          _buildOption(category, 1),
         ],
       ),
     );
   }
 
-  Widget _buildOption(String type, int score) {
+  Widget _buildOption(ScoreCategory category, int score) {
     return Padding(
       padding: const EdgeInsets.only(left: 4.0),
       child: ClipOval(
         child: BackgroundButton(
-          color: (_scores[type] == score) ? OTLColor.gray75 : OTLColor.grayD,
+          color: (_scores[category] == score)
+              ? OTLColor.gray75
+              : OTLColor.grayD,
           onTap: () {
             setState(() {
-              _scores[type] = (_scores[type] == score) ? 0 : score;
+              _scores[category] = (_scores[category] == score) ? 0 : score;
             });
           },
           child: SizedBox(
@@ -271,7 +279,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
               child: Text(
                 ["?", "F", "D", "C", "B", "A"][score],
                 style: labelBold.copyWith(
-                  color: _scores[type] == score
+                  color: _scores[category] == score
                       ? OTLColor.grayF
                       : OTLColor.grayF,
                 ),
