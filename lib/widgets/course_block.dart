@@ -11,7 +11,7 @@ class CourseBlock extends StatelessWidget {
   final Course course;
   final VoidCallback? onTap;
 
-  CourseBlock({required this.course, this.onTap});
+  CourseBlock({super.key, required this.course, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +84,6 @@ class CourseBlock extends StatelessWidget {
   }
 
   Widget _buildDivider() {
-    return Divider(color: OTLColor.gray0.withValues(alpha: .25));
+    return Divider(color: OTLColor.divider);
   }
 }

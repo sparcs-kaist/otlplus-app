@@ -96,7 +96,7 @@ class PeoplePage extends StatelessWidget {
                     Text(
                       people[i][j],
                       style: TextStyle(
-                        color: Color(0xFFEBA12A),
+                        color: OTLColor.sparcsGold,
                         fontSize: 15,
                         fontFamily: 'Raleway',
                         fontWeight: FontWeight.w800,
@@ -110,7 +110,7 @@ class PeoplePage extends StatelessWidget {
                       child: Text(
                         people_info[people[i][j]]['name'],
                         style: TextStyle(
-                          color: Color(0xFFEBA12A).withValues(alpha: .4),
+                          color: OTLColor.sparcsGoldMuted,
                           fontFamily: 'NanumSquare',
                           fontSize: 9.5,
                           fontWeight: FontWeight.w800,

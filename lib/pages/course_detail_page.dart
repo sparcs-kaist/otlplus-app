@@ -108,7 +108,7 @@ class CourseDetailPage extends StatelessWidget {
   }
 
   Widget _buildDivider() {
-    return Divider(color: OTLColor.gray0.withValues(alpha: .25));
+    return Divider(color: OTLColor.divider);
   }
 
   SliverPersistentHeader _buildReviewHeader() {

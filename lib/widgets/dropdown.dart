@@ -113,10 +113,7 @@ class Dropdown<T> extends StatelessWidget {
                   ),
                 ),
                 if (itemData != items.last)
-                  Container(
-                    color: OTLColor.grayF.withValues(alpha: .5),
-                    height: 0.5,
-                  ),
+                  Container(color: OTLColor.scrollbarThumb, height: 0.5),
               ],
             ),
           );
