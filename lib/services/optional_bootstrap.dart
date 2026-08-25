@@ -4,10 +4,11 @@ import 'dart:io';
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:otlplus/constants/preference_keys.dart';
 import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _showsChannelTalkButtonKey = 'showsChannelTalkButton';
+const _showsChannelTalkButtonKey = PreferenceKeys.showsChannelTalkButton;
 
 class OptionalBootstrap {
   OptionalBootstrap({

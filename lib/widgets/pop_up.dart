@@ -4,7 +4,9 @@ import 'dart:math' as math;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/constants/preference_keys.dart';
 import 'package:otlplus/constants/text_styles.dart';
+import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -71,7 +73,10 @@ class _PopUpState extends State<PopUp> {
                       () async {
                         final preferences =
                             await SharedPreferences.getInstance();
-                        await preferences.setBool('popup', !_checked);
+                        await preferences.setBool(
+                          PreferenceKeys.popup,
+                          !_checked,
+                        );
                       },
                       _popUpTelemetry(context),
                       operation: 'persist_popup_visibility',
@@ -111,11 +116,11 @@ Widget _build23fRecruiting(BuildContext context) {
       imageAsset: 'assets/popups/23f-recruiting.png',
       button: FilledButton(
         style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll(Color(0xFFEBA12A)),
+          backgroundColor: const WidgetStatePropertyAll(OTLColor.sparcsGold),
         ),
         onPressed: () => unawaited(
           _guardPopUpCallback(
-            () => launchUrl(Uri.parse('https://apply.sparcs.org/')),
+            () => launchUrl(Uri.parse(ExternalUrls.sparcsRecruiting)),
             _popUpTelemetry(context),
             operation: 'launch_popup_recruiting_url',
           ),
@@ -187,11 +192,7 @@ Widget _buildAppEvent(BuildContext context) {
       button: FilledButton(
         onPressed: () => unawaited(
           _guardPopUpCallback(
-            () => launchUrl(
-              Uri.parse(
-                'https://docs.google.com/forms/d/e/1FAIpQLSfZbU_TFUPN53De_ihtS4ZK5Tb_nRDazRS7EYQgp3QWAYvyhQ/viewform',
-              ),
-            ),
+            () => launchUrl(Uri.parse(ExternalUrls.appEvent)),
             _popUpTelemetry(context),
             operation: 'launch_popup_event_url',
           ),

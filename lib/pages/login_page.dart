@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:otlplus/constants/color.dart';
+import 'package:otlplus/constants/preference_keys.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/providers/auth_model.dart';
 import 'package:otlplus/services/storage_service.dart';
@@ -28,7 +29,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isWebViewInitialized = false;
   final String _loginUrl = Uri.https(
     BASE_AUTHORITY,
-    'session/login/',
+    SESSION_LOGIN_URL,
   ).toString();
   final String _redirectScheme = "org.sparcs.otl";
   final String _redirectHost = "login";
@@ -42,7 +43,10 @@ class _LoginPageState extends State<LoginPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final hasAccount =
-          (await SharedPreferences.getInstance()).getBool('hasAccount') ?? true;
+          (await SharedPreferences.getInstance()).getBool(
+            PreferenceKeys.hasAccount,
+          ) ??
+          true;
       if (!mounted) return;
 
       if (!hasAccount) {
@@ -60,7 +64,9 @@ class _LoginPageState extends State<LoginPage> {
           onTapNeg: () => SystemNavigator.pop(),
         ),
       );
-    } catch (_) {}
+    } catch (_) {
+      // Intentional: dialog dismissal can race with page disposal.
+    }
   }
 
   void _initializeWebView() async {
@@ -88,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
               }
             },
             onWebResourceError: (WebResourceError error) {
-              print('WebView Error: ${error.description}');
+              debugPrint('WebView Error: ${error.description}');
               if (!_isDisposed && mounted) {
                 setState(() {
                   _isLoadingPage = false;
@@ -120,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
         });
       }
     } catch (e) {
-      print('Error initializing WebViewController: $e');
+      debugPrint('Error initializing WebViewController: $e');
 
       if (mounted) {
         setState(() {
@@ -157,8 +163,8 @@ class _LoginPageState extends State<LoginPage> {
           authModel.setLoggedIn(true);
         }
       } catch (e) {
-        // Keep error print for actual errors
-        print("Error saving tokens: $e");
+        // Keep error logging for actual errors.
+        debugPrint("Error saving tokens: $e");
         if (!_isDisposed && mounted) {
           ScaffoldMessenger.of(
             context,

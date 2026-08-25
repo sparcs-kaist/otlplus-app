@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:otlplus/constants/preference_keys.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -28,6 +29,8 @@ Future<void> _guardNotificationConsentFuture(
 }
 
 class OTLHome extends StatefulWidget {
+  const OTLHome({super.key});
+
   static String route = 'home';
 
   @override
@@ -40,10 +43,12 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
       _controller.status == AnimationStatus.completed ||
       _controller.status == AnimationStatus.forward;
   late AnimationController _controller;
+  late final Future<void> _localizationDelay;
 
   @override
   void initState() {
     super.initState();
+    _localizationDelay = Future<void>.delayed(const Duration(milliseconds: 10));
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       value: 1.0,
@@ -57,7 +62,7 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
           ?.telemetry;
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
-      if (prefs.getBool('notification_consent_shown') != true) {
+      if (prefs.getBool(PreferenceKeys.notificationConsentShown) != true) {
         await OTLNavigator.pushDialog(
           context: context,
           builder: (_) => OTLDialog(
@@ -73,7 +78,10 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
               unawaited(
                 _guardNotificationConsentFuture(
                   () async {
-                    await prefs.setBool('notification_consent_shown', true);
+                    await prefs.setBool(
+                      PreferenceKeys.notificationConsentShown,
+                      true,
+                    );
                   },
                   telemetry,
                   operation: 'persist_notification_consent_shown',
@@ -91,7 +99,10 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
               unawaited(
                 _guardNotificationConsentFuture(
                   () async {
-                    await prefs.setBool('notification_consent_shown', true);
+                    await prefs.setBool(
+                      PreferenceKeys.notificationConsentShown,
+                      true,
+                    );
                   },
                   telemetry,
                   operation: 'persist_notification_consent_shown',
@@ -108,7 +119,7 @@ class _OTLHomeState extends State<OTLHome> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     // Localization이 초기화되지 않는 오류가 있는 것으로 파악 > 일단 야매로 딜레이 줌
     return FutureBuilder(
-      future: Future.delayed(Duration(milliseconds: 10)),
+      future: _localizationDelay,
       builder: (context, asyncSnapshot) {
         if (asyncSnapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(body: Center(child: CircularProgressIndicator()));
