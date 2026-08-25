@@ -11,10 +11,23 @@ class OTLColor {
   static const grayE = Color(0xFFEEEEEE);
   static const grayF = Color(0xFFFFFFFF);
   static const barrier = Color(0x40000000);
+  static const sparcsGold = Color(0xFFEBA12A);
+  // Equals sparcsGold at 40% opacity.
+  static const sparcsGoldMuted = Color(0x66EBA12A);
+  // Equals gray0 at 25% opacity; same value as barrier, kept separate for
+  // non-modal use.
+  static const divider = Color(0x40000000);
+  static const dialogScrim = Color(0x26000000);
+  static const disabledOverlay = Color(0x66000000);
+  static const scrollbarThumb = Color(0x80FFFFFF);
 
   static const pinksLight = Color(0xFFF9F0F0);
   static const pinksSub = Color(0xFFF6C5CD);
+
+  /// Legacy/intentional near-duplicate hex value: #E54C65 vs #E54C64.
   static const pinksMain = Color(0xFFE54C65);
+
+  /// Legacy/intentional near-duplicate hex value: #E54C65 vs #E54C64.
   static const pinksSelected = Color(0xFFE54C64);
 
   static const red = Color(0xFFFF453A);
