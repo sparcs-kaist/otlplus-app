@@ -30,10 +30,32 @@ class _LikedReviewPageState extends State<LikedReviewPage> {
     super.initState();
     _scrollController.addListener(_handleScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final userId = context.read<InfoModel>().user.id;
-      unawaited(context.read<LikedReviewModel>().load(userId));
+      unawaited(_guardedInitialLoad());
     });
+  }
+
+  Future<void> _guardedInitialLoad() async {
+    if (!mounted) return;
+
+    try {
+      final userId = context.read<InfoModel>().user.id;
+      await context.read<LikedReviewModel>().load(userId);
+    } catch (error, stackTrace) {
+      debugPrint('Failed to load liked reviews: $error\n$stackTrace');
+    }
+  }
+
+  Future<void> _guardedLoadMore() async {
+    if (!mounted) return;
+
+    try {
+      final model = context.read<LikedReviewModel>();
+      if (model.hasMore && !model.isLoading) {
+        await model.loadMore();
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Failed to load more liked reviews: $error\n$stackTrace');
+    }
   }
 
   @override
@@ -50,8 +72,7 @@ class _LikedReviewPageState extends State<LikedReviewPage> {
       return;
     }
 
-    final model = context.read<LikedReviewModel>();
-    if (model.hasMore && !model.isLoading) unawaited(model.loadMore());
+    unawaited(_guardedLoadMore());
   }
 
   @override
@@ -88,6 +109,7 @@ class _LikedReviewPageState extends State<LikedReviewPage> {
                                 index,
                               ) {
                                 return ReviewBlock(
+                                  key: ValueKey(reviews[index].id),
                                   review: reviews[index],
                                   onTap: () async {
                                     context

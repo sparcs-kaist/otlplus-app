@@ -11,8 +11,11 @@ class SearchFilterPanel extends StatefulWidget {
   final Map<String, FilterGroupInfo> filter;
   final Function(String varient, String code, bool selected) setFilter;
 
-  SearchFilterPanel({Key? key, required this.filter, required this.setFilter})
-    : super(key: key);
+  const SearchFilterPanel({
+    Key? key,
+    required this.filter,
+    required this.setFilter,
+  }) : super(key: key);
 
   @override
   State<SearchFilterPanel> createState() => _SearchFilterPanelState();
@@ -20,6 +23,12 @@ class SearchFilterPanel extends StatefulWidget {
 
 class _SearchFilterPanelState extends State<SearchFilterPanel> {
   final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
