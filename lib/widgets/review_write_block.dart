@@ -10,7 +10,7 @@ import 'package:otlplus/widgets/responsive_button.dart';
 import 'package:provider/provider.dart';
 import 'package:otlplus/extensions/locale.dart';
 
-enum ScoreCategory { grade, load, speech }
+enum _ScoreCategory { grade, load, speech }
 
 class ReviewWriteBlock extends StatefulWidget {
   final Lecture lecture;
@@ -30,10 +30,10 @@ class ReviewWriteBlock extends StatefulWidget {
 }
 
 class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
-  final Map<ScoreCategory, int> _scores = <ScoreCategory, int>{
-    ScoreCategory.grade: 0,
-    ScoreCategory.load: 0,
-    ScoreCategory.speech: 0,
+  final Map<_ScoreCategory, int> _scores = <_ScoreCategory, int>{
+    _ScoreCategory.grade: 0,
+    _ScoreCategory.load: 0,
+    _ScoreCategory.speech: 0,
   };
   final _contentTextController = TextEditingController();
   bool _isUploading = false;
@@ -43,9 +43,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
     super.initState();
 
     if (widget.existingReview != null) {
-      _scores[ScoreCategory.grade] = widget.existingReview!.grade;
-      _scores[ScoreCategory.load] = widget.existingReview!.load;
-      _scores[ScoreCategory.speech] = widget.existingReview!.speech;
+      _scores[_ScoreCategory.grade] = widget.existingReview!.grade;
+      _scores[_ScoreCategory.load] = widget.existingReview!.load;
+      _scores[_ScoreCategory.speech] = widget.existingReview!.speech;
       _contentTextController.text = widget.existingReview!.content;
     }
   }
@@ -140,9 +140,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
                 ),
               ),
             ),
-            _buildScore(ScoreCategory.grade),
-            _buildScore(ScoreCategory.load),
-            _buildScore(ScoreCategory.speech),
+            _buildScore(_ScoreCategory.grade),
+            _buildScore(_ScoreCategory.load),
+            _buildScore(_ScoreCategory.speech),
             Align(
               alignment: Alignment.bottomRight,
               child: IconTextButton(
@@ -164,15 +164,15 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
 
   bool _canUpload() {
     if (_isUploading) return false;
-    if ((_scores[ScoreCategory.grade] ?? -1) > 0 &&
-        (_scores[ScoreCategory.load] ?? -1) > 0 &&
-        (_scores[ScoreCategory.speech] ?? -1) > 0 &&
+    if ((_scores[_ScoreCategory.grade] ?? -1) > 0 &&
+        (_scores[_ScoreCategory.load] ?? -1) > 0 &&
+        (_scores[_ScoreCategory.speech] ?? -1) > 0 &&
         _contentTextController.text.isNotEmpty) {
       if (widget.existingReview != null) {
         return widget.existingReview?.content != _contentTextController.text ||
-            _scores[ScoreCategory.grade] != widget.existingReview?.grade ||
-            _scores[ScoreCategory.load] != widget.existingReview?.load ||
-            _scores[ScoreCategory.speech] != widget.existingReview?.speech;
+            _scores[_ScoreCategory.grade] != widget.existingReview?.grade ||
+            _scores[_ScoreCategory.load] != widget.existingReview?.load ||
+            _scores[_ScoreCategory.speech] != widget.existingReview?.speech;
       }
       return true;
     }
@@ -186,9 +186,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
 
     try {
       final repository = context.read<ReviewRepository>();
-      final grade = _scores[ScoreCategory.grade]!;
-      final load = _scores[ScoreCategory.load]!;
-      final speech = _scores[ScoreCategory.speech]!;
+      final grade = _scores[_ScoreCategory.grade]!;
+      final load = _scores[_ScoreCategory.load]!;
+      final speech = _scores[_ScoreCategory.speech]!;
 
       if (widget.existingReview == null) {
         await repository.create(
@@ -228,17 +228,17 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
     }
   }
 
-  Widget _buildScore(ScoreCategory category) {
+  Widget _buildScore(_ScoreCategory category) {
     late String title;
 
     switch (category) {
-      case ScoreCategory.grade:
+      case _ScoreCategory.grade:
         title = "review.grade".tr();
         break;
-      case ScoreCategory.load:
+      case _ScoreCategory.load:
         title = "review.load".tr();
         break;
-      case ScoreCategory.speech:
+      case _ScoreCategory.speech:
         title = "review.speech".tr();
         break;
     }
@@ -259,7 +259,7 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
     );
   }
 
-  Widget _buildOption(ScoreCategory category, int score) {
+  Widget _buildOption(_ScoreCategory category, int score) {
     return Padding(
       padding: const EdgeInsets.only(left: 4.0),
       child: ClipOval(

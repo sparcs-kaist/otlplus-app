@@ -2,6 +2,16 @@ import 'package:otlplus/models/nested_course.dart';
 import 'package:otlplus/models/nested_lecture.dart';
 import 'package:otlplus/models/professor.dart';
 
+/// Normalizes the two wire representations of the deletion flag: the legacy
+/// integer (`0`/`1`) and the v2 boolean. Anything else is a contract
+/// violation and throws instead of silently reading as active.
+bool _normalizeIsDeleted(Object? value) {
+  if (value is bool) return value;
+  if (value == 0) return false;
+  if (value == 1) return true;
+  throw ArgumentError.value(value, 'isDeleted', 'expected bool or int 0/1');
+}
+
 class Review {
   final int id;
   final NestedCourse course;
@@ -25,7 +35,7 @@ class Review {
     required this.load,
     required this.speech,
     required this.userspecificIsLiked,
-  }) : isDeleted = isDeleted == 1 || isDeleted == true;
+  }) : isDeleted = _normalizeIsDeleted(isDeleted);
 
   bool operator ==(Object other) =>
       identical(this, other) || (other is Review && other.id == id);
@@ -38,7 +48,7 @@ class Review {
       lecture = NestedLecture.fromJson(json['lecture']),
       content = json['content'],
       like = json['like'],
-      isDeleted = json['is_deleted'] == 1 || json['is_deleted'] == true,
+      isDeleted = _normalizeIsDeleted(json['is_deleted']),
       grade = json['grade'],
       load = json['load'],
       speech = json['speech'],
@@ -102,7 +112,7 @@ class Review {
       ),
       content: json['content'] as String,
       like: json['like'] as int,
-      isDeleted: json['isDeleted'] as bool,
+      isDeleted: _normalizeIsDeleted(json['isDeleted']),
       grade: json['grade'] as int,
       load: json['load'] as int,
       speech: json['speech'] as int,

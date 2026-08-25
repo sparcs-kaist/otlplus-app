@@ -145,4 +145,23 @@ void main() {
       _expectLegacyDeletionSerialization(review, 1);
     });
   });
+  group("Review.isDeleted rejects contract violations", () {
+    test("v2 boolean-shaped garbage throws", () {
+      expect(
+        () =>
+            Review.fromV2Json({..._v2ReviewPayload(false), "isDeleted": "yes"}),
+        throwsArgumentError,
+      );
+    });
+
+    test("v1 out-of-domain integers throw", () {
+      expect(() => Review.fromJson(_v1ReviewPayload(2)), throwsArgumentError);
+      expect(() => Review.fromJson(_v1ReviewPayload(-1)), throwsArgumentError);
+    });
+
+    test("constructor rejects unsupported objects", () {
+      final payload = _v1ReviewPayload(1)..["is_deleted"] = null;
+      expect(() => Review.fromJson(payload), throwsArgumentError);
+    });
+  });
 }
