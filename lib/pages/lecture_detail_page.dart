@@ -73,14 +73,10 @@ class LectureDetailPage extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        isEn
-                            ? 'Unable to load lecture details.'
-                            : '강의 정보를 불러오지 못했습니다.',
-                      ),
+                      Text('error.load_lecture_details'.tr()),
                       TextButton(
                         onPressed: lectureDetailModel.retryLoad,
-                        child: Text(isEn ? 'Retry' : '다시 시도'),
+                        child: Text('common.retry'.tr()),
                       ),
                     ],
                   ),
