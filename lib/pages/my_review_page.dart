@@ -40,87 +40,91 @@ class MyReviewPage extends StatelessWidget {
                 : (b.semester - a.semester)),
           );
 
+    final entries = <_ReviewListEntry>[];
+    for (final semester in targetSemesters) {
+      entries.add(_SemesterHeaderEntry(semester));
+      final lectures = user.reviewWritableLectures
+          .where(
+            (lecture) =>
+                lecture.year == semester.year &&
+                lecture.semester == semester.semester,
+          )
+          .toList();
+
+      for (int index = 0; index < lectures.length; index += 2) {
+        entries.add(
+          _LectureRowEntry(
+            first: lectures[index],
+            second: index + 1 < lectures.length ? lectures[index + 1] : null,
+            isLastInSemester: index + 2 >= lectures.length,
+          ),
+        );
+      }
+    }
+
     return OTLScaffold(
       child: OTLLayout(
         middle: Text('user.my_review'.tr(), style: titleBold),
         body: ColoredBox(
           color: OTLColor.grayF,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  ...targetSemesters
-                      .map(
-                        (semester) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Text(semester.title, style: labelBold),
-                            ),
-                            ..._buildLectureBlocks(
-                              context,
-                              user,
-                              user.reviewWritableLectures
-                                  .where(
-                                    (lecture) =>
-                                        lecture.year == semester.year &&
-                                        lecture.semester == semester.semester,
-                                  )
-                                  .toList(),
-                            ),
-                            const SizedBox(height: 8.0),
-                          ],
+          child: CustomScrollView(
+            slivers: <Widget>[
+              SliverPadding(
+                padding: const EdgeInsets.all(16.0),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final entry = entries[index];
+                    return switch (entry) {
+                      _SemesterHeaderEntry(:final semester) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Text(semester.title, style: labelBold),
+                      ),
+                      _LectureRowEntry(
+                        :final first,
+                        :final second,
+                        :final isLastInSemester,
+                      ) =>
+                        Padding(
+                          padding: EdgeInsets.only(
+                            bottom: isLastInSemester ? 8.0 : 0.0,
+                          ),
+                          child: _buildLectureRow(context, user, first, second),
                         ),
-                      )
-                      .toList(),
-                ],
+                    };
+                  }, childCount: entries.length),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  List<Widget> _buildLectureBlocks(
+  Widget _buildLectureRow(
     BuildContext context,
     User user,
-    List<Lecture> lectures,
+    Lecture first,
+    Lecture? second,
   ) {
-    final blocks = <Widget>[];
-    for (int i = 0; i < lectures.length ~/ 2; i++) {
-      blocks.add(
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Expanded(
-                child: _buildLectureBlock(context, user, lectures[i * 2]),
-              ),
-              Expanded(
-                child: _buildLectureBlock(context, user, lectures[i * 2 + 1]),
-              ),
-            ],
-          ),
-        ),
+    if (second == null) {
+      return Row(
+        children: <Widget>[
+          Expanded(child: _buildLectureBlock(context, user, first)),
+          Expanded(child: const SizedBox()),
+        ],
       );
     }
 
-    if (blocks.length * 2 < lectures.length) {
-      blocks.add(
-        Row(
-          children: <Widget>[
-            Expanded(child: _buildLectureBlock(context, user, lectures.last)),
-            Expanded(child: const SizedBox()),
-          ],
-        ),
-      );
-    }
-
-    return blocks;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Expanded(child: _buildLectureBlock(context, user, first)),
+          Expanded(child: _buildLectureBlock(context, user, second)),
+        ],
+      ),
+    );
   }
 
   Widget _buildLectureBlock(BuildContext context, User user, Lecture lecture) {
@@ -133,4 +137,26 @@ class MyReviewPage extends StatelessWidget {
       },
     );
   }
+}
+
+sealed class _ReviewListEntry {
+  const _ReviewListEntry();
+}
+
+class _SemesterHeaderEntry extends _ReviewListEntry {
+  const _SemesterHeaderEntry(this.semester);
+
+  final Semester semester;
+}
+
+class _LectureRowEntry extends _ReviewListEntry {
+  const _LectureRowEntry({
+    required this.first,
+    required this.second,
+    required this.isLastInSemester,
+  });
+
+  final Lecture first;
+  final Lecture? second;
+  final bool isLastInSemester;
 }
