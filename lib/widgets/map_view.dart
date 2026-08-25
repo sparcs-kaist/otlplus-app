@@ -129,11 +129,7 @@ class _MapViewState extends State<MapView> {
 
   Widget _buildMapPin(BuildContext context, String buildingCode) {
     List<BoxShadow> boxShadow = [
-      BoxShadow(
-        color: OTLColor.gray0.withValues(alpha: .25),
-        blurRadius: 4,
-        offset: Offset(0, 4),
-      ),
+      BoxShadow(color: OTLColor.divider, blurRadius: 4, offset: Offset(0, 4)),
     ];
     return Positioned(
       left:
@@ -229,11 +225,7 @@ class _MapViewState extends State<MapView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(_codeToName(buildingCode), style: bodyBold),
-                  Divider(
-                    height: 15,
-                    thickness: 1,
-                    color: OTLColor.gray0.withValues(alpha: .25),
-                  ),
+                  Divider(height: 15, thickness: 1, color: OTLColor.divider),
                   const SizedBox(height: 1),
                   ...List.generate(
                     widget.lectures[buildingCode]!.length,

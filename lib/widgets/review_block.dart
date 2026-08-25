@@ -37,7 +37,7 @@ class ReviewBlock extends StatefulWidget {
   final VoidCallback? onTap;
   final int maxLines = 5;
 
-  ReviewBlock({required this.review, this.onTap});
+  ReviewBlock({Key? key, required this.review, this.onTap}) : super(key: key);
 
   @override
   _ReviewBlockState createState() => _ReviewBlockState();
@@ -214,7 +214,8 @@ class _ReviewBlockState extends State<ReviewBlock> {
         reviewId: widget.review.id,
         action: action,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Failed to update review like: $error\n$stackTrace');
       if (mounted) {
         setState(() {
           _liked = wasLiked;

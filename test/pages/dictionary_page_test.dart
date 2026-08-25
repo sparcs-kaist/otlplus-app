@@ -35,6 +35,23 @@ void main() {
     expect(find.byType(CourseBlock), findsNWidgets(8));
   });
 
+  testWidgets('course blocks use course ids as stable keys', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final courses = List<Course>.generate(3, _course);
+
+    await _pumpDictionaryPage(
+      tester,
+      searchModel: _CourseSearchModel(courses),
+      detailModel: _CourseDetailModel(),
+    );
+
+    final firstCourseBlock = tester.widget<CourseBlock>(
+      find.byType(CourseBlock).first,
+    );
+    expect(firstCourseBlock.key, ValueKey(courses.first.id));
+  });
+
   testWidgets(
     'tap callback uses snapshot when live list is cleared before invocation',
     (tester) async {

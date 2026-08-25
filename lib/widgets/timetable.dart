@@ -29,13 +29,13 @@ class Timetable extends StatelessWidget {
     if (isExamTime) {
       lectures.forEach(
         (lecture) => lecture.examtimes.forEach(
-          (examtime) => _lectures[examtime.day][examtime] = lecture,
+          (examtime) => _lectures[examtime.day.code][examtime] = lecture,
         ),
       );
     } else {
       lectures.forEach(
         (lecture) => lecture.classtimes.forEach(
-          (classtime) => _lectures[classtime.day][classtime] = lecture,
+          (classtime) => _lectures[classtime.day.code][classtime] = lecture,
         ),
       );
     }
@@ -114,8 +114,7 @@ class Timetable extends StatelessWidget {
   }
 
   Widget _buildCell(int i) {
-    if (i % 100 == 0)
-      return Container(color: OTLColor.gray0.withValues(alpha: .25), height: 1);
+    if (i % 100 == 0) return Container(color: OTLColor.divider, height: 1);
     if (i % 50 == 0)
       return Row(
         children: List.generate(
@@ -123,10 +122,7 @@ class Timetable extends StatelessWidget {
           (i) => Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 1.0),
-              child: Container(
-                color: OTLColor.gray0.withValues(alpha: .25),
-                height: 1,
-              ),
+              child: Container(color: OTLColor.divider, height: 1),
             ),
           ),
         ),

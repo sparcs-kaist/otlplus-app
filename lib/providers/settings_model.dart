@@ -3,18 +3,19 @@ import 'dart:async';
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:otlplus/constants/preference_keys.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final _kSendCrashlytics = 'sendCrashlytics';
-final _kSendCrashlyticsAnonymously = 'sendCrashlyticsAnonymously';
-final _kSendAnalytics = 'sendAnalytics';
-final _kShowsChannelTalkButton = 'showsChannelTalkButton';
-final _kSendAlarm = 'sendAlarm';
-final _kPromotionAlarm = 'promotionAlarm';
-final _kInformationAlarm = 'informationAlarm';
-final _kSubjectSuggestionAlarm = 'subjectSuggestionAlarm';
+const _kSendCrashlytics = PreferenceKeys.sendCrashlytics;
+const _kSendCrashlyticsAnonymously = PreferenceKeys.sendCrashlyticsAnonymously;
+const _kSendAnalytics = PreferenceKeys.sendAnalytics;
+const _kShowsChannelTalkButton = PreferenceKeys.showsChannelTalkButton;
+const _kSendAlarm = PreferenceKeys.sendAlarm;
+const _kPromotionAlarm = PreferenceKeys.promotionAlarm;
+const _kInformationAlarm = PreferenceKeys.informationAlarm;
+const _kSubjectSuggestionAlarm = PreferenceKeys.subjectSuggestionAlarm;
 
 class SettingsModel extends ChangeNotifier {
   static Future<bool> loadCrashReportingEnabled() async {
@@ -89,6 +90,7 @@ class SettingsModel extends ChangeNotifier {
   bool _sendCrashlyticsAnonymously = false;
   bool _sendAnalytics = false;
   bool _isLoaded = false;
+  bool _isDisposed = false;
   bool _showsChannelTalkButton = true;
   bool _sendAlarm = false;
   bool _promotionAlarm = false;
@@ -284,16 +286,24 @@ class SettingsModel extends ChangeNotifier {
     }
   }
 
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
   Future<void> _loadPreferences() async {
     try {
       final instance = await SharedPreferences.getInstance();
       getAllValues(instance);
     } catch (e) {
       _onCrashReportingChanged?.call(_sendCrashlytics);
-      print("Error loading preferences: $e");
+      debugPrint("Error loading preferences: $e");
     } finally {
       _isLoaded = true;
-      notifyListeners();
+      if (!_isDisposed) {
+        notifyListeners();
+      }
     }
   }
 

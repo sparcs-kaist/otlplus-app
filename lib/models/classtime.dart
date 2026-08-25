@@ -15,9 +15,9 @@ class Classtime extends Time {
     required this.classroomShort,
     required this.classroomShortEn,
     required this.roomName,
-    day,
-    begin,
-    end,
+    required Object day,
+    required int begin,
+    required int end,
   }) : super(day: day, begin: begin, end: end);
 
   @override
@@ -32,7 +32,7 @@ class Classtime extends Time {
       classroomShort: json['classroom_short'],
       classroomShortEn: json['classroom_short_en'],
       roomName: json['room_name'],
-      day: json['day'],
+      day: Weekday.fromCode(json['day'] as int),
       begin: json['begin'],
       end: json['end'],
     );
@@ -49,7 +49,7 @@ class Classtime extends Time {
       classroomShort: buildingCode,
       classroomShortEn: buildingCode,
       roomName: json['roomName'] as String,
-      day: json['day'] as int,
+      day: Weekday.fromCode(json['day'] as int),
       begin: json['begin'] as int,
       end: json['end'] as int,
     );
@@ -63,7 +63,7 @@ class Classtime extends Time {
     data['classroom_short'] = this.classroomShort;
     data['classroom_short_en'] = this.classroomShortEn;
     data['room_name'] = this.roomName;
-    data['day'] = this.day;
+    data['day'] = this.day.code;
     data['begin'] = this.begin;
     data['end'] = this.end;
     return data;

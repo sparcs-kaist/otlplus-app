@@ -72,6 +72,7 @@ class DepartmentRepository {
         ),
       );
     } catch (_) {
+      // Intentional: department options are best-effort; empty fallback is valid.
       _optionsFuture = null;
       rethrow;
     }

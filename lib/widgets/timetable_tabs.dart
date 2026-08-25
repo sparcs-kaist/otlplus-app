@@ -5,10 +5,14 @@ import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/widgets/dropdown.dart';
 
+enum TimetableTabKind { myTimetable, savedTimetable }
+
 typedef TimetableTabActionCallback =
     void Function(TimetableTabAction action, int index);
 
 class TimetableTabs extends StatefulWidget {
+  static const int myTimetableIndex = 0;
+
   final int index;
   final int length;
   final ValueChanged<int> onTap;
@@ -52,6 +56,12 @@ class _TimetableTabsState extends State<TimetableTabs> {
     );
   }
 
+  TimetableTabKind _kindForIndex(int index) {
+    return index == TimetableTabs.myTimetableIndex
+        ? TimetableTabKind.myTimetable
+        : TimetableTabKind.savedTimetable;
+  }
+
   Widget _buildTab(int i, BuildContext context) {
     if (i == widget.length) {
       return GestureDetector(
@@ -74,8 +84,9 @@ class _TimetableTabsState extends State<TimetableTabs> {
       );
     }
 
+    final kind = _kindForIndex(i);
     Text text = Text(
-      i == 0
+      kind == TimetableTabKind.myTimetable
           ? 'timetable.my_tab'.tr()
           : 'timetable.tab'.tr(args: [i.toString()]),
       style: bodyBold.copyWith(
@@ -119,7 +130,7 @@ class _TimetableTabsState extends State<TimetableTabs> {
               text: 'timetable.tab_menu.export_cal'.tr(),
               icon: Icons.calendar_today_outlined,
             ),
-            if (i != 0) ...[
+            if (kind == TimetableTabKind.savedTimetable) ...[
               ItemData(
                 value: TimetableTabAction.delete,
                 text: 'timetable.tab_menu.delete'.tr(),

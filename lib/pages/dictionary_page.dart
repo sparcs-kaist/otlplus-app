@@ -92,6 +92,7 @@ class _DictionaryPageState extends State<DictionaryPage> {
                   padding: EdgeInsets.all(12.0),
                   itemCount: courses.length,
                   itemBuilder: (context, index) => CourseBlock(
+                    key: ValueKey(courses[index].id),
                     course: courses[index],
                     onTap: () {
                       context.read<CourseDetailModel>().loadCourse(

@@ -1,208 +1,23 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:ui';
 
-import 'package:app_links/app_links.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:in_app_update/in_app_update.dart';
-import 'package:otlplus/dio_provider.dart';
+import 'package:otlplus/app/app_bootstrap.dart';
+import 'package:otlplus/app/app_theme.dart';
+import 'package:otlplus/app/app_update_checker.dart';
+import 'package:otlplus/app/deep_link_handler.dart';
+import 'package:otlplus/home.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/pages/lecture_detail_page.dart';
 import 'package:otlplus/pages/liked_review_page.dart';
-import 'package:otlplus/pages/my_review_page.dart';
-import 'package:otlplus/providers/course_search_model.dart';
-import 'package:otlplus/providers/hall_of_fame_model.dart';
-import 'package:otlplus/providers/liked_review_model.dart';
-import 'package:otlplus/providers/settings_model.dart';
-import 'package:otlplus/repositories/review_repository.dart';
-import 'package:otlplus/services/channel_talk_readiness.dart';
-import 'package:otlplus/services/optional_bootstrap.dart';
-import 'package:otlplus/services/posthog_service.dart';
-import 'package:otlplus/services/sentry_consent_gate.dart';
-import 'package:otlplus/services/storage_service.dart';
-import 'package:otlplus/services/telemetry_coordinator.dart';
-import 'package:otlplus/widgets/telemetry_synchronizer.dart';
-import 'package:provider/provider.dart';
-import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/home.dart';
 import 'package:otlplus/pages/login_page.dart';
+import 'package:otlplus/pages/my_review_page.dart';
 import 'package:otlplus/providers/auth_model.dart';
-import 'package:otlplus/providers/course_detail_model.dart';
-import 'package:otlplus/providers/info_model.dart';
-import 'package:otlplus/providers/lecture_detail_model.dart';
-import 'package:otlplus/providers/latest_reviews_model.dart';
-import 'package:otlplus/providers/lecture_search_model.dart';
-import 'package:otlplus/providers/timetable_model.dart';
-import 'package:otlplus/utils/create_material_color.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
-
-import 'firebase_options.dart';
-
-final telemetryCoordinator = TelemetryCoordinator(
-  analytics: PostHogService(),
-  crashReporting: const FirebaseCrashReportingClient(),
-);
-final sentryConsentGate = SentryConsentGate();
-const _isSmokeTest = bool.fromEnvironment('APP_SMOKE_TEST');
+import 'package:otlplus/services/storage_service.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runZonedGuarded<Future<void>>(
-    () async {
-      WidgetsFlutterBinding.ensureInitialized();
-      var crashReportingEnabled = false;
-      if (!_isSmokeTest) {
-        crashReportingEnabled = await SettingsModel.loadCrashReportingEnabled();
-        await sentryConsentGate.setEnabled(crashReportingEnabled);
-        await Sentry.init(sentryConsentGate.configure);
-      }
-      await EasyLocalization.ensureInitialized();
-
-      if (!_isSmokeTest) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-      }
-      await telemetryCoordinator.initialize(
-        crashReportingEnabled: crashReportingEnabled,
-      );
-      DioProvider.configureTelemetry(telemetryCoordinator);
-
-      FlutterError.onError = (details) {
-        unawaited(telemetryCoordinator.recordFlutterFatalError(details));
-        if (sentryConsentGate.isEnabled) {
-          Sentry.captureException(details.exception, stackTrace: details.stack);
-        }
-      };
-      PlatformDispatcher.instance.onError = (error, stackTrace) {
-        unawaited(
-          telemetryCoordinator.recordFatal(
-            error,
-            stackTrace,
-            reason: 'platform_dispatcher_error',
-          ),
-        );
-        if (sentryConsentGate.isEnabled) {
-          Sentry.captureException(error, stackTrace: stackTrace);
-        }
-        return true;
-      };
-
-      runApp(
-        EasyLocalization(
-          supportedLocales: [Locale('en'), Locale('ko')],
-          path: 'assets/translations',
-          fallbackLocale: Locale('en'),
-          child: Builder(
-            builder: (context) {
-              final locale = context.locale.languageCode;
-              DioProvider.configureLocaleSupplier(() => locale);
-              return MultiProvider(
-                providers: [
-                  Provider(create: (_) => StorageService()),
-                  Provider(create: (_) => ReviewRepository(DioProvider().dio)),
-                  ChangeNotifierProvider(
-                    create: (context) => AuthModel(
-                      context.read<StorageService>(),
-                      telemetry: telemetryCoordinator,
-                    ),
-                  ),
-                  ChangeNotifierProxyProvider<AuthModel, InfoModel>(
-                    create: (context) =>
-                        InfoModel(telemetry: telemetryCoordinator),
-                    update: (context, authModel, infoModel) {
-                      final model =
-                          infoModel ??
-                          InfoModel(telemetry: telemetryCoordinator);
-                      if (authModel.isLogined) {
-                        // Failures set InfoModel.hasError for retry UI; session
-                        // expiry is handled by the Dio interceptor.
-                        unawaited(model.getInfo());
-                      } else {
-                        model.clearData();
-                      }
-                      return model;
-                    },
-                  ),
-                  ChangeNotifierProxyProvider<InfoModel, TimetableModel>(
-                    create: (context) => TimetableModel(),
-                    update: (context, infoModel, timetableModel) {
-                      final model = timetableModel ?? TimetableModel();
-                      if (infoModel.hasData) {
-                        model.loadSemesters(
-                          user: infoModel.user,
-                          semesters: infoModel.semesters,
-                        );
-                      }
-                      return model;
-                    },
-                  ),
-                  ChangeNotifierProvider(create: (_) => LectureSearchModel()),
-                  ChangeNotifierProvider(create: (_) => CourseSearchModel()),
-                  ChangeNotifierProvider(
-                    create: (context) =>
-                        LatestReviewsModel(context.read<ReviewRepository>()),
-                  ),
-                  ChangeNotifierProvider(
-                    create: (context) =>
-                        LikedReviewModel(context.read<ReviewRepository>()),
-                  ),
-                  ChangeNotifierProvider(
-                    create: (context) =>
-                        HallOfFameModel(context.read<ReviewRepository>()),
-                  ),
-                  ChangeNotifierProvider(create: (_) => CourseDetailModel()),
-                  ChangeNotifierProvider(create: (_) => LectureDetailModel()),
-                  ChangeNotifierProvider(
-                    create: (_) => SettingsModel(
-                      telemetry: telemetryCoordinator,
-                      onCrashReportingChanged: (enabled) {
-                        unawaited(sentryConsentGate.setEnabled(enabled));
-                      },
-                    ),
-                  ),
-                ],
-                child: TelemetrySynchronizer(
-                  telemetry: telemetryCoordinator,
-                  child: OTLApp(),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-
-      if (!_isSmokeTest) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => unawaited(
-            OptionalBootstrap(
-              recordNonFatal: (error, stack) =>
-                  telemetryCoordinator.recordNonFatal(
-                    error,
-                    stack,
-                    operation: 'optional_bootstrap',
-                  ),
-            ).run(),
-          ),
-        );
-      } else {
-        sharedChannelTalkReadiness.markUnavailable();
-      }
-    },
-    (error, stack) {
-      unawaited(
-        telemetryCoordinator.recordFatal(
-          error,
-          stack,
-          reason: 'uncaught_zone_error',
-        ),
-      );
-      if (sentryConsentGate.isEnabled) {
-        Sentry.captureException(error, stackTrace: stack);
-      }
-    },
-  );
+  bootstrapApp(() => OTLApp());
 }
 
 class OTLApp extends StatefulWidget {
@@ -227,8 +42,8 @@ class OTLApp extends StatefulWidget {
 }
 
 class _OTLAppState extends State<OTLApp> {
-  final _appLinks = AppLinks();
-  StreamSubscription<Uri>? _linkSubscription;
+  late final AppUpdateChecker _appUpdateChecker;
+  late final DeepLinkHandler _deepLinkHandler;
   late final StorageService _storageService;
   bool _isLoading = true;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
@@ -238,172 +53,35 @@ class _OTLAppState extends State<OTLApp> {
   void initState() {
     super.initState();
     _storageService = widget.storageServiceOverride ?? StorageService();
+    _appUpdateChecker = AppUpdateChecker(_scaffoldMessengerKey);
+    _deepLinkHandler = DeepLinkHandler(
+      storageService: _storageService,
+      authModel: () => Provider.of<AuthModel>(context, listen: false),
+      isMounted: () => mounted,
+      isLoading: () => _isLoading,
+      onLoaded: () => setState(() => _isLoading = false),
+      telemetryCoordinator: telemetryCoordinator,
+      uriLinkStreamOverride: widget.uriLinkStreamOverride,
+      recordNonFatalOverride: widget.recordNonFatalOverride,
+    );
     if (widget.initializeAppOverride case final initializeApp?) {
       initializeApp();
     } else {
-      _initializeApp();
+      initializeAppSession(
+        authModel: Provider.of<AuthModel>(context, listen: false),
+        storageService: _storageService,
+        isMounted: () => mounted,
+        onLoaded: () => setState(() => _isLoading = false),
+      );
     }
-    _initDeepLinks();
-    _checkForUpdate();
-  }
-
-  Future<void> _checkForUpdate() async {
-    if (Platform.isAndroid) {
-      try {
-        final info = await InAppUpdate.checkForUpdate();
-        if (info.updateAvailability == UpdateAvailability.updateAvailable) {
-          if (info.immediateUpdateAllowed && info.updatePriority >= 4) {
-            final result = await InAppUpdate.performImmediateUpdate();
-            if (result == AppUpdateResult.userDeniedUpdate) {
-              exit(0);
-            }
-          } else if (info.flexibleUpdateAllowed) {
-            await InAppUpdate.startFlexibleUpdate().then((_) {
-              _showUpdateSnackbar();
-            });
-          }
-        } else if (info.updateAvailability ==
-            UpdateAvailability.developerTriggeredUpdateInProgress) {
-          await InAppUpdate.performImmediateUpdate();
-        }
-      } catch (e) {
-        debugPrint("In-app update error: $e");
-      }
-    }
-  }
-
-  void _showUpdateSnackbar() {
-    _scaffoldMessengerKey.currentState?.showSnackBar(
-      SnackBar(
-        content: Text("popup.inapp_flexible_download_complete".tr()),
-        duration: const Duration(days: 1),
-        action: SnackBarAction(
-          label: "popup.inapp_flexible_restart".tr(),
-          onPressed: () async {
-            await InAppUpdate.completeFlexibleUpdate();
-          },
-        ),
-      ),
-    );
+    _deepLinkHandler.initialize();
+    _appUpdateChecker.checkForUpdate();
   }
 
   @override
   void dispose() {
-    _linkSubscription?.cancel();
+    _deepLinkHandler.dispose();
     super.dispose();
-  }
-
-  Future<void> _initializeApp() async {
-    final authModel = Provider.of<AuthModel>(context, listen: false);
-
-    try {
-      await () async {
-        if (await _storageService.hasTokens()) {
-          final result = await DioProvider().refreshSession();
-          if (result == SessionRefreshResult.rejected) {
-            authModel.setLoggedIn(await _storageService.hasTokens());
-          } else {
-            // Refresh succeeded, or the network was unavailable. Keep the
-            // stored session; the 401 interceptor decides once online.
-            authModel.setLoggedIn(true);
-          }
-        } else {
-          authModel.setLoggedIn(false);
-        }
-      }().timeout(const Duration(seconds: 15));
-    } catch (error, stackTrace) {
-      unawaited(
-        telemetryCoordinator.recordNonFatal(
-          error,
-          stackTrace,
-          operation: 'app_initialization',
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _initDeepLinks() {
-    final uriLinkStream =
-        widget.uriLinkStreamOverride ?? _appLinks.uriLinkStream;
-    _linkSubscription = uriLinkStream.listen(
-      (uri) {
-        if (uri.host == 'login' && uri.path == '/') {
-          final accessToken = uri.queryParameters['accessToken'];
-          final refreshToken = uri.queryParameters['refreshToken'];
-
-          if (accessToken != null && refreshToken != null) {
-            unawaited(_handleLoginTokensSafely(accessToken, refreshToken));
-          }
-        }
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        unawaited(
-          _recordDeepLinkNonFatalSafely(
-            error,
-            stackTrace,
-            operation: 'deep_link_stream',
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _handleLoginTokensSafely(
-    String accessToken,
-    String refreshToken,
-  ) async {
-    try {
-      await _handleLoginTokens(accessToken, refreshToken);
-    } catch (error, stackTrace) {
-      await _recordDeepLinkNonFatalSafely(
-        error,
-        stackTrace,
-        operation: 'deep_link_login',
-      );
-    }
-  }
-
-  Future<void> _handleLoginTokens(
-    String accessToken,
-    String refreshToken,
-  ) async {
-    final auth = Provider.of<AuthModel>(context, listen: false);
-    await _storageService.saveTokens(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    );
-    auth.setLoggedIn(true);
-    if (!mounted) return;
-    if (_isLoading) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _recordDeepLinkNonFatalSafely(
-    Object error,
-    StackTrace stackTrace, {
-    required String operation,
-  }) async {
-    try {
-      final recordNonFatal = widget.recordNonFatalOverride;
-      if (recordNonFatal != null) {
-        await recordNonFatal(error, stackTrace);
-      } else {
-        await telemetryCoordinator.recordNonFatal(
-          error,
-          stackTrace,
-          operation: operation,
-        );
-      }
-    } catch (_) {}
   }
 
   @override
@@ -428,7 +106,7 @@ class _OTLAppState extends State<OTLApp> {
       title: "OTL",
       home:
           widget.homeOverride ??
-          (authModel.isLogined ? OTLHome() : LoginPage()),
+          (authModel.isLogined ? const OTLHome() : LoginPage()),
       routes: {
         LikedReviewPage.route: (_) => LikedReviewPage(),
         MyReviewPage.route: (_) => MyReviewPage(),
@@ -436,52 +114,7 @@ class _OTLAppState extends State<OTLApp> {
         CourseDetailPage.route: (_) => CourseDetailPage(),
         LoginPage.route: (_) => LoginPage(),
       },
-      theme: _buildTheme(),
+      theme: buildAppTheme(),
     );
-  }
-
-  ThemeData _buildTheme() {
-    final base = ThemeData(
-      useMaterial3: false,
-      fontFamily: 'NotoSansKR',
-      primarySwatch: createMaterialColor(OTLColor.pinksMain),
-      canvasColor: OTLColor.grayF,
-      iconTheme: const IconThemeData(color: OTLColor.gray3),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: InputBorder.none,
-        contentPadding: EdgeInsets.only(),
-        isDense: true,
-        hintStyle: TextStyle(color: OTLColor.pinksMain, fontSize: 14.0),
-      ),
-    );
-
-    return base.copyWith(
-      cardTheme: base.cardTheme.copyWith(margin: const EdgeInsets.only()),
-      chipTheme: base.chipTheme.copyWith(
-        backgroundColor: OTLColor.grayE,
-        pressElevation: 0.0,
-        secondarySelectedColor: OTLColor.grayD,
-        labelStyle: const TextStyle(color: OTLColor.gray3, fontSize: 12.0),
-        secondaryLabelStyle: const TextStyle(
-          color: OTLColor.gray3,
-          fontSize: 12.0,
-        ),
-      ),
-      textTheme: base.textTheme.apply(
-        bodyColor: OTLColor.gray3,
-        displayColor: OTLColor.gray3,
-      ),
-    );
-  }
-}
-
-class NoEndOfScrollBehavior extends ScrollBehavior {
-  @override
-  Widget buildOverscrollIndicator(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails details,
-  ) {
-    return child;
   }
 }

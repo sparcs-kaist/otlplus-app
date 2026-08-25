@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:otlplus/constants/preference_keys.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/semester.dart';
@@ -215,7 +216,7 @@ class InfoModel extends ChangeNotifier {
 
   Future<void> deleteAccount() async {
     final pref = await SharedPreferences.getInstance();
-    pref.setBool('hasAccount', false);
+    pref.setBool(PreferenceKeys.hasAccount, false);
     _hasData = false;
     notifyListeners();
   }

@@ -104,7 +104,7 @@ class UserPage extends StatelessWidget {
   }
 
   Widget _buildDivider() {
-    return Divider(color: OTLColor.gray0.withValues(alpha: .25));
+    return Divider(color: OTLColor.divider);
   }
 
   Widget _buildContent(String title, String body) {

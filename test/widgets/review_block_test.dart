@@ -23,8 +23,9 @@ import '../utils/extensions.dart';
 import '../utils/samples.dart';
 
 class _FakeReviewRepository extends ReviewRepository {
-  _FakeReviewRepository() : super(Dio());
+  _FakeReviewRepository({this.error}) : super(Dio());
 
+  final Object? error;
   ReviewLikeAction? action;
   int? reviewId;
 
@@ -35,6 +36,7 @@ class _FakeReviewRepository extends ReviewRepository {
   }) async {
     this.reviewId = reviewId;
     this.action = action;
+    if (error != null) throw error!;
     return reviewId;
   }
 }
@@ -91,6 +93,42 @@ void main() {
     expect(repository.action, ReviewLikeAction.unlike);
   });
 
+  testWidgets('failed unlike rolls back optimistic state without crashing', (
+    tester,
+  ) async {
+    final failure = StateError('update failed');
+    final repository = _FakeReviewRepository(error: failure);
+    final escapedErrors = <Object>[];
+    final review = _reviewWithContent(
+      'rollback review content',
+      like: 97,
+      liked: true,
+    );
+    await tester.pumpWidget(
+      Provider<ReviewRepository>.value(
+        value: repository,
+        child: ReviewBlock(review: review).material,
+      ),
+    );
+
+    await runZonedGuarded<Future<void>>(() async {
+      await tester.tap(find.byIcon(Icons.thumb_up_alt));
+      await tester.pump(const Duration(seconds: 1));
+    }, (error, stackTrace) => escapedErrors.add(error));
+
+    expect(escapedErrors, <Object>[failure]);
+    expect(find.byIcon(Icons.thumb_up_alt), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.textSpan?.toPlainText().contains('97') == true,
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('report review triggers mailto launch', (tester) async {
     final telemetry = _RecordingTelemetryCoordinator();
     final review = _reviewWithContent('reportable review content');
@@ -132,18 +170,18 @@ void main() {
   });
 }
 
-Review _reviewWithContent(String content) {
+Review _reviewWithContent(String content, {int? like, bool? liked}) {
   return Review(
     id: SampleReview.id,
     course: SampleReview.course,
     lecture: SampleReview.lecture,
     content: content,
-    like: SampleReview.like,
+    like: like ?? SampleReview.like,
     isDeleted: SampleReview.isDeleted,
     grade: SampleReview.grade,
     load: SampleReview.load,
     speech: SampleReview.speech,
-    userspecificIsLiked: SampleReview.userspecificIsLiked,
+    userspecificIsLiked: liked ?? SampleReview.userspecificIsLiked,
   );
 }
 

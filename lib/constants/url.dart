@@ -2,6 +2,7 @@ const BASE_AUTHORITY = "otl.kaist.ac.kr";
 
 // Retained v1 endpoints: session, legacy lecture/review details, and sharing.
 const SESSION_URL = "session/";
+const SESSION_LOGIN_URL = "session/login/";
 const SESSION_INFO_URL = SESSION_URL + "info";
 const SESSION_REFRESH_URL = SESSION_URL + "refresh";
 
@@ -44,3 +45,9 @@ const API_V2_DEPARTMENT_OPTIONS_URL = API_V2_URL + "department-options";
 enum ShareType { image, ical }
 
 const CONTACT = "otlplus@sparcs.org";
+
+abstract final class ExternalUrls {
+  static const sparcsRecruiting = "https://apply.sparcs.org/";
+  static const appEvent =
+      "https://docs.google.com/forms/d/e/1FAIpQLSfZbU_TFUPN53De_ihtS4ZK5Tb_nRDazRS7EYQgp3QWAYvyhQ/viewform";
+}

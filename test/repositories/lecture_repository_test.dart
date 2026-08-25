@@ -7,6 +7,7 @@ import "package:dio/dio.dart";
 import "package:flutter_test/flutter_test.dart";
 import "package:otlplus/constants/url.dart";
 import "package:otlplus/models/lecture.dart";
+import "package:otlplus/models/time.dart";
 import "package:otlplus/repositories/lecture_repository.dart";
 
 import "../utils/fake_http.dart";
@@ -130,7 +131,7 @@ void main() {
 
       expect(lecture.classtimes, hasLength(1));
       final classtime = lecture.classtimes.single;
-      expect(classtime.day, 4);
+      expect(classtime.day, Weekday.fromCode(4));
       expect(classtime.begin, 1140);
       expect(classtime.end, 1320);
       expect(classtime.buildingCode, "Z02");
@@ -140,7 +141,7 @@ void main() {
 
       expect(lecture.examtimes, hasLength(1));
       final examtime = lecture.examtimes.single;
-      expect(examtime.day, 2);
+      expect(examtime.day, Weekday.fromCode(2));
       expect(examtime.str, "13:00~15:00");
       expect(examtime.strEn, examtime.str);
       expect(examtime.begin, 780);
@@ -163,7 +164,7 @@ void main() {
 
     final lecture = Lecture.fromV2Json(lectureJson, year: 2026, semester: 1);
 
-    expect(lecture.classtimes.single.day, 0);
+    expect(lecture.classtimes.single.day, Weekday.monday);
   });
 
   test("keeps v2 subtitle separate from the observable lecture title", () {

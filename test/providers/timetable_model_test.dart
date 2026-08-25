@@ -7,6 +7,7 @@ import "package:otlplus/constants/enums.dart";
 import "package:otlplus/models/classtime.dart";
 import "package:otlplus/models/lecture.dart";
 import "package:otlplus/models/semester.dart";
+import "package:otlplus/models/time.dart";
 import "package:otlplus/models/timetable.dart";
 import "package:otlplus/models/user.dart";
 import "package:otlplus/providers/timetable_model.dart";
@@ -497,7 +498,7 @@ Lecture _lecture(
         classroomShort: "E3",
         classroomShortEn: "E3",
         roomName: "101",
-        day: day,
+        day: Weekday.fromCode(day),
         begin: begin,
         end: end,
       ),

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:otlplus/constants/preference_keys.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/extensions/semester.dart';
 import 'package:otlplus/pages/course_search_page.dart';
@@ -65,7 +66,7 @@ class _MainPageState extends State<MainPage> {
       }
       if (Platform.isAndroid) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString("user_id", userId.toString());
+        await prefs.setString(PreferenceKeys.userId, userId.toString());
       }
       _syncedWidgetUserId = userId;
     } catch (error) {
@@ -322,7 +323,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildDivider() {
-    return Divider(color: OTLColor.gray0.withValues(alpha: .25));
+    return Divider(color: OTLColor.divider);
   }
 
   Widget _buildTextButtons(BuildContext context) {

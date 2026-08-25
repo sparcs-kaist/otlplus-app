@@ -103,8 +103,14 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  int _selectedTimetableIndex = 0;
+  static const int myTimetableIndex = 0;
+  static const int _firstSavedTimetableIndex = myTimetableIndex + 1;
+
+  int _selectedTimetableIndex = myTimetableIndex;
   int get selectedIndex => _selectedTimetableIndex;
+  bool get isMyTimetable => isMyTimetableIndex(_selectedTimetableIndex);
+
+  bool isMyTimetableIndex(int index) => index == myTimetableIndex;
 
   Timetable get currentTimetable => _timetables[_selectedTimetableIndex];
 
@@ -170,12 +176,12 @@ class TimetableModel extends ChangeNotifier {
 
   Future<bool> _loadTimetable() async {
     final requestId = ++_loadRequestId;
-    final selectServerTimetable = _selectedTimetableIndex > 0;
+    final selectServerTimetable = !isMyTimetable;
     _isLoading = true;
     _isLoaded = false;
     _loadFailed = false;
     _error = null;
-    _selectedTimetableIndex = 0;
+    _selectedTimetableIndex = myTimetableIndex;
     _summaries = <TimetableListItem>[];
     _timetables = <Timetable>[];
     notifyListeners();
@@ -250,11 +256,13 @@ class TimetableModel extends ChangeNotifier {
       final summaryIndex = _summaries.indexWhere(
         (summary) => summary.id == preferredTimetableId,
       );
-      _selectedTimetableIndex = summaryIndex < 0 ? 0 : summaryIndex + 1;
+      _selectedTimetableIndex = summaryIndex < 0
+          ? myTimetableIndex
+          : summaryIndex + _firstSavedTimetableIndex;
     } else if (selectServerTimetable && _summaries.isNotEmpty) {
-      _selectedTimetableIndex = 1;
+      _selectedTimetableIndex = _firstSavedTimetableIndex;
     } else {
-      _selectedTimetableIndex = 0;
+      _selectedTimetableIndex = myTimetableIndex;
     }
   }
 
@@ -263,7 +271,7 @@ class TimetableModel extends ChangeNotifier {
     _isLoading = false;
     _isLoaded = false;
     _loadFailed = true;
-    _selectedTimetableIndex = 0;
+    _selectedTimetableIndex = myTimetableIndex;
     _summaries = <TimetableListItem>[];
     _timetables = <Timetable>[];
     notifyListeners();
@@ -292,7 +300,7 @@ class TimetableModel extends ChangeNotifier {
       _isLoaded = true;
       _loadFailed = false;
       notifyListeners();
-      return _selectedTimetableIndex > 0;
+      return !isMyTimetable;
     } catch (exception) {
       _error = exception;
       notifyListeners();
@@ -378,9 +386,9 @@ class TimetableModel extends ChangeNotifier {
       _error = null;
       final deletedIndex = _selectedTimetableIndex;
       await _repository.delete(currentTimetable.id);
-      _summaries.removeAt(deletedIndex - 1);
+      _summaries.removeAt(deletedIndex - _firstSavedTimetableIndex);
       _timetables.removeAt(deletedIndex);
-      _selectedTimetableIndex = deletedIndex - 1;
+      _selectedTimetableIndex = deletedIndex - _firstSavedTimetableIndex;
       if (_selectedTimetableIndex >= _timetables.length) {
         _selectedTimetableIndex = _timetables.length - 1;
       }
@@ -393,15 +401,15 @@ class TimetableModel extends ChangeNotifier {
     }
   }
 
-  // The dedicated my-timetable response is read-only at UI index 0. The
-  // server collection contains only editable user-created timetable summaries.
+  // The dedicated my-timetable response is read-only. The server collection
+  // contains only editable user-created timetable summaries.
   bool get _hasEditableTimetable =>
-      _selectedTimetableIndex > 0 &&
+      !isMyTimetable &&
       _selectedTimetableIndex < _timetables.length &&
-      _selectedTimetableIndex - 1 < _summaries.length;
+      _selectedTimetableIndex - _firstSavedTimetableIndex < _summaries.length;
 
   TimetableListItem get _currentSummary =>
-      _summaries[_selectedTimetableIndex - 1];
+      _summaries[_selectedTimetableIndex - _firstSavedTimetableIndex];
 
   void _replaceCurrentTimetable(Timetable timetable) {
     if (timetable.id != _currentSummary.id) {
