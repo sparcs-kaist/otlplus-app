@@ -8,7 +8,7 @@ class Review {
   final NestedLecture lecture;
   final String content;
   final int like;
-  final int isDeleted;
+  final bool isDeleted;
   final int grade;
   final int load;
   final int speech;
@@ -20,12 +20,12 @@ class Review {
     required this.lecture,
     required this.content,
     required this.like,
-    required this.isDeleted,
+    required Object isDeleted,
     required this.grade,
     required this.load,
     required this.speech,
     required this.userspecificIsLiked,
-  });
+  }) : isDeleted = isDeleted == 1 || isDeleted == true;
 
   bool operator ==(Object other) =>
       identical(this, other) || (other is Review && other.id == id);
@@ -38,7 +38,7 @@ class Review {
       lecture = NestedLecture.fromJson(json['lecture']),
       content = json['content'],
       like = json['like'],
-      isDeleted = json['is_deleted'],
+      isDeleted = json['is_deleted'] == 1 || json['is_deleted'] == true,
       grade = json['grade'],
       load = json['load'],
       speech = json['speech'],
@@ -102,7 +102,7 @@ class Review {
       ),
       content: json['content'] as String,
       like: json['like'] as int,
-      isDeleted: (json['isDeleted'] as bool) ? 1 : 0,
+      isDeleted: json['isDeleted'] as bool,
       grade: json['grade'] as int,
       load: json['load'] as int,
       speech: json['speech'] as int,
@@ -117,7 +117,7 @@ class Review {
     data['lecture'] = this.lecture.toJson();
     data['content'] = this.content;
     data['like'] = this.like;
-    data['is_deleted'] = this.isDeleted;
+    data['is_deleted'] = this.isDeleted ? 1 : 0;
     data['grade'] = this.grade;
     data['load'] = this.load;
     data['speech'] = this.speech;

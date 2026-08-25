@@ -148,7 +148,7 @@ void main() {
     expect(review.grade, 4);
     expect(review.load, 3);
     expect(review.speech, 4);
-    expect(review.isDeleted, 0);
+    expect(review.isDeleted, isFalse);
     expect(review.userspecificIsLiked, isFalse);
   });
 
@@ -157,7 +157,8 @@ void main() {
 
     final review = Review.fromV2Json(deletedReview);
 
-    expect(review.isDeleted, 1);
+    expect(review.isDeleted, isTrue);
+    expect(review.toJson()["is_deleted"], 1);
   });
 
   test("create posts the v2 review body", () async {
