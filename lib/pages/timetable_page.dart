@@ -235,7 +235,7 @@ class _TimetablePageState extends State<TimetablePage> {
             OTLNavigator.push(context, LectureDetailPage());
           },
           onLongPress:
-              isSelected || context.read<TimetableModel>().selectedIndex == 0
+              isSelected || context.read<TimetableModel>().isMyTimetable
               ? null
               : () {
                   OTLNavigator.pushDialog(
@@ -283,7 +283,7 @@ class _TimetablePageState extends State<TimetablePage> {
         );
         return;
       case TimetableTabAction.delete:
-        if (index == 0) {
+        if (timetableModel.isMyTimetableIndex(index)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             OTLNavigator.pushDialog(
               context: context,
@@ -342,10 +342,11 @@ class _TimetablePageState extends State<TimetablePage> {
       onTap: (i) {
         final timetableModel = context.read<TimetableModel>();
 
-        if (i > 0 && i == timetableModel.timetables.length)
+        if (i == timetableModel.timetables.length) {
           timetableModel.createTimetable();
-        else
+        } else {
           timetableModel.setIndex(i);
+        }
       },
       onAction: (action, index) =>
           _handleTimetableTabAction(context, timetableModel, action, index),
