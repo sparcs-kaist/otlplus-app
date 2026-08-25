@@ -7,8 +7,9 @@ import 'package:otlplus/models/professor.dart';
 /// violation and throws instead of silently reading as active.
 bool _normalizeIsDeleted(Object? value) {
   if (value is bool) return value;
-  if (value == 0) return false;
-  if (value == 1) return true;
+  // `is int` guards against doubles sneaking through `0.0 == 0`.
+  if (value is int && value == 0) return false;
+  if (value is int && value == 1) return true;
   throw ArgumentError.value(value, 'isDeleted', 'expected bool or int 0/1');
 }
 

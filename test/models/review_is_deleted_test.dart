@@ -159,6 +159,17 @@ void main() {
       expect(() => Review.fromJson(_v1ReviewPayload(-1)), throwsArgumentError);
     });
 
+    test("v1 double lookalikes are contract violations", () {
+      expect(
+        () => Review.fromJson({..._v1ReviewPayload(1), "is_deleted": 1.0}),
+        throwsArgumentError,
+      );
+      expect(
+        () => Review.fromJson({..._v1ReviewPayload(0), "is_deleted": 0.0}),
+        throwsArgumentError,
+      );
+    });
+
     test("constructor rejects unsupported objects", () {
       final payload = _v1ReviewPayload(1)..["is_deleted"] = null;
       expect(() => Review.fromJson(payload), throwsArgumentError);
