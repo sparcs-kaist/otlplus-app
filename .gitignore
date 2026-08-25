@@ -89,3 +89,5 @@ android/app/property*
 .fvm/
 
 sentry.properties
+# Flutter native integration ephemeral env (machine-specific)
+ios/Flutter/ephemeral/flutter_native_integration.env
