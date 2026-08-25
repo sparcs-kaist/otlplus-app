@@ -170,11 +170,7 @@ void main() {
   });
 }
 
-Review _reviewWithContent(
-  String content, {
-  int? like,
-  bool? liked,
-}) {
+Review _reviewWithContent(String content, {int? like, bool? liked}) {
   return Review(
     id: SampleReview.id,
     course: SampleReview.course,

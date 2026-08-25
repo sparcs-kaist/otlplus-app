@@ -9,8 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _kSendCrashlytics = PreferenceKeys.sendCrashlytics;
-const _kSendCrashlyticsAnonymously =
-    PreferenceKeys.sendCrashlyticsAnonymously;
+const _kSendCrashlyticsAnonymously = PreferenceKeys.sendCrashlyticsAnonymously;
 const _kSendAnalytics = PreferenceKeys.sendAnalytics;
 const _kShowsChannelTalkButton = PreferenceKeys.showsChannelTalkButton;
 const _kSendAlarm = PreferenceKeys.sendAlarm;
