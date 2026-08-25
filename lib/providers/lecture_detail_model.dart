@@ -1,5 +1,4 @@
 import "package:flutter/foundation.dart";
-import "package:otlplus/dio_provider.dart";
 import "package:otlplus/models/course.dart";
 import "package:otlplus/models/lecture.dart";
 import "package:otlplus/models/review.dart";
@@ -7,13 +6,11 @@ import "package:otlplus/repositories/course_repository.dart";
 import "package:otlplus/repositories/lecture_repository.dart";
 
 class LectureDetailModel extends ChangeNotifier {
-  LectureDetailModel([
-    CourseRepository? courseRepository,
-    LectureRepository? lectureRepository,
-  ]) : _courseRepository =
-           courseRepository ?? CourseRepository(DioProvider().dio),
-       _lectureRepository =
-           lectureRepository ?? LectureRepository(DioProvider().dio);
+  LectureDetailModel(
+    CourseRepository courseRepository,
+    LectureRepository lectureRepository,
+  ) : _courseRepository = courseRepository,
+      _lectureRepository = lectureRepository;
 
   final CourseRepository _courseRepository;
   final LectureRepository _lectureRepository;

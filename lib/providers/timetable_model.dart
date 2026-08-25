@@ -5,7 +5,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/timetable.dart';
@@ -18,12 +17,12 @@ typedef TimetableFileWriter =
 
 class TimetableModel extends ChangeNotifier {
   TimetableModel({
-    TimetableRepository? repository,
+    required TimetableRepository repository,
     Dio? legacyShareDio,
     TimetableFileWriter? fileWriter,
     bool forTest = false,
-  }) : _repository = repository ?? TimetableRepository(DioProvider().dio),
-       _legacyShareDio = legacyShareDio ?? DioProvider().dio,
+  }) : _repository = repository,
+       _legacyShareDio = legacyShareDio ?? Dio(),
        _fileWriter = fileWriter ?? writeFile {
     if (forTest) {
       _user = User(

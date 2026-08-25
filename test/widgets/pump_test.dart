@@ -1,8 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/providers/lecture_search_model.dart';
 import 'package:otlplus/providers/timetable_model.dart';
+import 'package:otlplus/repositories/department_repository.dart';
+import 'package:otlplus/repositories/lecture_repository.dart';
+import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:otlplus/widgets/course_block.dart';
 import 'package:otlplus/widgets/dropdown.dart';
 import 'package:otlplus/widgets/expandable_text.dart';
@@ -49,9 +53,9 @@ void main() {
 
   testWidgets('pump LectureGroupBlockRow', (WidgetTester tester) async {
     await tester.pumpWidget(
-      LectureGroupBlockRow(
-        lecture: SampleLecture.shared,
-      ).materialAndNotifier(TimetableModel(forTest: true)),
+      LectureGroupBlockRow(lecture: SampleLecture.shared).materialAndNotifier(
+        TimetableModel(repository: TimetableRepository(Dio()), forTest: true),
+      ),
     );
   });
 
@@ -62,7 +66,9 @@ void main() {
         onLongPress: (_) {
           return;
         },
-      ).materialAndNotifier(TimetableModel(forTest: true)),
+      ).materialAndNotifier(
+        TimetableModel(repository: TimetableRepository(Dio()), forTest: true),
+      ),
     );
   });
 
@@ -74,7 +80,12 @@ void main() {
 
   testWidgets('pump LectureSearch', (WidgetTester tester) async {
     await tester.pumpWidget(
-      LectureSearch().scaffoldAndNotifier(LectureSearchModel()),
+      LectureSearch().scaffoldAndNotifier(
+        LectureSearchModel(
+          LectureRepository(Dio()),
+          DepartmentRepository(Dio()),
+        ),
+      ),
     );
   });
 
@@ -92,9 +103,9 @@ void main() {
 
   testWidgets('pump SemesterPicker', (WidgetTester tester) async {
     await tester.pumpWidget(
-      SemesterPicker(
-        onSemesterChanged: () => null,
-      ).scaffoldAndNotifier(TimetableModel(forTest: true)),
+      SemesterPicker(onSemesterChanged: () => null).scaffoldAndNotifier(
+        TimetableModel(repository: TimetableRepository(Dio()), forTest: true),
+      ),
     );
   });
 
@@ -106,7 +117,9 @@ void main() {
 
   testWidgets('pump TimetableSummary', (WidgetTester tester) async {
     tester.pumpWidget(
-      TimetableSummary().scaffoldAndNotifier(TimetableModel(forTest: true)),
+      TimetableSummary().scaffoldAndNotifier(
+        TimetableModel(repository: TimetableRepository(Dio()), forTest: true),
+      ),
     );
   });
 

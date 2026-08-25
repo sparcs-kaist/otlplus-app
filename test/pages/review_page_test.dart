@@ -9,6 +9,7 @@ import 'package:otlplus/pages/review_page.dart';
 import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/latest_reviews_model.dart';
+import 'package:otlplus/repositories/info_repository.dart';
 import 'package:otlplus/repositories/review_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -172,7 +173,7 @@ class _ReviewPageHarnessState extends State<_ReviewPageHarness> {
 }
 
 class _InfoModel extends InfoModel {
-  _InfoModel() : super(forTest: true);
+  _InfoModel() : super(infoRepository: InfoRepository(Dio()), forTest: true);
 
   @override
   List<Semester> get semesters => const <Semester>[];

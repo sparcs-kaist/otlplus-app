@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,11 @@ import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/lecture_detail_model.dart';
 import 'package:otlplus/providers/timetable_model.dart';
+import 'package:otlplus/repositories/course_repository.dart';
+import 'package:otlplus/repositories/info_repository.dart';
+import 'package:otlplus/repositories/lecture_repository.dart';
+import 'package:otlplus/repositories/review_repository.dart';
+import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -101,7 +107,8 @@ Widget _app(Widget home) {
 }
 
 class _FailedTimetableModel extends TimetableModel {
-  _FailedTimetableModel() : super(forTest: true);
+  _FailedTimetableModel()
+    : super(repository: TimetableRepository(Dio()), forTest: true);
 
   @override
   bool get isLoaded => false;
@@ -111,7 +118,8 @@ class _FailedTimetableModel extends TimetableModel {
 }
 
 class _FailedInfoModel extends InfoModel {
-  _FailedInfoModel() : super(forTest: true);
+  _FailedInfoModel()
+    : super(infoRepository: InfoRepository(Dio()), forTest: true);
 
   @override
   bool get hasData => false;
@@ -121,7 +129,8 @@ class _FailedInfoModel extends InfoModel {
 }
 
 class _EmptySemestersInfoModel extends InfoModel {
-  _EmptySemestersInfoModel() : super(forTest: true);
+  _EmptySemestersInfoModel()
+    : super(infoRepository: InfoRepository(Dio()), forTest: true);
 
   @override
   bool get hasData => true;
@@ -134,6 +143,13 @@ class _EmptySemestersInfoModel extends InfoModel {
 }
 
 class _FailedCourseDetailModel extends CourseDetailModel {
+  _FailedCourseDetailModel()
+    : super(
+        CourseRepository(Dio()),
+        LectureRepository(Dio()),
+        ReviewRepository(Dio()),
+      );
+
   @override
   bool get hasData => false;
 
@@ -142,6 +158,9 @@ class _FailedCourseDetailModel extends CourseDetailModel {
 }
 
 class _FailedLectureDetailModel extends LectureDetailModel {
+  _FailedLectureDetailModel()
+    : super(CourseRepository(Dio()), LectureRepository(Dio()));
+
   @override
   bool get hasData => false;
 

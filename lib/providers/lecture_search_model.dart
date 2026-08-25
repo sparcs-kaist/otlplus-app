@@ -4,7 +4,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
-import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/filter.dart';
 import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/semester.dart';
@@ -12,13 +11,11 @@ import 'package:otlplus/repositories/department_repository.dart';
 import 'package:otlplus/repositories/lecture_repository.dart';
 
 class LectureSearchModel extends ChangeNotifier {
-  LectureSearchModel([
-    LectureRepository? lectureRepository,
-    DepartmentRepository? departmentRepository,
-  ]) : _lectureRepository =
-           lectureRepository ?? LectureRepository(DioProvider().dio),
-       _departmentRepository =
-           departmentRepository ?? DepartmentRepository(DioProvider().dio);
+  LectureSearchModel(
+    LectureRepository lectureRepository,
+    DepartmentRepository departmentRepository,
+  ) : _lectureRepository = lectureRepository,
+      _departmentRepository = departmentRepository;
 
   final LectureRepository _lectureRepository;
   final DepartmentRepository _departmentRepository;
