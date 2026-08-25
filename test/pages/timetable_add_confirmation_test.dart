@@ -1,6 +1,7 @@
 import "dart:convert";
 import "dart:io";
 
+import "package:dio/dio.dart";
 import "package:easy_localization/easy_localization.dart";
 import "package:flutter/material.dart";
 import "package:flutter_test/flutter_test.dart";
@@ -12,6 +13,11 @@ import "package:otlplus/providers/course_detail_model.dart";
 import "package:otlplus/providers/info_model.dart";
 import "package:otlplus/providers/lecture_detail_model.dart";
 import "package:otlplus/providers/timetable_model.dart";
+import "package:otlplus/repositories/course_repository.dart";
+import "package:otlplus/repositories/info_repository.dart";
+import "package:otlplus/repositories/lecture_repository.dart";
+import "package:otlplus/repositories/review_repository.dart";
+import "package:otlplus/repositories/timetable_repository.dart";
 import "package:otlplus/utils/navigator.dart";
 import "package:otlplus/widgets/lecture_group_block_row.dart";
 import "package:otlplus/widgets/otl_dialog.dart";
@@ -20,7 +26,8 @@ import "package:provider/provider.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
 class RecordingTimetableModel extends TimetableModel {
-  RecordingTimetableModel() : super(forTest: true) {
+  RecordingTimetableModel()
+    : super(repository: TimetableRepository(Dio()), forTest: true) {
     setIndex(1);
   }
 
@@ -56,7 +63,8 @@ class RecordingTimetableModel extends TimetableModel {
 }
 
 class LoadedLectureDetailModel extends LectureDetailModel {
-  LoadedLectureDetailModel(this.loadedLecture);
+  LoadedLectureDetailModel(this.loadedLecture)
+    : super(CourseRepository(Dio()), LectureRepository(Dio()));
 
   final Lecture loadedLecture;
 
@@ -119,10 +127,17 @@ void main() {
                 value: detailModel,
               ),
               ChangeNotifierProvider<InfoModel>.value(
-                value: InfoModel(forTest: true),
+                value: InfoModel(
+                  infoRepository: InfoRepository(Dio()),
+                  forTest: true,
+                ),
               ),
               ChangeNotifierProvider<CourseDetailModel>.value(
-                value: CourseDetailModel(),
+                value: CourseDetailModel(
+                  CourseRepository(Dio()),
+                  LectureRepository(Dio()),
+                  ReviewRepository(Dio()),
+                ),
               ),
             ],
             child: LectureDetailPage(),

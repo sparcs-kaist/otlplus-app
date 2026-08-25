@@ -1,20 +1,17 @@
 import "dart:async";
 
 import "package:flutter/foundation.dart";
-import "package:otlplus/dio_provider.dart";
 import "package:otlplus/models/course.dart";
 import "package:otlplus/models/filter.dart";
 import "package:otlplus/repositories/course_repository.dart";
 import "package:otlplus/repositories/department_repository.dart";
 
 class CourseSearchModel extends ChangeNotifier {
-  CourseSearchModel([
-    CourseRepository? courseRepository,
-    DepartmentRepository? departmentRepository,
-  ]) : _courseRepository =
-           courseRepository ?? CourseRepository(DioProvider().dio),
-       _departmentRepository =
-           departmentRepository ?? DepartmentRepository(DioProvider().dio);
+  CourseSearchModel(
+    CourseRepository courseRepository,
+    DepartmentRepository departmentRepository,
+  ) : _courseRepository = courseRepository,
+      _departmentRepository = departmentRepository;
 
   final CourseRepository _courseRepository;
   final DepartmentRepository _departmentRepository;

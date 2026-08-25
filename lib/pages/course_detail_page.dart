@@ -54,14 +54,10 @@ class CourseDetailPage extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        isEn
-                            ? 'Unable to load course details.'
-                            : '과목 정보를 불러오지 못했습니다.',
-                      ),
+                      Text('error.load_course_details'.tr()),
                       TextButton(
                         onPressed: courseDetailModel.retryLoad,
-                        child: Text(isEn ? 'Retry' : '다시 시도'),
+                        child: Text('common.retry'.tr()),
                       ),
                     ],
                   ),

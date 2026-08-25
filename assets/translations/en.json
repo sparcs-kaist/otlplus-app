@@ -19,7 +19,16 @@
     "all_selected": "All Selected",
     "num_selected": " Selected",
     "close": "Close",
+    "retry": "Retry",
     "coming": "Coming Soon"
+  },
+  "error": {
+    "load_timetable": "Unable to load timetable.",
+    "load_user_info": "Unable to load your info.",
+    "load_semesters": "Unable to load semesters.",
+    "load_course_details": "Unable to load course details.",
+    "load_lecture_details": "Unable to load lecture details.",
+    "save_review": "Failed to save review."
   },
   "semester": {
     "spring": "Spring",

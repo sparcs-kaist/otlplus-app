@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,10 @@ import 'package:otlplus/models/professor.dart';
 import 'package:otlplus/pages/dictionary_page.dart';
 import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/course_search_model.dart';
+import 'package:otlplus/repositories/course_repository.dart';
+import 'package:otlplus/repositories/department_repository.dart';
+import 'package:otlplus/repositories/lecture_repository.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/course_block.dart';
 import 'package:provider/provider.dart';
@@ -132,7 +137,8 @@ Future<void> _pumpDictionaryPage(
 }
 
 class _CourseSearchModel extends CourseSearchModel {
-  _CourseSearchModel(this._courseValues);
+  _CourseSearchModel(this._courseValues)
+    : super(CourseRepository(Dio()), DepartmentRepository(Dio()));
 
   List<Course>? _courseValues;
 
@@ -146,7 +152,8 @@ class _CourseSearchModel extends CourseSearchModel {
 }
 
 class _FlakyCourseSearchModel extends CourseSearchModel {
-  _FlakyCourseSearchModel(this._initialCourses);
+  _FlakyCourseSearchModel(this._initialCourses)
+    : super(CourseRepository(Dio()), DepartmentRepository(Dio()));
 
   final List<Course> _initialCourses;
   int _readCount = 0;
@@ -156,6 +163,13 @@ class _FlakyCourseSearchModel extends CourseSearchModel {
 }
 
 class _CourseDetailModel extends CourseDetailModel {
+  _CourseDetailModel()
+    : super(
+        CourseRepository(Dio()),
+        LectureRepository(Dio()),
+        ReviewRepository(Dio()),
+      );
+
   final List<int> loadedCourseIds = <int>[];
 
   @override

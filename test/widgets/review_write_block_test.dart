@@ -13,8 +13,9 @@ import "../utils/extensions.dart";
 import "../utils/samples.dart";
 
 class _FakeReviewRepository extends ReviewRepository {
-  _FakeReviewRepository() : super(Dio());
+  _FakeReviewRepository({this.failure}) : super(Dio());
 
+  final Object? failure;
   int? reviewId;
   Map<String, Object>? payload;
 
@@ -26,6 +27,8 @@ class _FakeReviewRepository extends ReviewRepository {
     required int load,
     required int speech,
   }) async {
+    if (failure != null) throw failure!;
+
     this.reviewId = reviewId;
     payload = <String, Object>{
       "content": content,
@@ -172,5 +175,21 @@ void main() {
       repository.payload!["speech"]!,
     ], everyElement(isA<int>()));
     expect(reloadCount, 1);
+  });
+
+  testWidgets("shows a localized snackbar when saving a review fails", (
+    WidgetTester tester,
+  ) async {
+    await _pumpReviewWriteBlock(
+      tester,
+      repository: _FakeReviewRepository(failure: StateError("save failed")),
+    );
+
+    await tester.enterText(find.byType(EditableText), "updated review");
+    await tester.pump();
+    await tester.tap(find.byKey(const Key("review_write_submit")));
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(find.text("error.save_review".tr()), findsOneWidget);
   });
 }

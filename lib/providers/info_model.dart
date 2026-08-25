@@ -3,10 +3,9 @@ import 'dart:async';
 import 'package:channel_talk_flutter/channel_talk_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/preference_keys.dart';
-import 'package:otlplus/constants/url.dart';
-import 'package:otlplus/dio_provider.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/user.dart';
+import 'package:otlplus/repositories/info_repository.dart';
 import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,16 +22,19 @@ const SCHEDULE_NAME = [
 ];
 
 class InfoModel extends ChangeNotifier {
+  final InfoRepository _infoRepository;
   final TelemetryCoordinator? _telemetry;
   final ChannelTalkReadiness _channelTalkReadiness;
   final Duration _channelTalkReadyTimeout;
 
   InfoModel({
+    required InfoRepository infoRepository,
     bool forTest = false,
     TelemetryCoordinator? telemetry,
     ChannelTalkReadiness? channelTalkReadiness,
     Duration channelTalkReadyTimeout = const Duration(seconds: 30),
-  }) : _telemetry = telemetry,
+  }) : _infoRepository = infoRepository,
+       _telemetry = telemetry,
        _channelTalkReadiness =
            channelTalkReadiness ?? sharedChannelTalkReadiness,
        _channelTalkReadyTimeout = channelTalkReadyTimeout {
@@ -178,16 +180,9 @@ class InfoModel extends ChangeNotifier {
     }
   }
 
-  Future<List<Semester>> getSemesters() async {
-    final response = await DioProvider().dio.get(API_SEMESTER_URL);
-    final rawSemesters = response.data as List;
-    return rawSemesters.map((semester) => Semester.fromJson(semester)).toList();
-  }
+  Future<List<Semester>> getSemesters() => _infoRepository.fetchSemesters();
 
-  Future<User> getUser() async {
-    final response = await DioProvider().dio.get(SESSION_INFO_URL);
-    return User.fromJson(response.data);
-  }
+  Future<User> getUser() => _infoRepository.fetchSessionInfo();
 
   Map<String, dynamic>? getCurrentSchedule() {
     final now = DateTime.now();

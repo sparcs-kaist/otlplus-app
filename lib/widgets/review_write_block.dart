@@ -213,12 +213,9 @@ class _ReviewWriteBlockState extends State<ReviewWriteBlock> {
       debugPrint('Review upload failed: $exception');
       if (!mounted) return;
 
-      final isEn = context.isEn;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isEn ? 'Failed to save review.' : '후기를 저장하지 못했습니다.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('error.save_review'.tr())));
     } finally {
       if (mounted) {
         setState(() {

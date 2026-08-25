@@ -29,7 +29,6 @@ import 'package:otlplus/widgets/today_timetable.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_widgetkit/flutter_widgetkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:otlplus/extensions/locale.dart';
 
 class MainPage extends StatefulWidget {
   static String route = 'main_page';
@@ -84,15 +83,14 @@ class _MainPageState extends State<MainPage> {
 
     if (!infoModel.hasData) {
       if (infoModel.hasError) {
-        final isEn = context.isEn;
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(isEn ? 'Unable to load your info.' : '내 정보를 불러오지 못했습니다.'),
+              Text('error.load_user_info'.tr()),
               TextButton(
                 onPressed: () => context.read<InfoModel>().getInfo(),
-                child: Text(isEn ? 'Retry' : '다시 시도'),
+                child: Text('common.retry'.tr()),
               ),
             ],
           ),
@@ -104,15 +102,14 @@ class _MainPageState extends State<MainPage> {
     _scheduleWidgetUserSync(infoModel.user.id);
 
     if (infoModel.semesters.isEmpty) {
-      final isEn = context.isEn;
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isEn ? 'Unable to load semesters.' : '학기 정보를 불러오지 못했습니다.'),
+            Text('error.load_semesters'.tr()),
             TextButton(
               onPressed: () => context.read<InfoModel>().reload(),
-              child: Text(isEn ? 'Retry' : '다시 시도'),
+              child: Text('common.retry'.tr()),
             ),
           ],
         ),

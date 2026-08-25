@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/providers/timetable_model.dart';
+import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:otlplus/widgets/timetable_mode_control.dart';
 import 'package:otlplus/widgets/timetable_tabs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -97,7 +99,10 @@ void main() {
   });
 
   test('timetable model stores typed mode and exposes typed season', () {
-    final model = TimetableModel(forTest: true);
+    final model = TimetableModel(
+      repository: TimetableRepository(Dio()),
+      forTest: true,
+    );
 
     expect(model.selectedMode, TimetableViewMode.classes);
     expect(model.selectedSeason, Season.fall);

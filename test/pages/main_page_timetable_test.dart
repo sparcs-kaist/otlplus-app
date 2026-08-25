@@ -13,6 +13,7 @@ import "package:otlplus/models/user.dart";
 import "package:otlplus/pages/main_page.dart";
 import "package:otlplus/providers/info_model.dart";
 import "package:otlplus/providers/timetable_model.dart";
+import "package:otlplus/repositories/info_repository.dart";
 import "package:otlplus/repositories/timetable_repository.dart";
 import "package:otlplus/widgets/timetable_block.dart";
 import "package:provider/provider.dart";
@@ -34,7 +35,8 @@ class MainPageTimetableRepository extends TimetableRepository {
 }
 
 class LoadedInfoModel extends InfoModel {
-  LoadedInfoModel(this.loadedUser, this.loadedSemester) : super(forTest: true);
+  LoadedInfoModel(this.loadedUser, this.loadedSemester)
+    : super(infoRepository: InfoRepository(Dio()), forTest: true);
 
   final User loadedUser;
   final Semester loadedSemester;

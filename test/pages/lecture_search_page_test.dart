@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,9 @@ import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/pages/lecture_search_page.dart';
 import 'package:otlplus/providers/lecture_search_model.dart';
 import 'package:otlplus/providers/timetable_model.dart';
+import 'package:otlplus/repositories/department_repository.dart';
+import 'package:otlplus/repositories/lecture_repository.dart';
+import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -155,7 +159,8 @@ class _LectureSearchScenario {
 }
 
 class _FakeLectureSearchModel extends LectureSearchModel {
-  _FakeLectureSearchModel(this.callOrder);
+  _FakeLectureSearchModel(this.callOrder)
+    : super(LectureRepository(Dio()), DepartmentRepository(Dio()));
 
   final List<String> callOrder;
   final Completer<bool> searchCompleter = Completer<bool>();
@@ -168,7 +173,8 @@ class _FakeLectureSearchModel extends LectureSearchModel {
 }
 
 class _FakeTimetableModel extends TimetableModel {
-  _FakeTimetableModel(this.callOrder) : super(forTest: true);
+  _FakeTimetableModel(this.callOrder)
+    : super(repository: TimetableRepository(Dio()), forTest: true);
 
   final List<String> callOrder;
 

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,12 +21,26 @@ import 'package:otlplus/providers/lecture_detail_model.dart';
 import 'package:otlplus/providers/lecture_search_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/providers/timetable_model.dart';
+import 'package:otlplus/repositories/course_repository.dart';
+import 'package:otlplus/repositories/department_repository.dart';
+import 'package:otlplus/repositories/info_repository.dart';
+import 'package:otlplus/repositories/lecture_repository.dart';
+import 'package:otlplus/repositories/review_repository.dart';
+import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/extensions.dart';
 
 void main() {
+  final dio = Dio();
+  final courseRepository = CourseRepository(dio);
+  final lectureRepository = LectureRepository(dio);
+  final departmentRepository = DepartmentRepository(dio);
+  final infoRepository = InfoRepository(dio);
+  final reviewRepository = ReviewRepository(dio);
+  final timetableRepository = TimetableRepository(dio);
+
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
     WidgetsFlutterBinding.ensureInitialized();
@@ -34,20 +49,29 @@ void main() {
 
   testWidgets("pump CourseDetailPage", (WidgetTester tester) async {
     tester.pumpWidget(
-      CourseDetailPage().scaffoldAndNotifier(CourseDetailModel()),
+      CourseDetailPage().scaffoldAndNotifier(
+        CourseDetailModel(
+          courseRepository,
+          lectureRepository,
+          reviewRepository,
+        ),
+      ),
     );
   });
 
   testWidgets("pump CourseSearchPage", (WidgetTester tester) async {
     tester.pumpWidget(
-      CourseSearchPage().scaffoldAndNotifier(CourseSearchModel()),
+      CourseSearchPage().scaffoldAndNotifier(
+        CourseSearchModel(courseRepository, departmentRepository),
+      ),
     );
   });
 
   testWidgets("pump DictionaryPage", (WidgetTester tester) async {
-    final searchModel = CourseSearchModel()
-      ..setSearchText("robot")
-      ..setCourseFilterSelected("types", "BR", true);
+    final searchModel =
+        CourseSearchModel(courseRepository, departmentRepository)
+          ..setSearchText("robot")
+          ..setCourseFilterSelected("types", "BR", true);
 
     await tester.pumpWidget(
       EasyLocalization(
@@ -57,7 +81,11 @@ void main() {
           providers: [
             ChangeNotifierProvider<CourseSearchModel>.value(value: searchModel),
             ChangeNotifierProvider<CourseDetailModel>(
-              create: (_) => CourseDetailModel(),
+              create: (_) => CourseDetailModel(
+                courseRepository,
+                lectureRepository,
+                reviewRepository,
+              ),
             ),
           ],
           child: const MaterialApp(home: Scaffold(body: DictionaryPage())),
@@ -72,18 +100,22 @@ void main() {
 
   testWidgets("pump LectureDetailPage", (WidgetTester tester) async {
     tester.pumpWidget(
-      LectureDetailPage().scaffoldAndNotifier(LectureDetailModel()),
+      LectureDetailPage().scaffoldAndNotifier(
+        LectureDetailModel(courseRepository, lectureRepository),
+      ),
     );
   });
 
   testWidgets("pump LectureSearchPage", (WidgetTester tester) async {
     tester.pumpWidget(
-      LectureSearchPage().scaffoldAndNotifier(LectureSearchModel()),
+      LectureSearchPage().scaffoldAndNotifier(
+        LectureSearchModel(lectureRepository, departmentRepository),
+      ),
     );
   });
 
   testWidgets("pump LikedReviewPage", (WidgetTester tester) async {
-    // tester.pumpWidget(LikedReviewPage().scaffoldAndNotifiers([InfoModel(forTest: true), LikedReviewModel()]));
+    // tester.pumpWidget(LikedReviewPage().scaffoldAndNotifiers([InfoModel(infoRepository: infoRepository, forTest: true), LikedReviewModel()]));
   });
 
   testWidgets("pump LoginPage", (WidgetTester tester) async {
@@ -92,15 +124,17 @@ void main() {
 
   testWidgets("pump MainPage", (WidgetTester tester) async {
     tester.pumpWidget(
-      MainPage(
-        changeIndex: (int index) {},
-      ).materialAndNotifier(InfoModel(forTest: true)),
+      MainPage(changeIndex: (int index) {}).materialAndNotifier(
+        InfoModel(infoRepository: infoRepository, forTest: true),
+      ),
     );
   });
 
   testWidgets("pump MyReviewPage", (WidgetTester tester) async {
     tester.pumpWidget(
-      MyReviewPage().materialAndNotifier(InfoModel(forTest: true)),
+      MyReviewPage().materialAndNotifier(
+        InfoModel(infoRepository: infoRepository, forTest: true),
+      ),
     );
   });
 
@@ -113,7 +147,7 @@ void main() {
   });
 
   testWidgets("pump ReviewPage", (WidgetTester tester) async {
-    // tester.pumpWidget(ReviewPage().scaffoldAndNotifiers([InfoModel(forTest: true), ReviewModel()]));
+    // tester.pumpWidget(ReviewPage().scaffoldAndNotifiers([InfoModel(infoRepository: infoRepository, forTest: true), ReviewModel()]));
   });
 
   testWidgets("pump SettingsPage", (WidgetTester tester) async {
@@ -123,10 +157,18 @@ void main() {
   });
 
   testWidgets("pump TimetablePage", (WidgetTester tester) async {
-    tester.pumpWidget(TimetablePage().materialAndNotifier(TimetableModel()));
+    tester.pumpWidget(
+      TimetablePage().materialAndNotifier(
+        TimetableModel(repository: timetableRepository, legacyShareDio: dio),
+      ),
+    );
   });
 
   testWidgets("pump UserPage", (WidgetTester tester) async {
-    tester.pumpWidget(UserPage().materialAndNotifier(InfoModel(forTest: true)));
+    tester.pumpWidget(
+      UserPage().materialAndNotifier(
+        InfoModel(infoRepository: infoRepository, forTest: true),
+      ),
+    );
   });
 }

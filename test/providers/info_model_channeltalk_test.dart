@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/user.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/repositories/info_repository.dart';
 import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/posthog_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
@@ -290,6 +292,7 @@ class _LoadedInfoModel extends InfoModel {
     ChannelTalkReadiness? channelTalkReadiness,
     Duration channelTalkReadyTimeout = const Duration(seconds: 30),
   }) : super(
+         infoRepository: InfoRepository(Dio()),
          forTest: true,
          telemetry: telemetry,
          channelTalkReadiness: channelTalkReadiness,
@@ -332,6 +335,7 @@ class _SequencedInfoModel extends InfoModel {
     Duration channelTalkReadyTimeout = const Duration(seconds: 30),
   }) : _users = users,
        super(
+         infoRepository: InfoRepository(Dio()),
          forTest: true,
          telemetry: telemetry,
          channelTalkReadiness: channelTalkReadiness,

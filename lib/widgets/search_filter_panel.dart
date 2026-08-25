@@ -46,7 +46,6 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
           child: ListView.separated(
             controller: _scrollController,
             itemCount: widget.filter.entries.length,
-            shrinkWrap: true,
             padding: EdgeInsets.all(16.0),
             itemBuilder: (context, index) {
               return Padding(

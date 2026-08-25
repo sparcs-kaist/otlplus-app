@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/pages/course_search_page.dart';
 import 'package:otlplus/providers/course_search_model.dart';
+import 'package:otlplus/repositories/course_repository.dart';
+import 'package:otlplus/repositories/department_repository.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -143,6 +146,9 @@ class _CourseSearchScenario {
 }
 
 class _FakeCourseSearchModel extends CourseSearchModel {
+  _FakeCourseSearchModel()
+    : super(CourseRepository(Dio()), DepartmentRepository(Dio()));
+
   final Completer<bool> searchCompleter = Completer<bool>();
 
   @override

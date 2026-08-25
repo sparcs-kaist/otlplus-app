@@ -169,6 +169,7 @@ class LatestReviewsPage extends StatelessWidget {
             slivers: [
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index >= reviews.length) return null;
                   return ReviewBlock(
                     review: reviews[index],
                     onTap: () async {
@@ -211,6 +212,7 @@ class HallOfFamePage extends StatelessWidget {
             slivers: [
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index >= reviews.length) return null;
                   return ReviewBlock(
                     review: reviews[index],
                     onTap: () async {

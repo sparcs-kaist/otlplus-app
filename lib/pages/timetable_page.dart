@@ -21,7 +21,6 @@ import 'package:otlplus/widgets/timetable_block.dart';
 import 'package:otlplus/widgets/timetable_summary.dart';
 import 'package:otlplus/widgets/timetable_tabs.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:otlplus/extensions/locale.dart';
 
 class TimetablePage extends StatefulWidget {
   static String route = 'timetable_page';
@@ -45,16 +44,15 @@ class _TimetablePageState extends State<TimetablePage> {
       );
     }
     if (timetableModel.loadFailed) {
-      final isEn = context.isEn;
       return Center(
         child: Column(
           key: const Key('timetable_error'),
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isEn ? 'Unable to load timetable.' : '시간표를 불러오지 못했습니다.'),
+            Text('error.load_timetable'.tr()),
             TextButton(
               onPressed: timetableModel.retryLoad,
-              child: Text(isEn ? 'Retry' : '다시 시도'),
+              child: Text('common.retry'.tr()),
             ),
           ],
         ),

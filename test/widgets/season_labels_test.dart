@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/extensions/semester.dart';
@@ -12,6 +13,10 @@ import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/pages/my_review_page.dart';
 import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/repositories/course_repository.dart';
+import 'package:otlplus/repositories/info_repository.dart';
+import 'package:otlplus/repositories/lecture_repository.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/widgets/hall_of_fame_control.dart';
 import 'package:otlplus/widgets/review_block.dart';
 import 'package:provider/provider.dart';
@@ -197,7 +202,7 @@ class _InfoModel extends InfoModel {
     : userValue = user,
       semesterValues = semesters,
       yearValues = years,
-      super(forTest: true);
+      super(infoRepository: InfoRepository(Dio()), forTest: true);
 
   final User? userValue;
   final List<Semester>? semesterValues;
@@ -214,7 +219,12 @@ class _InfoModel extends InfoModel {
 }
 
 class _CourseDetailModel extends CourseDetailModel {
-  _CourseDetailModel(this.lectureValues);
+  _CourseDetailModel(this.lectureValues)
+    : super(
+        CourseRepository(Dio()),
+        LectureRepository(Dio()),
+        ReviewRepository(Dio()),
+      );
 
   final List<Lecture> lectureValues;
 

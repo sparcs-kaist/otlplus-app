@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,10 @@ import 'package:otlplus/models/user.dart';
 import 'package:otlplus/pages/course_detail_page.dart';
 import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
+import 'package:otlplus/repositories/course_repository.dart';
+import 'package:otlplus/repositories/info_repository.dart';
+import 'package:otlplus/repositories/lecture_repository.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/widgets/review_block.dart';
 import 'package:otlplus/widgets/review_write_block.dart';
 import 'package:provider/provider.dart';
@@ -124,7 +129,7 @@ User _user(List<Lecture> lectures) {
 }
 
 class _InfoModel extends InfoModel {
-  _InfoModel({this.userValue}) : super();
+  _InfoModel({this.userValue}) : super(infoRepository: InfoRepository(Dio()));
 
   final User? userValue;
 
@@ -142,7 +147,12 @@ class _InfoModel extends InfoModel {
 }
 
 class _CourseDetailModel extends CourseDetailModel {
-  _CourseDetailModel(this.lectureValue, this.reviewValues);
+  _CourseDetailModel(this.lectureValue, this.reviewValues)
+    : super(
+        CourseRepository(Dio()),
+        LectureRepository(Dio()),
+        ReviewRepository(Dio()),
+      );
 
   final Lecture lectureValue;
   final List<Review> reviewValues;
