@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'package:test/test.dart';
 import 'package:otlplus/models/examtime.dart';
+import 'package:otlplus/models/time.dart';
 
 void main() {
   group('Examtime', () {
     String str = 'str';
     String strEn = 'str_en';
-    int day = 1;
+    int dayCode = 1;
+    Weekday day = Weekday.fromCode(dayCode);
     int begin = 2;
     int end = 3;
     String json =
@@ -14,7 +16,7 @@ void main() {
       {
         "str": "$str",
         "str_en": "$strEn",
-        "day": $day,
+        "day": $dayCode,
         "begin": $begin,
         "end": $end
       }

@@ -27,7 +27,9 @@ class TodayTimetable extends StatelessWidget {
   }) {
     lectures.forEach(
       (lecture) => lecture.classtimes.forEach((classtime) {
-        if (classtime.day == now.weekday - 1) _lectures[classtime] = lecture;
+        if (classtime.day == Weekday.fromCode(now.weekday - 1)) {
+          _lectures[classtime] = lecture;
+        }
       }),
     );
   }

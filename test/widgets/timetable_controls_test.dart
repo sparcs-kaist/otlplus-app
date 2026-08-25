@@ -101,9 +101,12 @@ void main() {
 
     expect(model.selectedMode, TimetableViewMode.classes);
     expect(model.selectedSeason, Season.fall);
+    expect(model.isMyTimetable, isTrue);
 
+    model.setIndex(1);
     model.setMode(TimetableViewMode.map);
 
+    expect(model.isMyTimetable, isFalse);
     expect(model.selectedMode, TimetableViewMode.map);
   });
 }

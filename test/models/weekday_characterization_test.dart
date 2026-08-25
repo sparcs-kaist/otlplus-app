@@ -3,7 +3,6 @@ import "dart:io";
 
 import "package:flutter_test/flutter_test.dart";
 import "package:otlplus/models/lecture.dart";
-import "package:otlplus/models/time.dart";
 import "package:otlplus/widgets/timetable.dart";
 
 Future<Map<String, dynamic>> _readFixture(String path) async {

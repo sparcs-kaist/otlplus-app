@@ -29,13 +29,13 @@ class Timetable extends StatelessWidget {
     if (isExamTime) {
       lectures.forEach(
         (lecture) => lecture.examtimes.forEach(
-          (examtime) => _lectures[examtime.day][examtime] = lecture,
+          (examtime) => _lectures[examtime.day.code][examtime] = lecture,
         ),
       );
     } else {
       lectures.forEach(
         (lecture) => lecture.classtimes.forEach(
-          (classtime) => _lectures[classtime.day][classtime] = lecture,
+          (classtime) => _lectures[classtime.day.code][classtime] = lecture,
         ),
       );
     }

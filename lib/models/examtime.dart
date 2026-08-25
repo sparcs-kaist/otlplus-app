@@ -7,7 +7,7 @@ class Examtime extends Time {
   Examtime({
     required this.str,
     required this.strEn,
-    required int day,
+    required Object day,
     required int begin,
     required int end,
   }) : super(day: day, begin: begin, end: end);
@@ -19,7 +19,7 @@ class Examtime extends Time {
     return Examtime(
       str: json['str'],
       strEn: json['str_en'],
-      day: json['day'],
+      day: Weekday.fromCode(json['day'] as int),
       begin: json['begin'],
       end: json['end'],
     );
@@ -31,7 +31,7 @@ class Examtime extends Time {
     return Examtime(
       str: localizedString,
       strEn: localizedString,
-      day: json['day'] as int,
+      day: Weekday.fromCode(json['day'] as int),
       begin: json['begin'] as int,
       end: json['end'] as int,
     );
@@ -41,7 +41,7 @@ class Examtime extends Time {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['str'] = this.str;
     data['str_en'] = this.strEn;
-    data['day'] = this.day;
+    data['day'] = this.day.code;
     data['begin'] = this.begin;
     data['end'] = this.end;
     return data;
