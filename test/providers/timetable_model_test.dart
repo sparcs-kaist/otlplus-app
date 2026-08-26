@@ -36,6 +36,7 @@ class FakeTimetableRepository extends TimetableRepository {
   final serverTimetables = <int, Timetable>{};
   final createdIds = Queue<int>();
   Object? fetchError;
+  Object? createError;
 
   @override
   Future<Timetable> fetchMyTimetable(int year, int semester) {
@@ -62,6 +63,8 @@ class FakeTimetableRepository extends TimetableRepository {
       semester: semester,
       lectureIds: List<int>.of(lectureIds),
     ));
+    final error = createError;
+    if (error != null) throw error;
     return createdIds.removeFirst();
   }
 
@@ -116,6 +119,29 @@ void main() {
       beginning: DateTime(2026, 8, 1),
       end: DateTime(2026, 12, 31),
     );
+  });
+
+  test("rejected auto-create degrades to my timetable only", () async {
+    repository.myTimetable = Timetable(
+      id: -1,
+      lectures: <Lecture>[primaryLecture],
+    );
+    repository.collections.add(
+      TimetableCollection(
+        summaries: <TimetableListItem>[],
+        timetables: <Timetable>[],
+      ),
+    );
+    repository.createError = StateError("past semesters are locked");
+
+    await model.loadSemesters(user: user, semesters: <Semester>[semester]);
+
+    expect(model.loadFailed, isFalse,
+        reason: "browsing a semester without saved timetables must not "
+            "turn a rejected auto-create into a load-failure screen");
+    expect(model.isLoaded, isTrue);
+    expect(model.timetables, hasLength(1));
+    expect(model.currentTimetable.lectures, <Lecture>[primaryLecture]);
   });
 
   test("load fetches primary and editable timetables concurrently", () async {

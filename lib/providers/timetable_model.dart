@@ -208,17 +208,24 @@ class TimetableModel extends ChangeNotifier {
       var collection = results[1] as TimetableCollection;
       if (requestId != _loadRequestId) return false;
       if (collection.summaries.isEmpty) {
-        await _repository.create(
-          year: selectedSemester.year,
-          semester: selectedSeason.code,
-          lectureIds: <int>[],
-        );
-        collection = await _repository.fetchBySemester(
-          selectedSemester.year,
-          selectedSeason.code,
-        );
-        if (collection.summaries.isEmpty) {
-          throw StateError('Created timetable was missing from the refetch');
+        // Seed the first editable timetable for the semester. Past semesters
+        // can reject creation server-side; browsing them must still show the
+        // read-only my timetable instead of a load-failure screen.
+        try {
+          await _repository.create(
+            year: selectedSemester.year,
+            semester: selectedSeason.code,
+            lectureIds: <int>[],
+          );
+          collection = await _repository.fetchBySemester(
+            selectedSemester.year,
+            selectedSeason.code,
+          );
+        } catch (exception) {
+          collection = TimetableCollection(
+            summaries: <TimetableListItem>[],
+            timetables: <Timetable>[],
+          );
         }
       }
       if (requestId != _loadRequestId) return false;
@@ -245,9 +252,6 @@ class TimetableModel extends ChangeNotifier {
     int? preferredTimetableId,
     bool selectServerTimetable = false,
   }) {
-    if (collection.summaries.isEmpty) {
-      throw StateError('Timetable collection must not be empty');
-    }
     if (collection.summaries.length != collection.timetables.length) {
       throw StateError(
         'Timetable summaries and details must have equal length',
