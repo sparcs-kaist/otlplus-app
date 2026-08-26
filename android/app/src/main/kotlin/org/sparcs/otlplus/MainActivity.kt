@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.net.Uri
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -64,6 +65,19 @@ class MainActivity : FlutterActivity() {
                 }
             } else if (call.method == "getAndroidVersion") {
                 result.success(Build.VERSION.SDK_INT)
+            } else if (call.method == "startInlineInstall") {
+                val targetPackage = call.argument<String>("packageName")
+                val referrer = call.argument<String>("referrer")
+                val listing = call.argument<String>("listing")
+                if (targetPackage.isNullOrEmpty()) {
+                    result.error(
+                        "INVALID_ARGUMENTS",
+                        "Target package name is required.",
+                        null,
+                    )
+                } else {
+                    result.success(startInlineInstall(targetPackage, referrer, listing))
+                }
             } else {
                 result.notImplemented()
             }
@@ -191,6 +205,41 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+    }
+
+
+    /// Opens the Google Play inline-install half sheet for [targetPackage],
+    /// per https://developer.android.com/distribute/marketing-tools/inline-installs.
+    /// Returns true when the overlay intent resolved; false tells Dart to
+    /// fall back to the regular Play Store listing.
+    private fun startInlineInstall(
+        targetPackage: String,
+        referrer: String?,
+        listing: String?,
+    ): Boolean {
+        val deepLinkUrl = buildString {
+            append("https://play.google.com/d?id=")
+            append(targetPackage)
+            if (!referrer.isNullOrEmpty()) {
+                append("&referrer=")
+                append(referrer)
+            }
+            if (!listing.isNullOrEmpty()) {
+                append("&listing=")
+                append(listing)
+            }
+        }
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setPackage("com.android.vending")
+            data = Uri.parse(deepLinkUrl)
+            putExtra("overlay", true)
+            putExtra("callerId", packageName)
+        }
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+            return true
+        }
+        return false
     }
 
     private fun writeImageAsBytes(fileName: String, bytes: ByteArray): String? {
