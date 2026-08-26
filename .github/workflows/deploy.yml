@@ -400,7 +400,11 @@ jobs:
             profile_length=$(echo "$IOS_PROVISIONING_PROFILE_WATCH" | wc -c)
             echo "✅ IOS_PROVISIONING_PROFILE_WATCH: Available ($profile_length characters)"
           else
-            echo "⚠️  IOS_PROVISIONING_PROFILE_WATCH: Not set (Watch app may fail)"
+            echo "::error::IOS_PROVISIONING_PROFILE_WATCH is not set, but the archive builds the OTL Watch App target."
+            echo "::error::Legacy automatic-signing fallback cannot provision org.sparcs.otlplus.watchkitapp on CI runners."
+            echo "::error::Fix: create an App Store provisioning profile for org.sparcs.otlplus.watchkitapp in Apple Developer,"
+            echo "::error::then add it to the Release environment secrets as IOS_PROVISIONING_PROFILE_WATCH (base64) plus IOS_WATCH_PROFILE_NAME/IOS_WATCH_PROFILE_UUID."
+            exit 1
           fi
 
       - name: Create Fastlane environment file
