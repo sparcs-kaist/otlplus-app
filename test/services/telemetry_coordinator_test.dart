@@ -10,10 +10,17 @@ class _FakeAnalyticsClient implements AnalyticsClient {
   var enableCount = 0;
   var initializeCount = 0;
   var resetCount = 0;
+  final List<String> identifyCalls = <String>[];
 
   @override
   Future<void> capture(String eventName) async {
     capturedEvents.add(eventName);
+  }
+
+  @override
+  Future<void> identify(String distinctId) async {
+    identifyCalls.add(distinctId);
+    operations.add('identify');
   }
 
   @override
@@ -257,4 +264,45 @@ void main() {
       expect(analytics.operations, <String>['disable', 'reset']);
     },
   );
+  test("identifies analytics with the user id when not anonymous", () async {
+    final analytics = _FakeAnalyticsClient();
+    final coordinator = TelemetryCoordinator(
+      analytics: analytics,
+      crashReporting: _FakeCrashReportingClient(),
+    );
+    await coordinator.initialize();
+
+    await coordinator.synchronize(
+      const TelemetryState(
+        isReady: true,
+        crashlyticsEnabled: true,
+        crashlyticsAnonymous: false,
+        analyticsEnabled: true,
+        userIdentifier: "1234",
+      ),
+    );
+
+    expect(analytics.identifyCalls, ["1234"]);
+  });
+
+  test("keeps analytics anonymous when the anonymous flag is on", () async {
+    final analytics = _FakeAnalyticsClient();
+    final coordinator = TelemetryCoordinator(
+      analytics: analytics,
+      crashReporting: _FakeCrashReportingClient(),
+    );
+    await coordinator.initialize();
+
+    await coordinator.synchronize(
+      const TelemetryState(
+        isReady: true,
+        crashlyticsEnabled: true,
+        crashlyticsAnonymous: true,
+        analyticsEnabled: true,
+        userIdentifier: "1234",
+      ),
+    );
+
+    expect(analytics.identifyCalls, isEmpty);
+  });
 }

@@ -13,6 +13,9 @@ class _NoopAnalyticsClient implements AnalyticsClient {
   Future<void> capture(String eventName) async {}
 
   @override
+  Future<void> identify(String distinctId) async {}
+
+  @override
   Future<void> disable() async {}
 
   @override

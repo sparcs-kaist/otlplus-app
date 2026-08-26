@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 abstract interface class AnalyticsClient {
   Future<void> capture(String eventName);
+  Future<void> identify(String distinctId);
   Future<void> initialize();
   Future<void> enable();
   Future<void> disable();
@@ -9,27 +11,42 @@ abstract interface class AnalyticsClient {
 }
 
 class PostHogConfiguration {
-  const PostHogConfiguration({required this.apiKey, required this.host});
+  const PostHogConfiguration({
+    required this.apiKey,
+    required this.host,
+    this.region = '',
+    this.projectId = '',
+  });
 
   const PostHogConfiguration.fromEnvironment()
     : apiKey = const String.fromEnvironment('POSTHOG_API_KEY'),
-      host = const String.fromEnvironment(
-        'POSTHOG_HOST',
-        defaultValue: 'https://us.i.posthog.com',
-      );
+      host = const String.fromEnvironment('POSTHOG_HOST'),
+      region = const String.fromEnvironment('POSTHOG_REGION'),
+      projectId = const String.fromEnvironment('POSTHOG_PROJECT_ID');
 
   final String apiKey;
   final String host;
+  final String region;
+
+  /// Project reference for tooling (e.g. symbolication); unused by the SDK.
+  final String projectId;
 
   bool get isConfigured => apiKey.isNotEmpty;
+
+  /// Explicit host wins; otherwise the region picks the ingestion endpoint.
+  String get resolvedHost {
+    if (host.isNotEmpty) return host;
+    if (region.toLowerCase() == 'eu') return 'https://eu.i.posthog.com';
+    return 'https://us.i.posthog.com';
+  }
 }
 
 /// Privacy-safe adapter around the PostHog Flutter SDK.
 ///
 /// PostHog starts disabled and may only be enabled by an explicit analytics
-/// preference. It never sends user identities or exceptions. Session replay
-/// is enabled with full masking: all text, images, and platform views
-/// (including login WebViews) are blacked out in recordings.
+/// preference. Error tracking and identity attach only under that same
+/// consent. Session replay keeps text and platform views (including login
+/// WebViews) masked; images are visible for context.
 class PostHogService implements AnalyticsClient {
   PostHogService({
     PostHogConfiguration configuration =
@@ -62,23 +79,23 @@ class PostHogService implements AnalyticsClient {
 
     try {
       final config = PostHogConfig(_configuration.apiKey);
-      config.host = _configuration.host;
+      config.host = _configuration.resolvedHost;
       config.optOut = true;
       config.captureApplicationLifecycleEvents = true;
-      config.preloadFeatureFlags = false;
-      config.sendFeatureFlagEvents = false;
+      config.preloadFeatureFlags = true;
+      config.sendFeatureFlagEvents = true;
       config.sessionReplay = true;
       config.sessionReplayConfig.maskAllTexts = true;
-      config.sessionReplayConfig.maskAllImages = true;
+      config.sessionReplayConfig.maskAllImages = false;
       config.sessionReplayConfig.maskAllPlatformViews = true;
       config.sessionReplayConfig.throttleDelay = const Duration(seconds: 1);
-      config.surveys = false;
+      config.surveys = true;
       config.capturePushNotificationSubscriptions = false;
       config.capturePushNotificationOpened = false;
-      config.errorTrackingConfig.captureFlutterErrors = false;
-      config.errorTrackingConfig.capturePlatformDispatcherErrors = false;
-      config.errorTrackingConfig.captureNativeExceptions = false;
-      config.errorTrackingConfig.captureIsolateErrors = false;
+      config.errorTrackingConfig.captureFlutterErrors = true;
+      config.errorTrackingConfig.capturePlatformDispatcherErrors = true;
+      config.errorTrackingConfig.captureNativeExceptions = true;
+      config.errorTrackingConfig.captureIsolateErrors = true;
       config.beforeSend = <BeforeSendCallback>[_redactEvent];
 
       await Posthog().setup(config);
@@ -99,6 +116,16 @@ class PostHogService implements AnalyticsClient {
   }
 
   @override
+  Future<void> identify(String distinctId) async {
+    if (!_initialized || distinctId.isEmpty) return;
+    await Posthog().identify(userId: distinctId);
+  }
+
+  @visibleForTesting
+  PostHogEvent? redactEventForTesting(PostHogEvent event) =>
+      _redactEvent(event);
+
+  @override
   Future<void> reset() async {
     if (!_initialized) return;
     await Posthog().reset();
@@ -111,8 +138,6 @@ class PostHogService implements AnalyticsClient {
   }
 
   PostHogEvent? _redactEvent(PostHogEvent event) {
-    if (event.event == r'$exception') return null;
-
     final properties = event.properties;
     if (properties != null) _redactProperties(properties);
     return event;
