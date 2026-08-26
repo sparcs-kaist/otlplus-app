@@ -340,7 +340,8 @@ class _TimetablePageState extends State<TimetablePage> {
       onTap: (i) {
         final timetableModel = context.read<TimetableModel>();
 
-        if (i == timetableModel.timetables.length) {
+        if (!timetableModel.isMyTimetableIndex(i) &&
+            i == timetableModel.timetables.length) {
           timetableModel.createTimetable();
         } else {
           timetableModel.setIndex(i);
