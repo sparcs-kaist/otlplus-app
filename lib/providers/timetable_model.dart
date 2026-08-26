@@ -111,7 +111,18 @@ class TimetableModel extends ChangeNotifier {
 
   bool isMyTimetableIndex(int index) => index == myTimetableIndex;
 
-  Timetable get currentTimetable => _timetables[_selectedTimetableIndex];
+  static final Timetable _reloadPlaceholder = Timetable(
+    id: -1,
+    lectures: const [],
+  );
+
+  /// Total getter: selectors re-run on every notification, including the
+  /// reload window where [_timetables] is momentarily empty (e.g. moving to
+  /// the previous semester), so this must never index blindly
+  /// (Sentry OTL-APP-G).
+  Timetable get currentTimetable => _timetables.isEmpty
+      ? _reloadPlaceholder
+      : _timetables[_selectedTimetableIndex.clamp(0, _timetables.length - 1)];
 
   TimetableViewMode _selectedMode = TimetableViewMode.classes;
   TimetableViewMode get selectedMode => _selectedMode;

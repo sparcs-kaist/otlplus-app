@@ -6,6 +6,7 @@ import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/models/review.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/pages/review_page.dart';
+import 'package:otlplus/widgets/expandable_text.dart';
 import 'package:otlplus/providers/hall_of_fame_model.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/latest_reviews_model.dart';
@@ -123,6 +124,122 @@ void main() {
       isNull,
     );
   });
+
+  testWidgets('hall of fame feed keeps paginating until the last page', (
+    tester,
+  ) async {
+    final repository = _PagingReviewRepository(
+      totalRecent: 0,
+      totalHallOfFame: 25,
+    );
+    final hallOfFameModel = HallOfFameModel(repository);
+    final latestReviewsModel = LatestReviewsModel(repository);
+
+    await tester.pumpWidget(_pumpablePage(hallOfFameModel, latestReviewsModel));
+    await tester.pumpAndSettle();
+
+    expect(repository.hallOfFameOffsets, [0]);
+    expect(_richTextContaining('hof-content-0'), findsOneWidget);
+
+    for (var drag = 0; drag < 12; drag++) {
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, -1200),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    expect(
+      repository.hallOfFameOffsets,
+      [0, 10, 20],
+      reason: 'scrolling to the bottom must keep fetching next pages',
+    );
+    expect(_richTextContaining('hof-content-24'), findsOneWidget);
+  });
+
+  testWidgets(
+    'an empty page stops pagination even when totalCount overpromises',
+    (tester) async {
+      final repository = _PagingReviewRepository(
+        totalRecent: 0,
+        totalHallOfFame: 40,
+        serverItemCap: 20,
+      );
+      final hallOfFameModel = HallOfFameModel(repository);
+      final latestReviewsModel = LatestReviewsModel(repository);
+
+      await tester.pumpWidget(
+        _pumpablePage(hallOfFameModel, latestReviewsModel),
+      );
+      await tester.pumpAndSettle();
+
+      for (var drag = 0; drag < 12; drag++) {
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -1200),
+          warnIfMissed: false,
+        );
+        await tester.pumpAndSettle();
+      }
+
+      expect(
+        repository.hallOfFameOffsets,
+        [0, 10, 20],
+        reason:
+            'after the server returns an empty page, pagination must stop '
+            'instead of refiring forever at the same scroll position',
+      );
+      expect(hallOfFameModel.hasMore, isFalse);
+      expect(_richTextContaining('hof-content-19'), findsOneWidget);
+    },
+  );
+
+  testWidgets('latest feed keeps paginating until the last page', (
+    tester,
+  ) async {
+    final repository = _PagingReviewRepository(totalRecent: 25);
+    final hallOfFameModel = HallOfFameModel(repository)
+      ..setMode(ReviewTab.latest);
+    final latestReviewsModel = LatestReviewsModel(repository);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<InfoModel>.value(value: _InfoModel()),
+          ChangeNotifierProvider<HallOfFameModel>.value(value: hallOfFameModel),
+          ChangeNotifierProvider<LatestReviewsModel>.value(
+            value: latestReviewsModel,
+          ),
+        ],
+        child: EasyLocalization(
+          supportedLocales: const [Locale('ko')],
+          path: 'assets/translations',
+          child: const MaterialApp(home: Scaffold(body: ReviewPage())),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository.recentOffsets, [0]);
+    expect(_richTextContaining('paging-content-0'), findsOneWidget);
+
+    for (var drag = 0; drag < 12; drag++) {
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, -1200),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    expect(
+      repository.recentOffsets,
+      [0, 10, 20],
+      reason: 'scrolling to the bottom must keep fetching next pages',
+    );
+    expect(_richTextContaining('paging-content-24'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpReviewPage(
@@ -177,6 +294,124 @@ class _InfoModel extends InfoModel {
 
   @override
   List<Semester> get semesters => const <Semester>[];
+}
+
+Widget _pumpablePage(
+  HallOfFameModel hallOfFameModel,
+  LatestReviewsModel latestReviewsModel,
+) {
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<InfoModel>.value(value: _InfoModel()),
+      ChangeNotifierProvider<HallOfFameModel>.value(value: hallOfFameModel),
+      ChangeNotifierProvider<LatestReviewsModel>.value(
+        value: latestReviewsModel,
+      ),
+    ],
+    child: EasyLocalization(
+      supportedLocales: const [Locale('ko')],
+      path: 'assets/translations',
+      child: const MaterialApp(home: Scaffold(body: ReviewPage())),
+    ),
+  );
+}
+
+Finder _richTextContaining(String pattern) {
+  return find.byWidgetPredicate(
+    (widget) => widget is ExpandableText && widget.text.contains(pattern),
+  );
+}
+
+class _PagingReviewRepository extends ReviewRepository {
+  _PagingReviewRepository({
+    required this.totalRecent,
+    this.totalHallOfFame = 0,
+    this.serverItemCap,
+  }) : super(Dio());
+
+  final int totalRecent;
+  final int totalHallOfFame;
+
+  /// When set, the fake server stops returning items past this many even
+  /// though totalCount still advertises the full amount (reproduces the
+  /// production mismatch that stalls infinite scroll).
+  final int? serverItemCap;
+  final List<int> recentOffsets = <int>[];
+  final List<int> hallOfFameOffsets = <int>[];
+
+  @override
+  Future<ReviewListResult> fetchRecent({
+    int? year,
+    int? semester,
+    int offset = 0,
+    int limit = 10,
+  }) async {
+    recentOffsets.add(offset);
+    final available = serverItemCap == null
+        ? totalRecent
+        : (serverItemCap! < totalRecent ? serverItemCap! : totalRecent);
+    final end = (offset + limit) > available ? available : offset + limit;
+    final start = offset > end ? end : offset;
+    return ReviewListResult(
+      reviews: [
+        for (var index = start; index < end; index++)
+          Review(
+            id: 1000 + index,
+            course: SampleReview.course,
+            lecture: SampleReview.lecture,
+            content: 'paging-content-$index',
+            like: 0,
+            isDeleted: SampleReview.isDeleted,
+            grade: SampleReview.grade,
+            load: SampleReview.load,
+            speech: SampleReview.speech,
+            userspecificIsLiked: false,
+          ),
+      ],
+      averageGrade: 0,
+      averageLoad: 0,
+      averageSpeech: 0,
+      department: null,
+      totalCount: totalRecent,
+    );
+  }
+
+  @override
+  Future<ReviewListResult> fetchHallOfFame({
+    int? year,
+    int? semester,
+    int offset = 0,
+    int limit = 10,
+  }) async {
+    hallOfFameOffsets.add(offset);
+    final available = serverItemCap == null
+        ? totalHallOfFame
+        : (serverItemCap! < totalHallOfFame ? serverItemCap! : totalHallOfFame);
+    final end = (offset + limit) > available ? available : offset + limit;
+    final start = offset > end ? end : offset;
+    return ReviewListResult(
+      reviews: [
+        for (var index = start; index < end; index++)
+          Review(
+            id: 2000 + index,
+            course: SampleReview.course,
+            lecture: SampleReview.lecture,
+            content: 'hof-content-$index',
+            like: 0,
+            isDeleted: SampleReview.isDeleted,
+            grade: SampleReview.grade,
+            load: SampleReview.load,
+            speech: SampleReview.speech,
+            userspecificIsLiked: false,
+          ),
+      ],
+      averageGrade: 0,
+      averageLoad: 0,
+      averageSpeech: 0,
+      department: null,
+      totalCount: totalHallOfFame,
+    );
+  }
 }
 
 class _FakeReviewRepository extends ReviewRepository {
