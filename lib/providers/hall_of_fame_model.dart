@@ -74,7 +74,11 @@ class HallOfFameModel extends ChangeNotifier {
       if (reset) _hallOfFame.clear();
       _hallOfFame.addAll(result.reviews);
       _hasLoaded = true;
-      _hasMore = _hallOfFame.length < result.totalCount;
+      // An empty page means the server has no more rows for this filter
+      // even when totalCount overpromises; stopping here prevents the
+      // infinite refetch loop that stalls scrolling at the same spot.
+      _hasMore =
+          result.reviews.isNotEmpty && _hallOfFame.length < result.totalCount;
     } catch (error) {
       _error = error;
     } finally {

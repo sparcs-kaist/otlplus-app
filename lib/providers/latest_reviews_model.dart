@@ -47,7 +47,12 @@ class LatestReviewsModel extends ChangeNotifier {
       if (reset) _latestReviews.clear();
       _latestReviews.addAll(result.reviews);
       _hasLoaded = true;
-      _hasMore = _latestReviews.length < result.totalCount;
+      // An empty page means the server has no more rows for this filter
+      // even when totalCount overpromises; stopping here prevents the
+      // infinite refetch loop that stalls scrolling at the same spot.
+      _hasMore =
+          result.reviews.isNotEmpty &&
+          _latestReviews.length < result.totalCount;
     } catch (error) {
       _error = error;
     } finally {
