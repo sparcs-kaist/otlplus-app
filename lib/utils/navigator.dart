@@ -105,7 +105,9 @@ class OTLNavigator {
       if (_rightleftTransitionHistory.isEmpty) return;
       navigator.popUntil(
         (Route<dynamic> route) =>
-            _rightleftTransitionHistory.last == route || route.isFirst,
+            (_rightleftTransitionHistory.isNotEmpty &&
+                _rightleftTransitionHistory.last == route) ||
+            route.isFirst,
       );
       _removeLastUntil((mode) => mode == _TransitionHistory.rightLeft);
       return navigator.pop(result);
@@ -113,7 +115,9 @@ class OTLNavigator {
       if (_downupTransitionHistory.isEmpty) return;
       navigator.popUntil(
         (Route<dynamic> route) =>
-            _downupTransitionHistory.last == route || route.isFirst,
+            (_downupTransitionHistory.isNotEmpty &&
+                _downupTransitionHistory.last == route) ||
+            route.isFirst,
       );
       _removeLastUntil(
         (mode) =>
