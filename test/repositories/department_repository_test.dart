@@ -66,7 +66,7 @@ void main() {
   test("fetches typed department options from the v2 endpoint", () async {
     final options = await repository.fetchOptions();
 
-    expect(options, hasLength(19));
+    expect(options, hasLength(21));
     final physics = options.singleWhere((option) => option.code == "PH");
     expect(physics.id, 623);
     expect(physics.name, "물리학과");
@@ -91,6 +91,18 @@ void main() {
       4299,
     ]);
   });
+
+  test(
+    "resolves the brain-cognitive and ai graduate codes as primary",
+    () async {
+      expect(await repository.resolveFilterCodes(const <String>["BCE"]), <int>[
+        16412,
+      ]);
+      expect(await repository.resolveFilterCodes(const <String>["AI"]), <int>[
+        16413,
+      ]);
+    },
+  );
 
   test("resolves ETC to all options outside explicit primary codes", () async {
     expect(await repository.resolveFilterCodes(const <String>["ETC"]), <int>[

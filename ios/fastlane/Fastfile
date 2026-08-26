@@ -117,7 +117,7 @@ def build_release_ipa
   sh "flutter pub get"
   sh "bundle exec pod install"
   posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
-  sh "flutter build ios --config-only --release --no-codesign --dart-define=POSTHOG_API_KEY=#{ENV.fetch('POSTHOG_API_KEY')} --dart-define=POSTHOG_HOST=#{posthog_host}"
+  sh "flutter build ios --config-only --release --no-codesign --dart-define=POSTHOG_API_KEY=#{ENV.fetch('POSTHOG_API_KEY')} --dart-define=POSTHOG_HOST=#{posthog_host} --dart-define=POSTHOG_PROJECT_ID=#{ENV.fetch('POSTHOG_PROJECT_ID', '')} --dart-define=POSTHOG_REGION=#{ENV.fetch('POSTHOG_REGION', '')}"
 
   team_id = CredentialsManager::AppfileConfig.try_fetch_value(:team_id)
   update_project_team(teamid: team_id)

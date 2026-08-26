@@ -178,6 +178,9 @@ class TelemetryCoordinator {
 
     if (state.analyticsEnabled) {
       await _analytics.enable();
+      if (!state.crashlyticsAnonymous && state.userIdentifier != null) {
+        await _analytics.identify(state.userIdentifier!);
+      }
       if (!_analyticsEnabled) await _analytics.capture('analytics_enabled');
       _analyticsEnabled = true;
     } else {

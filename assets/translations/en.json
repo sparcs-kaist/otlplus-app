@@ -219,7 +219,9 @@
     "ms": "MS",
     "ph": "PH",
     "ts": "TS",
-    "etc": "ETC"
+    "etc": "ETC",
+    "bce": "Brain & Cognitive Eng.",
+    "ai": "Grad. School of AI"
   },
   "type": {
     "type": "Type",
