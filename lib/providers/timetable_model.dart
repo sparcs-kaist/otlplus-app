@@ -197,20 +197,29 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Fetches my-timetable, mapping "not found / refused" responses (4xx)
-  /// to null. Connection and server-side failures rethrow normally.
+  /// Fetches my-timetable leniently for semester browsing.
+  ///
+  /// Degrades to null when the server refuses the term (4xx) OR answers 200
+  /// with a payload the app cannot parse (older semester data shapes).
+  /// Connection-level failures still rethrow so the retry screen survives.
   Future<Timetable?> _fetchMyTimetableLenient(int year, int seasonCode) async {
     try {
       return await _repository.fetchMyTimetable(year, seasonCode);
     } on DioException catch (exception) {
       final status = exception.response?.statusCode ?? 0;
-      if (status >= 400 && status < 500) return null;
+      if (exception.response != null && status >= 400 && status < 500) {
+        return null;
+      }
       rethrow;
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
     }
   }
 
-  /// Same lenient policy as [_fetchMyTimetableLenient] but returns null so
-  /// callers can skip auto-creation when the server refuses to list.
+  /// Same lenient policy as [_fetchMyTimetableLenient]; null also signals
+  /// that auto-creation must be skipped for this term.
   Future<TimetableCollection?> _fetchCollectionLenient(
     int year,
     int seasonCode,
@@ -219,8 +228,14 @@ class TimetableModel extends ChangeNotifier {
       return await _repository.fetchBySemester(year, seasonCode);
     } on DioException catch (exception) {
       final status = exception.response?.statusCode ?? 0;
-      if (status >= 400 && status < 500) return null;
+      if (exception.response != null && status >= 400 && status < 500) {
+        return null;
+      }
       rethrow;
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
     }
   }
 
