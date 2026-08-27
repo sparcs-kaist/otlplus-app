@@ -223,8 +223,6 @@ jobs:
           fi
           echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
           echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
-          echo "POSTHOG_PROJECT_ID=${POSTHOG_PROJECT_ID:-}" >> "$GITHUB_ENV"
-          echo "POSTHOG_REGION=${POSTHOG_REGION:-}" >> "$GITHUB_ENV"
 
       - name: Set app version from release tag
         run: |
@@ -632,8 +630,6 @@ jobs:
           fi
           echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
           echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
-          echo "POSTHOG_PROJECT_ID=${POSTHOG_PROJECT_ID:-}" >> "$GITHUB_ENV"
-          echo "POSTHOG_REGION=${POSTHOG_REGION:-}" >> "$GITHUB_ENV"
 
       - name: Set app version from release tag
         run: |

@@ -109,6 +109,20 @@ def apply_release_profile(target:, profile_path:, team_id:, sdk:)
   )
 end
 
+def posthog_build_defines
+  require 'shellwords'
+  pairs = {
+    'POSTHOG_API_KEY' => ENV['POSTHOG_API_KEY'],
+    'POSTHOG_HOST' => ENV.fetch('POSTHOG_HOST', 'https://us.i.posthog.com'),
+    'POSTHOG_PROJECT_ID' => ENV['POSTHOG_PROJECT_ID'],
+    'POSTHOG_REGION' => ENV['POSTHOG_REGION'],
+  }
+  pairs.filter_map { |key, value|
+    next if value.nil? || value.empty?
+    "--dart-define=#{Shellwords.escape("#{key}=#{value}")}"
+  }.join(' ')
+end
+
 def build_release_ipa
   increment_build_number(
     build_number: Time.now.strftime("%y%m%d.%H%M"),
@@ -116,8 +130,7 @@ def build_release_ipa
   )
   sh "flutter pub get"
   sh "bundle exec pod install"
-  posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
-  sh "flutter build ios --config-only --release --no-codesign --dart-define=POSTHOG_API_KEY=#{ENV.fetch('POSTHOG_API_KEY')} --dart-define=POSTHOG_HOST=#{posthog_host} --dart-define=POSTHOG_PROJECT_ID=#{ENV.fetch('POSTHOG_PROJECT_ID', '')} --dart-define=POSTHOG_REGION=#{ENV.fetch('POSTHOG_REGION', '')}"
+    sh "flutter build ios --config-only --release --no-codesign #{posthog_build_defines}"
 
   team_id = CredentialsManager::AppfileConfig.try_fetch_value(:team_id)
   update_project_team(teamid: team_id)
