@@ -133,20 +133,54 @@ void main() {
     );
   });
 
-  test("unparseable past semester responses degrade to the placeholder",
-      () async {
-    repository.myTimetableParseError = const FormatException(
-      "legacy lecture payload missing field",
+  test(
+    "unparseable past semester responses degrade to the placeholder",
+    () async {
+      repository.myTimetableParseError = const FormatException(
+        "legacy lecture payload missing field",
+      );
+      repository.collectionParseError = TypeError();
+
+      await model.loadSemesters(user: user, semesters: <Semester>[semester]);
+
+      expect(
+        model.loadFailed,
+        isFalse,
+        reason:
+            "a 200 response the app cannot parse (older semester data) "
+            "must degrade to the read-only view, not the error screen",
+      );
+      expect(model.isLoaded, isTrue);
+      expect(model.currentTimetable.lectures, isEmpty);
+    },
+  );
+
+  test("an unrecognized semester code degrades instead of erroring", () async {
+    final oddSemester = Semester(
+      year: 2020,
+      semester: 9,
+      beginning: DateTime(2020, 3, 1),
+      end: DateTime(2020, 6, 30),
     );
-    repository.collectionParseError = TypeError();
+    repository.collections.add(
+      TimetableCollection(
+        summaries: <TimetableListItem>[_summary(7, order: 0)],
+        timetables: <Timetable>[
+          Timetable(id: 7, lectures: <Lecture>[firstLecture]),
+        ],
+      ),
+    );
 
-    await model.loadSemesters(user: user, semesters: <Semester>[semester]);
+    await model.loadSemesters(user: user, semesters: <Semester>[oddSemester]);
 
-    expect(model.loadFailed, isFalse,
-        reason: "a 200 response the app cannot parse (older semester data) "
-            "must degrade to the read-only view, not the error screen");
+    expect(
+      model.loadFailed,
+      isFalse,
+      reason:
+          "a semester code outside 1..4 must not throw during the "
+          "semester switch; it should degrade to the read-only view",
+    );
     expect(model.isLoaded, isTrue);
-    expect(model.currentTimetable.lectures, isEmpty);
   });
 
   test("connection-level failures still surface the retry screen", () async {
@@ -157,8 +191,11 @@ void main() {
 
     await model.loadSemesters(user: user, semesters: <Semester>[semester]);
 
-    expect(model.loadFailed, isTrue,
-        reason: "network outages keep the retry affordance");
+    expect(
+      model.loadFailed,
+      isTrue,
+      reason: "network outages keep the retry affordance",
+    );
   });
 
   test(
