@@ -136,9 +136,13 @@ void main() {
 
     await model.loadSemesters(user: user, semesters: <Semester>[semester]);
 
-    expect(model.loadFailed, isFalse,
-        reason: "browsing a semester without saved timetables must not "
-            "turn a rejected auto-create into a load-failure screen");
+    expect(
+      model.loadFailed,
+      isFalse,
+      reason:
+          "browsing a semester without saved timetables must not "
+          "turn a rejected auto-create into a load-failure screen",
+    );
     expect(model.isLoaded, isTrue);
     expect(model.timetables, hasLength(1));
     expect(model.currentTimetable.lectures, <Lecture>[primaryLecture]);

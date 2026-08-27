@@ -76,7 +76,20 @@ class TimetableModel extends ChangeNotifier {
   List<Semester> _semesters = <Semester>[];
 
   int _selectedSemesterIndex = 0;
-  Semester get selectedSemester => _semesters[_selectedSemesterIndex];
+
+  /// Total getter: notify-selected rebuilds can land in the load window
+  /// where [_semesters] is momentarily empty; clamp instead of indexing
+  /// blindly (Sentry OTL-APP-G, empty: -1 variant).
+  Semester get selectedSemester => _semesters.isEmpty
+      ? _loadSemestersFallback
+      : _semesters[_selectedSemesterIndex.clamp(0, _semesters.length - 1)];
+
+  static final Semester _loadSemestersFallback = Semester(
+    year: DateTime.now().year,
+    semester: Season.fall.code,
+    beginning: DateTime.now(),
+    end: DateTime.now().add(const Duration(days: 120)),
+  );
   Season get selectedSeason {
     final season = Season.fromCode(selectedSemester.semester);
     if (season == null) {
