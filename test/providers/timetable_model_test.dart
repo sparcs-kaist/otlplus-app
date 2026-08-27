@@ -38,13 +38,17 @@ class FakeTimetableRepository extends TimetableRepository {
   Object? fetchError;
   Object? createError;
   DioException? myTimetableError;
+  Object? myTimetableParseError;
   DioException? collectionError;
+  Object? collectionParseError;
 
   @override
   Future<Timetable> fetchMyTimetable(int year, int semester) {
     myTimetableCalls.add((year, semester));
     final error = myTimetableError;
     if (error != null) throw error;
+    final parseError = myTimetableParseError;
+    if (parseError != null) throw parseError;
     return myTimetableCompleter?.future ?? Future<Timetable>.value(myTimetable);
   }
 
@@ -55,6 +59,8 @@ class FakeTimetableRepository extends TimetableRepository {
     if (fetchFailure != null) throw fetchFailure;
     final collectionFailure = collectionError;
     if (collectionFailure != null) throw collectionFailure;
+    final collectionParseFailure = collectionParseError;
+    if (collectionParseFailure != null) throw collectionParseFailure;
     return collections.removeFirst();
   }
 
@@ -124,6 +130,71 @@ void main() {
       semester: Season.fall.code,
       beginning: DateTime(2026, 8, 1),
       end: DateTime(2026, 12, 31),
+    );
+  });
+
+  test(
+    "unparseable past semester responses degrade to the placeholder",
+    () async {
+      repository.myTimetableParseError = const FormatException(
+        "legacy lecture payload missing field",
+      );
+      repository.collectionParseError = TypeError();
+
+      await model.loadSemesters(user: user, semesters: <Semester>[semester]);
+
+      expect(
+        model.loadFailed,
+        isFalse,
+        reason:
+            "a 200 response the app cannot parse (older semester data) "
+            "must degrade to the read-only view, not the error screen",
+      );
+      expect(model.isLoaded, isTrue);
+      expect(model.currentTimetable.lectures, isEmpty);
+    },
+  );
+
+  test("an unrecognized semester code degrades instead of erroring", () async {
+    final oddSemester = Semester(
+      year: 2020,
+      semester: 9,
+      beginning: DateTime(2020, 3, 1),
+      end: DateTime(2020, 6, 30),
+    );
+    repository.collections.add(
+      TimetableCollection(
+        summaries: <TimetableListItem>[_summary(7, order: 0)],
+        timetables: <Timetable>[
+          Timetable(id: 7, lectures: <Lecture>[firstLecture]),
+        ],
+      ),
+    );
+
+    await model.loadSemesters(user: user, semesters: <Semester>[oddSemester]);
+
+    expect(
+      model.loadFailed,
+      isFalse,
+      reason:
+          "a semester code outside 1..4 must not throw during the "
+          "semester switch; it should degrade to the read-only view",
+    );
+    expect(model.isLoaded, isTrue);
+  });
+
+  test("connection-level failures still surface the retry screen", () async {
+    repository.myTimetableError = DioException(
+      requestOptions: RequestOptions(path: "/api/v2/timetables/my-timetable"),
+      type: DioExceptionType.connectionTimeout,
+    );
+
+    await model.loadSemesters(user: user, semesters: <Semester>[semester]);
+
+    expect(
+      model.loadFailed,
+      isTrue,
+      reason: "network outages keep the retry affordance",
     );
   });
 

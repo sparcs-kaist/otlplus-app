@@ -197,20 +197,29 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Fetches my-timetable, mapping "not found / refused" responses (4xx)
-  /// to null. Connection and server-side failures rethrow normally.
+  /// Fetches my-timetable leniently for semester browsing.
+  ///
+  /// Degrades to null when the server refuses the term (4xx) OR answers 200
+  /// with a payload the app cannot parse (older semester data shapes).
+  /// Connection-level failures still rethrow so the retry screen survives.
   Future<Timetable?> _fetchMyTimetableLenient(int year, int seasonCode) async {
     try {
       return await _repository.fetchMyTimetable(year, seasonCode);
     } on DioException catch (exception) {
       final status = exception.response?.statusCode ?? 0;
-      if (status >= 400 && status < 500) return null;
+      if (exception.response != null && status >= 400 && status < 500) {
+        return null;
+      }
       rethrow;
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
     }
   }
 
-  /// Same lenient policy as [_fetchMyTimetableLenient] but returns null so
-  /// callers can skip auto-creation when the server refuses to list.
+  /// Same lenient policy as [_fetchMyTimetableLenient]; null also signals
+  /// that auto-creation must be skipped for this term.
   Future<TimetableCollection?> _fetchCollectionLenient(
     int year,
     int seasonCode,
@@ -219,8 +228,14 @@ class TimetableModel extends ChangeNotifier {
       return await _repository.fetchBySemester(year, seasonCode);
     } on DioException catch (exception) {
       final status = exception.response?.statusCode ?? 0;
-      if (status >= 400 && status < 500) return null;
+      if (exception.response != null && status >= 400 && status < 500) {
+        return null;
+      }
       rethrow;
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
     }
   }
 
@@ -241,8 +256,14 @@ class TimetableModel extends ChangeNotifier {
       // term). Those refusals degrade to placeholders instead of failing
       // the load; connection-level errors still surface as load failures.
       final results = await Future.wait<Object?>(<Future<Object?>>[
-        _fetchMyTimetableLenient(selectedSemester.year, selectedSeason.code),
-        _fetchCollectionLenient(selectedSemester.year, selectedSeason.code),
+        _fetchMyTimetableLenient(
+          selectedSemester.year,
+          selectedSemester.semester,
+        ),
+        _fetchCollectionLenient(
+          selectedSemester.year,
+          selectedSemester.semester,
+        ),
       ]);
       final primary = results[0] as Timetable?;
       var collection = results[1] as TimetableCollection?;
@@ -258,12 +279,12 @@ class TimetableModel extends ChangeNotifier {
         try {
           await _repository.create(
             year: selectedSemester.year,
-            semester: selectedSeason.code,
+            semester: selectedSemester.semester,
             lectureIds: <int>[],
           );
           collection = await _repository.fetchBySemester(
             selectedSemester.year,
-            selectedSeason.code,
+            selectedSemester.semester,
           );
         } catch (exception) {
           collection = TimetableCollection(
@@ -345,14 +366,14 @@ class TimetableModel extends ChangeNotifier {
       _error = null;
       final id = await _repository.create(
         year: selectedSemester.year,
-        semester: selectedSeason.code,
+        semester: selectedSemester.semester,
         lectureIds: (lectures ?? <Lecture>[])
             .map((lecture) => lecture.id)
             .toList(growable: false),
       );
       final collection = await _repository.fetchBySemester(
         selectedSemester.year,
-        selectedSeason.code,
+        selectedSemester.semester,
       );
       _applyCollection(_timetables.first, collection, preferredTimetableId: id);
       _isLoaded = true;
@@ -486,7 +507,7 @@ class TimetableModel extends ChangeNotifier {
         queryParameters: {
           'timetable': currentTimetable.id,
           'year': selectedSemester.year,
-          'semester': selectedSeason.code,
+          'semester': selectedSemester.semester,
           'language': language,
         },
         options: Options(responseType: ResponseType.bytes),
