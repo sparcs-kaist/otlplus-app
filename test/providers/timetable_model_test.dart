@@ -127,30 +127,39 @@ void main() {
     );
   });
 
-  test("past semester rejects my-timetable and collection gracefully", () async {
-    repository.myTimetableError = DioException(
-      requestOptions: RequestOptions(path: "/api/v2/timetables/my-timetable"),
-      response: Response<void>(
+  test(
+    "past semester rejects my-timetable and collection gracefully",
+    () async {
+      repository.myTimetableError = DioException(
         requestOptions: RequestOptions(path: "/api/v2/timetables/my-timetable"),
-        statusCode: 404,
-      ),
-    );
-    repository.collectionError = DioException(
-      requestOptions: RequestOptions(path: "/api/v2/timetables"),
-      response: Response<void>(
+        response: Response<void>(
+          requestOptions: RequestOptions(
+            path: "/api/v2/timetables/my-timetable",
+          ),
+          statusCode: 404,
+        ),
+      );
+      repository.collectionError = DioException(
         requestOptions: RequestOptions(path: "/api/v2/timetables"),
-        statusCode: 400,
-      ),
-    );
+        response: Response<void>(
+          requestOptions: RequestOptions(path: "/api/v2/timetables"),
+          statusCode: 400,
+        ),
+      );
 
-    await model.loadSemesters(user: user, semesters: <Semester>[semester]);
+      await model.loadSemesters(user: user, semesters: <Semester>[semester]);
 
-    expect(model.loadFailed, isFalse,
-        reason: "server refusing to serve a past semester must render the "
-            "read-only view, not the load-failure screen");
-    expect(model.isLoaded, isTrue);
-    expect(model.currentTimetable.lectures, isEmpty);
-  });
+      expect(
+        model.loadFailed,
+        isFalse,
+        reason:
+            "server refusing to serve a past semester must render the "
+            "read-only view, not the load-failure screen",
+      );
+      expect(model.isLoaded, isTrue);
+      expect(model.currentTimetable.lectures, isEmpty);
+    },
+  );
 
   test("rejected auto-create degrades to my timetable only", () async {
     repository.myTimetable = Timetable(
