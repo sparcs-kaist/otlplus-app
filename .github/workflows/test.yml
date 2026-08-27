@@ -134,7 +134,7 @@ jobs:
         with:
           api-level: ${{ env.ANDROID_API_LEVEL }}
           arch: x86_64
-          script: flutter test integration_test/authenticated_flow_test.dart --timeout 15m --dart-define=APP_SMOKE_TEST=true --dart-define=TEST_SSO_EMAIL="$TEST_SSO_EMAIL" --dart-define=TEST_SSO_PASSWORD="$TEST_SSO_PASSWORD"
+          script: flutter test integration_test/authenticated_flow_test.dart integration_test/previous_semester_test.dart --timeout 15m --dart-define=APP_SMOKE_TEST=true --dart-define=TEST_SSO_EMAIL="$TEST_SSO_EMAIL" --dart-define=TEST_SSO_PASSWORD="$TEST_SSO_PASSWORD"
 
   e2e-ios:
     needs: e2e-android
@@ -176,7 +176,7 @@ jobs:
       - name: Warm up simulator build
         run: flutter build ios --simulator --debug -d "$UDID" --dart-define=APP_SMOKE_TEST=true --dart-define=TEST_SSO_EMAIL="$TEST_SSO_EMAIL" --dart-define=TEST_SSO_PASSWORD="$TEST_SSO_PASSWORD"
       - name: Authenticated integration test
-        run: flutter test --timeout 20m integration_test/authenticated_flow_test.dart -d "$UDID" --dart-define=APP_SMOKE_TEST=true --dart-define=TEST_SSO_EMAIL="$TEST_SSO_EMAIL" --dart-define=TEST_SSO_PASSWORD="$TEST_SSO_PASSWORD"
+        run: flutter test --timeout 20m integration_test/authenticated_flow_test.dart integration_test/previous_semester_test.dart -d "$UDID" --dart-define=APP_SMOKE_TEST=true --dart-define=TEST_SSO_EMAIL="$TEST_SSO_EMAIL" --dart-define=TEST_SSO_PASSWORD="$TEST_SSO_PASSWORD"
       - name: Shutdown simulator
         if: always()
         run: xcrun simctl shutdown all
