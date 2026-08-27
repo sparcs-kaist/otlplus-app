@@ -197,6 +197,33 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Fetches my-timetable, mapping "not found / refused" responses (4xx)
+  /// to null. Connection and server-side failures rethrow normally.
+  Future<Timetable?> _fetchMyTimetableLenient(int year, int seasonCode) async {
+    try {
+      return await _repository.fetchMyTimetable(year, seasonCode);
+    } on DioException catch (exception) {
+      final status = exception.response?.statusCode ?? 0;
+      if (status >= 400 && status < 500) return null;
+      rethrow;
+    }
+  }
+
+  /// Same lenient policy as [_fetchMyTimetableLenient] but returns null so
+  /// callers can skip auto-creation when the server refuses to list.
+  Future<TimetableCollection?> _fetchCollectionLenient(
+    int year,
+    int seasonCode,
+  ) async {
+    try {
+      return await _repository.fetchBySemester(year, seasonCode);
+    } on DioException catch (exception) {
+      final status = exception.response?.statusCode ?? 0;
+      if (status >= 400 && status < 500) return null;
+      rethrow;
+    }
+  }
+
   Future<bool> _loadTimetable() async {
     final requestId = ++_loadRequestId;
     final selectServerTimetable = !isMyTimetable;
@@ -210,20 +237,24 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final results = await Future.wait<Object>(<Future<Object>>[
-        _repository.fetchMyTimetable(
-          selectedSemester.year,
-          selectedSeason.code,
-        ),
-        _repository.fetchBySemester(selectedSemester.year, selectedSeason.code),
+      // Past semesters can be refused by the server (no record, locked
+      // term). Those refusals degrade to placeholders instead of failing
+      // the load; connection-level errors still surface as load failures.
+      final results = await Future.wait<Object?>(<Future<Object?>>[
+        _fetchMyTimetableLenient(selectedSemester.year, selectedSeason.code),
+        _fetchCollectionLenient(selectedSemester.year, selectedSeason.code),
       ]);
-      final primary = results[0] as Timetable;
-      var collection = results[1] as TimetableCollection;
+      final primary = results[0] as Timetable?;
+      var collection = results[1] as TimetableCollection?;
       if (requestId != _loadRequestId) return false;
+      collection ??= TimetableCollection(
+        summaries: <TimetableListItem>[],
+        timetables: <Timetable>[],
+      );
+
       if (collection.summaries.isEmpty) {
-        // Seed the first editable timetable for the semester. Past semesters
-        // can reject creation server-side; browsing them must still show the
-        // read-only my timetable instead of a load-failure screen.
+        // Seed the first editable timetable for the semester. Semesters that
+        // refuse creation just browse with the read-only my timetable.
         try {
           await _repository.create(
             year: selectedSemester.year,
@@ -244,9 +275,9 @@ class TimetableModel extends ChangeNotifier {
       if (requestId != _loadRequestId) return false;
 
       _applyCollection(
-        primary,
+        primary ?? _reloadPlaceholder,
         collection,
-        selectServerTimetable: selectServerTimetable,
+        selectServerTimetable: selectServerTimetable && primary != null,
       );
       _isLoading = false;
       _isLoaded = true;
