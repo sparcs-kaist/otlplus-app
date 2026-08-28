@@ -104,7 +104,7 @@ class TelemetryCoordinator {
   Future<void> _operations = Future<void>.value();
   TelemetryState? _requestedState;
   bool _crashlyticsEnabled = false;
-  bool _analyticsEnabled = false;
+  bool _analyticsMarked = false;
 
   Future<void> initialize({bool crashReportingEnabled = false}) async {
     await _analytics.initialize();
@@ -176,15 +176,24 @@ class TelemetryCoordinator {
       await _crashReporting.setUserIdentifier('');
     }
 
-    if (state.analyticsEnabled) {
+    // PostHog error tracking follows crash-reporting consent (default on) so
+    // crashes surface like Sentry. Identity and the analytics marker still
+    // require explicit analytics consent, so crash consent alone never
+    // identifies a user.
+    final posthogEnabled = state.analyticsEnabled || state.crashlyticsEnabled;
+    if (posthogEnabled) {
       await _analytics.enable();
-      if (!state.crashlyticsAnonymous && state.userIdentifier != null) {
-        await _analytics.identify(state.userIdentifier!);
+      if (state.analyticsEnabled) {
+        if (!state.crashlyticsAnonymous && state.userIdentifier != null) {
+          await _analytics.identify(state.userIdentifier!);
+        }
+        if (!_analyticsMarked) {
+          await _analytics.capture('analytics_enabled');
+          _analyticsMarked = true;
+        }
       }
-      if (!_analyticsEnabled) await _analytics.capture('analytics_enabled');
-      _analyticsEnabled = true;
     } else {
-      _analyticsEnabled = false;
+      _analyticsMarked = false;
       await _analytics.disable();
       await _analytics.reset();
     }
