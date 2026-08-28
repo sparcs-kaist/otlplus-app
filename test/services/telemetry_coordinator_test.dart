@@ -305,4 +305,58 @@ void main() {
 
     expect(analytics.identifyCalls, isEmpty);
   });
+
+  test("enables posthog under crash consent alone so errors are captured, "
+      "without identifying the user", () async {
+    final analytics = _FakeAnalyticsClient();
+    final coordinator = TelemetryCoordinator(
+      analytics: analytics,
+      crashReporting: _FakeCrashReportingClient(),
+    );
+    await coordinator.initialize();
+
+    await coordinator.synchronize(
+      const TelemetryState(
+        isReady: true,
+        crashlyticsEnabled: true,
+        crashlyticsAnonymous: false,
+        analyticsEnabled: false,
+        userIdentifier: "1234",
+      ),
+    );
+
+    expect(analytics.enableCount, 1);
+    expect(
+      analytics.identifyCalls,
+      isEmpty,
+      reason: "crash consent alone must never identify the user",
+    );
+    expect(
+      analytics.capturedEvents,
+      isEmpty,
+      reason: "the analytics marker requires explicit analytics consent",
+    );
+  });
+
+  test("disables posthog when both consents are withdrawn", () async {
+    final analytics = _FakeAnalyticsClient();
+    final coordinator = TelemetryCoordinator(
+      analytics: analytics,
+      crashReporting: _FakeCrashReportingClient(),
+    );
+    await coordinator.initialize();
+
+    await coordinator.synchronize(
+      const TelemetryState(
+        isReady: true,
+        crashlyticsEnabled: false,
+        crashlyticsAnonymous: false,
+        analyticsEnabled: false,
+        userIdentifier: "1234",
+      ),
+    );
+
+    expect(analytics.disableCount, 1);
+    expect(analytics.resetCount, 1);
+  });
 }
