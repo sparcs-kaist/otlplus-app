@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:otlplus/services/posthog_service.dart';
+import 'package:otlplus/services/channel_talk_analytics_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 
 class _FakeAnalyticsClient implements AnalyticsClient {
@@ -10,17 +10,9 @@ class _FakeAnalyticsClient implements AnalyticsClient {
   var enableCount = 0;
   var initializeCount = 0;
   var resetCount = 0;
-  final List<String> identifyCalls = <String>[];
-
   @override
   Future<void> capture(String eventName) async {
     capturedEvents.add(eventName);
-  }
-
-  @override
-  Future<void> identify(String distinctId) async {
-    identifyCalls.add(distinctId);
-    operations.add('identify');
   }
 
   @override
@@ -264,81 +256,33 @@ void main() {
       expect(analytics.operations, <String>['disable', 'reset']);
     },
   );
-  test("identifies analytics with the user id when not anonymous", () async {
-    final analytics = _FakeAnalyticsClient();
-    final coordinator = TelemetryCoordinator(
-      analytics: analytics,
-      crashReporting: _FakeCrashReportingClient(),
-    );
-    await coordinator.initialize();
+  test(
+    'does not enable ChannelTalk analytics or send identity from crash consent alone',
+    () async {
+      final analytics = _FakeAnalyticsClient();
+      final coordinator = TelemetryCoordinator(
+        analytics: analytics,
+        crashReporting: _FakeCrashReportingClient(),
+      );
+      await coordinator.initialize();
 
-    await coordinator.synchronize(
-      const TelemetryState(
-        isReady: true,
-        crashlyticsEnabled: true,
-        crashlyticsAnonymous: false,
-        analyticsEnabled: true,
-        userIdentifier: "1234",
-      ),
-    );
+      await coordinator.synchronize(
+        const TelemetryState(
+          isReady: true,
+          crashlyticsEnabled: true,
+          crashlyticsAnonymous: false,
+          analyticsEnabled: false,
+          userIdentifier: '1234',
+        ),
+      );
 
-    expect(analytics.identifyCalls, ["1234"]);
-  });
+      expect(analytics.enableCount, 0);
+      expect(analytics.capturedEvents, isEmpty);
+      expect(analytics.operations, <String>['disable', 'reset']);
+    },
+  );
 
-  test("keeps analytics anonymous when the anonymous flag is on", () async {
-    final analytics = _FakeAnalyticsClient();
-    final coordinator = TelemetryCoordinator(
-      analytics: analytics,
-      crashReporting: _FakeCrashReportingClient(),
-    );
-    await coordinator.initialize();
-
-    await coordinator.synchronize(
-      const TelemetryState(
-        isReady: true,
-        crashlyticsEnabled: true,
-        crashlyticsAnonymous: true,
-        analyticsEnabled: true,
-        userIdentifier: "1234",
-      ),
-    );
-
-    expect(analytics.identifyCalls, isEmpty);
-  });
-
-  test("enables posthog under crash consent alone so errors are captured, "
-      "without identifying the user", () async {
-    final analytics = _FakeAnalyticsClient();
-    final coordinator = TelemetryCoordinator(
-      analytics: analytics,
-      crashReporting: _FakeCrashReportingClient(),
-    );
-    await coordinator.initialize();
-
-    await coordinator.synchronize(
-      const TelemetryState(
-        isReady: true,
-        crashlyticsEnabled: true,
-        crashlyticsAnonymous: false,
-        analyticsEnabled: false,
-        userIdentifier: "1234",
-      ),
-    );
-
-    expect(analytics.enableCount, 1);
-    expect(
-      analytics.identifyCalls,
-      isEmpty,
-      reason: "crash consent alone must never identify the user",
-    );
-    expect(
-      analytics.capturedEvents,
-      isEmpty,
-      reason: "the analytics marker requires explicit analytics consent",
-    );
-  });
-
-  test("disables posthog when both consents are withdrawn", () async {
+  test('disables ChannelTalk analytics when consent is withdrawn', () async {
     final analytics = _FakeAnalyticsClient();
     final coordinator = TelemetryCoordinator(
       analytics: analytics,

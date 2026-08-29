@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
-import 'package:otlplus/services/posthog_service.dart';
+import 'package:otlplus/services/channel_talk_analytics_service.dart';
 
 abstract interface class CrashReportingClient {
   Future<void> deleteUnsentReports();
@@ -176,21 +176,11 @@ class TelemetryCoordinator {
       await _crashReporting.setUserIdentifier('');
     }
 
-    // PostHog error tracking follows crash-reporting consent (default on) so
-    // crashes surface like Sentry. Identity and the analytics marker still
-    // require explicit analytics consent, so crash consent alone never
-    // identifies a user.
-    final posthogEnabled = state.analyticsEnabled || state.crashlyticsEnabled;
-    if (posthogEnabled) {
+    if (state.analyticsEnabled) {
       await _analytics.enable();
-      if (state.analyticsEnabled) {
-        if (!state.crashlyticsAnonymous && state.userIdentifier != null) {
-          await _analytics.identify(state.userIdentifier!);
-        }
-        if (!_analyticsMarked) {
-          await _analytics.capture('analytics_enabled');
-          _analyticsMarked = true;
-        }
+      if (!_analyticsMarked) {
+        await _analytics.capture('analytics_enabled');
+        _analyticsMarked = true;
       }
     } else {
       _analyticsMarked = false;
