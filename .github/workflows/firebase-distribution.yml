@@ -86,20 +86,8 @@ jobs:
           doppler-token: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
           inject-env-vars: true
 
-      - name: Map release configuration
-        run: |
-          if [ -z "${POSTHOG_APP_TOKEN:-}" ]; then
-            echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
-            exit 1
-          fi
-          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
-          echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
-
       - name: Build APK
-        run: >-
-          flutter build apk --release
-          --dart-define=POSTHOG_API_KEY="$POSTHOG_API_KEY"
-          --dart-define=POSTHOG_HOST="$POSTHOG_HOST"
+        run: flutter build apk --release
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
@@ -182,15 +170,6 @@ jobs:
           doppler-token: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
           inject-env-vars: true
 
-      - name: Map release configuration
-        run: |
-          if [ -z "${POSTHOG_APP_TOKEN:-}" ]; then
-            echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
-            exit 1
-          fi
-          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
-          echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
-
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install --repo-update
@@ -237,17 +216,9 @@ jobs:
       - name: Build IPA
         working-directory: ios
         run: |
-          if [ -z "$POSTHOG_API_KEY" ]; then
-            echo "::error::POSTHOG_API_KEY repository variable is not set"
-            exit 1
-          fi
           flutter build ipa --release \
             --export-options-plist=ExportOptions.plist \
-            --dart-define=POSTHOG_API_KEY="$POSTHOG_API_KEY" \
-            --dart-define=POSTHOG_HOST="$POSTHOG_HOST" \
-            2>&1 || flutter build ios --release --no-codesign \
-            --dart-define=POSTHOG_API_KEY="$POSTHOG_API_KEY" \
-            --dart-define=POSTHOG_HOST="$POSTHOG_HOST"
+            2>&1 || flutter build ios --release --no-codesign
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
