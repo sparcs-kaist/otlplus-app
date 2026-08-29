@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/repositories/info_repository.dart';
-import 'package:otlplus/services/posthog_service.dart';
+import 'package:otlplus/services/channel_talk_analytics_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/pop_up.dart';
@@ -217,9 +217,6 @@ class _RecordingTelemetryCoordinator extends TelemetryCoordinator {
 class _NoOpAnalyticsClient implements AnalyticsClient {
   @override
   Future<void> capture(String eventName) async {}
-
-  @override
-  Future<void> identify(String distinctId) async {}
 
   @override
   Future<void> disable() async {}
