@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/optional_bootstrap.dart';
@@ -11,6 +12,40 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
+  test('disables ChannelTalk default event tracking on boot', () async {
+    const channel = MethodChannel('channel_talk_flutter');
+    Map<String, dynamic>? bootArguments;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == 'boot') {
+            bootArguments = Map<String, dynamic>.from(
+              call.arguments as Map<Object?, Object?>,
+            );
+            return true;
+          }
+          return true;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null),
+    );
+    final bootstrap = OptionalBootstrap(
+      requestPermission: () async {},
+      getAPNSToken: () async => 'apns',
+      getToken: () async => null,
+      onTokenRefresh: () => const Stream<String>.empty(),
+      initPushToken: (token) async {},
+      showChannelButton: () async {},
+      recordNonFatal: (error, stack) async {},
+      isIOS: false,
+    );
+    addTearDown(bootstrap.dispose);
+
+    await bootstrap.run();
+
+    expect(bootArguments?['trackDefaultEvent'], isFalse);
   });
 
   test(
