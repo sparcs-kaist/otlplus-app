@@ -100,15 +100,6 @@ jobs:
           doppler-token: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
           inject-env-vars: true
 
-      - name: Map release configuration
-        run: |
-          if [ -z "${POSTHOG_APP_TOKEN:-}" ]; then
-            echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
-            exit 1
-          fi
-          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
-          echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
-
       - name: Set app version from release tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -280,15 +271,6 @@ jobs:
         with:
           doppler-token: ${{ secrets.DOPPLER_TOKEN || secrets.DOPPER_TOKEN }}
           inject-env-vars: true
-
-      - name: Map release configuration
-        run: |
-          if [ -z "${POSTHOG_APP_TOKEN:-}" ]; then
-            echo "::error::POSTHOG_APP_TOKEN is not available in Doppler"
-            exit 1
-          fi
-          echo "POSTHOG_API_KEY=$POSTHOG_APP_TOKEN" >> "$GITHUB_ENV"
-          echo "POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}" >> "$GITHUB_ENV"
 
       - name: Set app version from release tag
         run: |

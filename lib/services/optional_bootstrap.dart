@@ -251,6 +251,7 @@ class OptionalBootstrap {
       pluginKey: '0abc4b50-9e66-4b45-b910-eb654a481f08',
       memberHash: memberHash,
       language: Language.korean,
+      trackDefaultEvent: false,
       appearance: Appearance.light,
       channelButtonOption: ChannelButtonOption(
         position: ChannelButtonPosition.right,
