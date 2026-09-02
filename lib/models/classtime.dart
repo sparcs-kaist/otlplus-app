@@ -43,8 +43,12 @@ class Classtime extends Time {
     final buildingName = json['buildingName'] as String;
     final roomName = json['roomName'] as String? ?? "";
 
-    final classroomStr = roomName.isNotEmpty ? "$buildingName $roomName" : buildingName;
-    final classroomShortStr = roomName.isNotEmpty ? "$buildingCode $roomName" : buildingCode;
+    final classroomStr = roomName.isNotEmpty
+        ? "$buildingName $roomName"
+        : buildingName;
+    final classroomShortStr = roomName.isNotEmpty
+        ? "$buildingCode $roomName"
+        : buildingCode;
 
     return Classtime(
       buildingCode: buildingCode,
