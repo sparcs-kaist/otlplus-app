@@ -123,12 +123,14 @@ class OTLLayout extends StatefulWidget {
     this.leading,
     this.trailing,
     this.extendBodyBehindAppBar = false,
+    this.toolbarHeight = kToolbarHeight,
     required this.body,
   }) : super(key: key);
   final Widget? middle;
   final Widget? leading;
   final Widget? trailing;
   final bool extendBodyBehindAppBar;
+  final double toolbarHeight;
   final Widget body;
 
   @override
@@ -150,7 +152,7 @@ class _OTLLayoutState extends State<OTLLayout> {
       alignment: Alignment.topCenter,
       children: [
         Positioned.fill(
-          top: widget.extendBodyBehindAppBar ? 0 : kToolbarHeight,
+          top: widget.extendBodyBehindAppBar ? 0 : widget.toolbarHeight,
           child: widget.body,
         ),
         Positioned(
@@ -158,7 +160,7 @@ class _OTLLayoutState extends State<OTLLayout> {
           left: 0,
           right: 0,
           child: SizedBox(
-            height: kToolbarHeight,
+            height: widget.toolbarHeight,
             child: NavigationToolbar(
               leading: (widget.leading != null || canPopRightLeft || hasDrawer)
                   ? Row(

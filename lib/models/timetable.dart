@@ -1,4 +1,5 @@
 import 'package:otlplus/models/lecture.dart';
+import 'package:otlplus/models/custom_block.dart';
 
 int _requirePositive(int value, String field) {
   if (value <= 0) throw FormatException('$field must be positive');
@@ -74,8 +75,13 @@ class TimetableListItem {
 class Timetable {
   final int id;
   late List<Lecture> lectures;
+  List<CustomBlock> customBlocks;
 
-  Timetable({required this.id, required this.lectures});
+  Timetable({
+    required this.id,
+    required this.lectures,
+    this.customBlocks = const [],
+  });
 
   factory Timetable.fromV2Detail(
     Map<String, dynamic> json, {
@@ -108,7 +114,11 @@ class Timetable {
   @override
   int get hashCode => id.hashCode;
 
-  Timetable.fromJson(Map<String, dynamic> json) : id = json['id'] {
+  Timetable.fromJson(Map<String, dynamic> json)
+    : id = json['id'],
+      customBlocks = (json['custom_blocks'] as List<dynamic>? ?? [])
+          .map((block) => CustomBlock.fromJson(block as Map<String, dynamic>))
+          .toList() {
     if (json['lectures'] != null) {
       lectures = [];
       json['lectures'].forEach((v) {
@@ -123,6 +133,11 @@ class Timetable {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['id'] = this.id;
     data['lectures'] = this.lectures.map((v) => v.toJson()).toList();
+    if (customBlocks.isNotEmpty) {
+      data['custom_blocks'] = customBlocks
+          .map((block) => block.toJson())
+          .toList();
+    }
     return data;
   }
 }

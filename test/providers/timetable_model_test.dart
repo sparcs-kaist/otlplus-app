@@ -31,6 +31,7 @@ class FakeTimetableRepository extends TimetableRepository {
   Completer<Timetable>? myTimetableCompleter;
   final createCalls = <({int year, int semester, List<int> lectureIds})>[];
   final updateCalls = <RepositoryUpdateCall>[];
+  Completer<void>? updateGate;
   final deleteCalls = <int>[];
   final lecturesById = <int, Lecture>{};
   final serverTimetables = <int, Timetable>{};
@@ -87,6 +88,7 @@ class FakeTimetableRepository extends TimetableRepository {
     required TimetableLectureAction action,
   }) async {
     updateCalls.add(RepositoryUpdateCall(summary, lectureId, action));
+    await updateGate?.future;
     final current = serverTimetables[summary.id]!;
     final lectures = List<Lecture>.of(current.lectures);
     switch (action) {
@@ -364,6 +366,29 @@ void main() {
       secondLecture,
     ]);
   });
+
+  test(
+    "switching tabs during lecture update preserves the request owner",
+    () async {
+      await _loadOneServerTimetable(
+        model,
+        repository,
+        user,
+        semester,
+        lectures: <Lecture>[firstLecture],
+      );
+      repository.lecturesById[secondLecture.id] = secondLecture;
+      repository.updateGate = Completer<void>();
+      model.setIndex(1);
+      final pending = model.addLecture(lecture: secondLecture);
+      model.setIndex(0);
+      repository.updateGate!.complete();
+      expect(await pending, TimetableAddResult.added);
+      expect(model.error, isNull);
+      expect(model.selectedIndex, 0);
+      expect(model.timetables[1].lectures, [firstLecture, secondLecture]);
+    },
+  );
 
   test("remove patches and replaces the selected timetable detail", () async {
     await _loadOneServerTimetable(

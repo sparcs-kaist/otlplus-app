@@ -1,6 +1,7 @@
 import "package:dio/dio.dart";
 import "package:otlplus/constants/url.dart";
 import "package:otlplus/models/timetable.dart";
+import "package:otlplus/repositories/custom_block_repository.dart";
 
 class TimetableCollection {
   TimetableCollection({
@@ -16,9 +17,11 @@ class TimetableCollection {
 enum TimetableLectureAction { add, delete }
 
 class TimetableRepository {
-  TimetableRepository(this._dio);
+  TimetableRepository(this._dio, {CustomBlockRepository? customBlocks})
+    : customBlocks = customBlocks ?? CustomBlockRepository(_dio);
 
   final Dio _dio;
+  final CustomBlockRepository customBlocks;
 
   Future<TimetableCollection> fetchBySemester(int year, int semester) async {
     _validateYear(year);
@@ -107,10 +110,12 @@ class TimetableRepository {
     final response = await _dio.get<Map<String, dynamic>>(
       API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", summary.id.toString()),
     );
-    return Timetable.fromV2Detail(
+    final timetable = Timetable.fromV2Detail(
       response.data as Map<String, dynamic>,
       summary: summary,
     );
+    timetable.customBlocks = await customBlocks.fetch(summary.id);
+    return timetable;
   }
 }
 

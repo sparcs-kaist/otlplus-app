@@ -30,6 +30,21 @@
     "load_lecture_details": "Unable to load lecture details.",
     "save_review": "Failed to save review."
   },
+  "custom_block": {
+    "add": "Add custom block",
+    "edit": "Edit custom block",
+    "name": "Name",
+    "place": "Place (optional)",
+    "day": "Day",
+    "begin": "Start time (HH:mm)",
+    "end": "End time (HH:mm)",
+    "save": "Save",
+    "required": "Enter a name.",
+    "invalid_time": "Use 00:00–24:00 with the end after the start.",
+    "overlap": "This overlaps another custom block.",
+    "failed": "Unable to complete the action. Please try again.",
+    "confirm_delete": "Delete this custom block?"
+  },
   "semester": {
     "spring": "Spring",
     "summer": "Summer",

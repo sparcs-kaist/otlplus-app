@@ -369,6 +369,8 @@ class _RawResponsiveButtonState extends State<RawResponsiveButton> {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
       onTapDown: (_) {
         _isPressed = true;
         setPressed(true);
@@ -376,13 +378,9 @@ class _RawResponsiveButtonState extends State<RawResponsiveButton> {
         Future.delayed(const Duration(milliseconds: 128), () {
           _delaying = false;
           if (_isPressed == false) setPressed(false);
-          Future.delayed(const Duration(milliseconds: 512), () {
-            if (_isPressed) widget.onLongPress?.call();
-          });
         });
       },
       onTapUp: (_) {
-        if (_isPressed) widget.onTap?.call();
         _isPressed = false;
         if (_delaying == false) setPressed(false);
       },

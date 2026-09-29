@@ -100,6 +100,18 @@ void main() {
         listResponse,
       );
       for (final id in <int>[7, 3]) {
+        adapter.register('GET', '/$API_V2_TIMETABLES_URL/$id/custom-blocks', {
+          'custom_blocks': [
+            {
+              'id': id + 10,
+              'block_name': 'Study',
+              'place': '',
+              'day': 0,
+              'begin': 540,
+              'end': 600,
+            },
+          ],
+        });
         adapter.register(
           "GET",
           "/${API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", id.toString())}",
@@ -120,10 +132,11 @@ void main() {
       ]);
       expect(collection.timetables.first.lectures.single.year, 2026);
       expect(collection.timetables.first.lectures.single.semester, 3);
-      expect(adapter.requests, hasLength(3));
+      expect(collection.timetables.first.customBlocks.single.name, 'Study');
+      expect(adapter.requests, hasLength(5));
       expect(
         adapter.requests.map((request) => request.method).toList(),
-        <String>["GET", "GET", "GET"],
+        <String>["GET", "GET", "GET", "GET", "GET"],
       );
       expect(
         adapter.requests.map((request) => request.uri.path).toList(),
@@ -131,6 +144,8 @@ void main() {
           "/$API_V2_TIMETABLES_URL",
           "/${API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", "7")}",
           "/${API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", "3")}",
+          '/$API_V2_TIMETABLES_URL/7/custom-blocks',
+          '/$API_V2_TIMETABLES_URL/3/custom-blocks',
         ],
       );
       expect(adapter.requests.first.queryParameters, <String, dynamic>{
@@ -289,6 +304,7 @@ void main() {
         final path = API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", "7");
         adapter.register("PATCH", "/$path", <String, dynamic>{"message": "ok"});
         adapter.register("GET", "/$path", detailFixture);
+        adapter.register('GET', '/$path/custom-blocks', {'custom_blocks': []});
 
         final timetable = await repository.updateLecture(
           summary: summary,
@@ -298,14 +314,14 @@ void main() {
 
         expect(timetable.id, summary.id);
         expect(timetable.lectures.single.id, 1921750);
-        expect(adapter.requests, hasLength(2));
+        expect(adapter.requests, hasLength(3));
         expect(
           adapter.requests.map((request) => request.method).toList(),
-          <String>["PATCH", "GET"],
+          <String>["PATCH", "GET", "GET"],
         );
         expect(
           adapter.requests.map((request) => request.uri.path).toList(),
-          <String>["/$path", "/$path"],
+          <String>["/$path", "/$path", '/$path/custom-blocks'],
         );
         expect(adapter.requests.first.data, <String, dynamic>{
           "lectureId": 1921750,

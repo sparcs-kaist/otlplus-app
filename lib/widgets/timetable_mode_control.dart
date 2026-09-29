@@ -34,8 +34,8 @@ class _TimetableModeControlState extends State<TimetableModeControl> {
       ),
       child: Stack(
         children: [
-          AnimatedPositioned(
-            left: 48.0 * widget.selectedMode.index,
+          AnimatedPositionedDirectional(
+            start: 48.0 * widget.selectedMode.index,
             duration: Duration(milliseconds: 500),
             curve: Curves.easeInOut,
             child: Container(
@@ -47,27 +47,26 @@ class _TimetableModeControlState extends State<TimetableModeControl> {
               ),
             ),
           ),
-          ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: TimetableViewMode.values.length,
-            itemBuilder: (_, index) {
-              final mode = TimetableViewMode.values[index];
+          Row(
+            children: TimetableViewMode.values.map((mode) {
               return GestureDetector(
                 onTap: () => widget.onTap(mode),
                 behavior: HitTestBehavior.opaque,
-                child: Container(
+                child: SizedBox(
+                  width: 48,
                   height: 32,
-                  padding: EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                  child: Icon(
-                    _icons[mode],
-                    color: mode == widget.selectedMode
-                        ? OTLColor.grayF
-                        : OTLColor.pinksMain,
+                  child: Center(
+                    child: Icon(
+                      _icons[mode],
+                      size: 24,
+                      color: mode == widget.selectedMode
+                          ? OTLColor.grayF
+                          : OTLColor.pinksMain,
+                    ),
                   ),
                 ),
               );
-            },
+            }).toList(),
           ),
         ],
       ),

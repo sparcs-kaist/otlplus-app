@@ -30,6 +30,21 @@
     "load_lecture_details": "강의 정보를 불러오지 못했습니다.",
     "save_review": "후기를 저장하지 못했습니다."
   },
+  "custom_block": {
+    "add": "커스텀 블록 추가",
+    "edit": "커스텀 블록 수정",
+    "name": "일정 이름",
+    "place": "장소 (선택)",
+    "day": "요일",
+    "begin": "시작 시간 (HH:mm)",
+    "end": "종료 시간 (HH:mm)",
+    "save": "저장",
+    "required": "일정 이름을 입력해 주세요.",
+    "invalid_time": "00:00~24:00 범위에서 시작보다 늦은 종료 시간을 입력해 주세요.",
+    "overlap": "다른 커스텀 블록과 시간이 겹칩니다.",
+    "failed": "작업을 완료하지 못했습니다. 다시 시도해 주세요.",
+    "confirm_delete": "이 커스텀 블록을 삭제할까요?"
+  },
   "semester": {
     "spring": "봄",
     "summer": "여름",

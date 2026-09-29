@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/constants/text_styles.dart';
@@ -105,71 +106,91 @@ class TimetableSummary extends StatelessWidget {
           : 0);
     }
 
-    return Container(
-      height: 75,
-      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
-      decoration: BoxDecoration(
-        border: Border.symmetric(
-          horizontal: BorderSide(color: OTLColor.pinksLight),
+    final scale = MediaQuery.textScalerOf(context).scale(12) / 12;
+    return LayoutBuilder(
+      builder: (context, constraints) => Container(
+        height: 75 * scale,
+        padding: EdgeInsets.symmetric(vertical: 15 * scale, horizontal: 16),
+        decoration: BoxDecoration(
+          border: Border.symmetric(
+            horizontal: BorderSide(color: OTLColor.pinksLight),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 150,
-            padding: const EdgeInsets.only(right: 3),
-            child: GridView.builder(
-              itemCount: 6,
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 6,
-                mainAxisExtent: 45,
-              ),
-              itemBuilder: (_, index) => _buildAttribute(
-                'timetable.summary.${TYPES_SHORT[index]}'.tr(),
-                typeCredit[index],
-                tempLecture?.typeIdx == index,
-              ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: math.max(constraints.maxWidth - 32, 328 * scale),
+            child: Row(
+              children: [
+                Container(
+                  width: 150 * scale,
+                  padding: const EdgeInsets.only(right: 3),
+                  child: GridView.builder(
+                    itemCount: 6,
+                    scrollDirection: Axis.horizontal,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 6 * scale,
+                      mainAxisExtent: 45 * scale,
+                    ),
+                    itemBuilder: (_, index) => _buildAttribute(
+                      'timetable.summary.${TYPES_SHORT[index]}'.tr(),
+                      typeCredit[index],
+                      tempLecture?.typeIdx == index,
+                      scale,
+                    ),
+                  ),
+                ),
+                _buildScore(
+                  'timetable.summary.credit'.tr(),
+                  allCreditCredit.toString(),
+                  tempLecture != null && tempLecture.credit > 0,
+                  scale,
+                ),
+                _buildScore(
+                  "AU",
+                  allAuCredit.toString(),
+                  tempLecture != null && tempLecture.creditAu > 0,
+                  scale,
+                ),
+                _buildScore(
+                  'timetable.summary.grade'.tr(),
+                  targetNum > 0 ? LETTERS[(grade / targetNum).round()] : "?",
+                  tempLecture != null && tempLecture.grade > 0,
+                  scale,
+                ),
+                _buildScore(
+                  'timetable.summary.load'.tr(),
+                  targetNum > 0 ? LETTERS[(load / targetNum).round()] : "?",
+                  tempLecture != null && tempLecture.load > 0,
+                  scale,
+                ),
+                _buildScore(
+                  'timetable.summary.speech'.tr(),
+                  targetNum > 0 ? LETTERS[(speech / targetNum).round()] : "?",
+                  tempLecture != null && tempLecture.speech > 0,
+                  scale,
+                ),
+              ],
             ),
           ),
-          _buildScore(
-            'timetable.summary.credit'.tr(),
-            allCreditCredit.toString(),
-            tempLecture != null && tempLecture.credit > 0,
-          ),
-          _buildScore(
-            "AU",
-            allAuCredit.toString(),
-            tempLecture != null && tempLecture.creditAu > 0,
-          ),
-          _buildScore(
-            'timetable.summary.grade'.tr(),
-            targetNum > 0 ? LETTERS[(grade / targetNum).round()] : "?",
-            tempLecture != null && tempLecture.grade > 0,
-          ),
-          _buildScore(
-            'timetable.summary.load'.tr(),
-            targetNum > 0 ? LETTERS[(load / targetNum).round()] : "?",
-            tempLecture != null && tempLecture.load > 0,
-          ),
-          _buildScore(
-            'timetable.summary.speech'.tr(),
-            targetNum > 0 ? LETTERS[(speech / targetNum).round()] : "?",
-            tempLecture != null && tempLecture.speech > 0,
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildScore(String title, String content, bool highlight) {
+  Widget _buildScore(
+    String title,
+    String content,
+    bool highlight,
+    double scale,
+  ) {
     return Expanded(
       child: Column(
         children: [
           SizedBox(
-            height: 26,
+            height: 26 * scale,
             child: Text(
               content,
               style: titleBold.copyWith(
@@ -179,7 +200,7 @@ class TimetableSummary extends StatelessWidget {
             ),
           ),
           SizedBox(
-            height: 17,
+            height: 17 * scale,
             child: Text(
               title,
               style: labelRegular.copyWith(
@@ -193,11 +214,16 @@ class TimetableSummary extends StatelessWidget {
     );
   }
 
-  Widget _buildAttribute(String title, int value, bool highlight) {
+  Widget _buildAttribute(
+    String title,
+    int value,
+    bool highlight,
+    double scale,
+  ) {
     return Row(
       children: [
         SizedBox(
-          width: 28,
+          width: 28 * scale,
           child: Text(
             title,
             style: labelBold.copyWith(
@@ -206,7 +232,7 @@ class TimetableSummary extends StatelessWidget {
           ),
         ),
         SizedBox(
-          width: 17,
+          width: 17 * scale,
           child: Text(
             value.toString(),
             style: labelRegular.copyWith(

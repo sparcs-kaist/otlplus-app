@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/models/lecture.dart';
+import 'package:otlplus/models/custom_block.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/timetable.dart';
 import 'package:otlplus/models/user.dart';
 import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:otlplus/utils/export_file.dart';
+import 'package:otlplus/utils/custom_block_calendar.dart';
 
 typedef TimetableFileWriter =
     Future<void> Function(ShareType type, Uint8List? bytes);
@@ -268,12 +270,13 @@ class TimetableModel extends ChangeNotifier {
       final primary = results[0] as Timetable?;
       var collection = results[1] as TimetableCollection?;
       if (requestId != _loadRequestId) return false;
+      final collectionWasLoaded = collection != null;
       collection ??= TimetableCollection(
         summaries: <TimetableListItem>[],
         timetables: <Timetable>[],
       );
 
-      if (collection.summaries.isEmpty) {
+      if (collectionWasLoaded && collection.summaries.isEmpty) {
         // Seed the first editable timetable for the semester. Semesters that
         // refuse creation just browse with the read-only my timetable.
         try {
@@ -360,21 +363,30 @@ class TimetableModel extends ChangeNotifier {
     await _loadTimetable();
   }
 
-  Future<bool> createTimetable({List<Lecture>? lectures}) async {
+  Future<bool> createTimetable({
+    List<Lecture>? lectures,
+    List<CustomBlock> customBlocks = const [],
+  }) async {
     if (_semesters.isEmpty || !_isLoaded || _timetables.isEmpty) return false;
+    final semester = selectedSemester;
+    final requestId = _loadRequestId;
     try {
       _error = null;
       final id = await _repository.create(
-        year: selectedSemester.year,
-        semester: selectedSemester.semester,
+        year: semester.year,
+        semester: semester.semester,
         lectureIds: (lectures ?? <Lecture>[])
             .map((lecture) => lecture.id)
             .toList(growable: false),
       );
+      for (final block in customBlocks) {
+        await _repository.customBlocks.create(id, block);
+      }
       final collection = await _repository.fetchBySemester(
-        selectedSemester.year,
-        selectedSemester.semester,
+        semester.year,
+        semester.semester,
       );
+      if (requestId != _loadRequestId) return true;
       _applyCollection(_timetables.first, collection, preferredTimetableId: id);
       _isLoaded = true;
       _loadFailed = false;
@@ -403,11 +415,87 @@ class TimetableModel extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  bool _customBlocksBusy = false;
+  bool get customBlocksBusy => _customBlocksBusy;
+
+  Future<bool> saveCustomBlock(int timetableId, CustomBlock block) async {
+    if (!block.isValid ||
+        !_hasEditableTimetable ||
+        currentTimetable.id != timetableId)
+      return false;
+    if (currentTimetable.customBlocks.any(
+      (other) => other.id != block.id && other.overlaps(block),
+    ))
+      return false;
+    return _mutateCustomBlocks(timetableId, (blocks) async {
+      if (block.id == 0) {
+        final id = await _repository.customBlocks.create(timetableId, block);
+        return [
+          ...blocks,
+          CustomBlock.fromJson({'id': id, ...block.toPayload()}),
+        ];
+      } else {
+        final updated = await _repository.customBlocks.update(
+          timetableId,
+          block,
+        );
+        return blocks
+            .map((other) => other.id == block.id ? updated : other)
+            .toList();
+      }
+    });
+  }
+
+  Future<bool> deleteCustomBlock(int timetableId, int blockId) =>
+      _mutateCustomBlocks(timetableId, (blocks) async {
+        await _repository.customBlocks.delete(timetableId, blockId);
+        return blocks.where((block) => block.id != blockId).toList();
+      });
+
+  Future<bool> _mutateCustomBlocks(
+    int timetableId,
+    Future<List<CustomBlock>> Function(List<CustomBlock>) action,
+  ) async {
+    if (_customBlocksBusy ||
+        !_hasEditableTimetable ||
+        currentTimetable.id != timetableId)
+      return false;
+    final requestId = _loadRequestId;
+    final previousBlocks = currentTimetable.customBlocks;
+    _customBlocksBusy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final blocks = await action(previousBlocks);
+      if (requestId == _loadRequestId) {
+        final index = _timetables.indexWhere(
+          (table) => table.id == timetableId,
+        );
+        if (index > 0) {
+          _timetables[index] = Timetable(
+            id: timetableId,
+            lectures: _timetables[index].lectures,
+            customBlocks: blocks,
+          );
+        }
+      }
+      return true;
+    } catch (exception) {
+      if (requestId == _loadRequestId) _error = exception;
+      return false;
+    } finally {
+      _customBlocksBusy = false;
+      notifyListeners();
+    }
+  }
+
   Future<TimetableAddResult> addLecture({
     required Lecture lecture,
     bool replaceOverlaps = false,
   }) async {
     if (!_hasEditableTimetable) return TimetableAddResult.failed;
+    final summary = _currentSummary;
+    final requestId = _loadRequestId;
     final hadError = _error != null;
     _error = null;
     final overlaps = overlappingLectures(lecture);
@@ -419,18 +507,18 @@ class TimetableModel extends ChangeNotifier {
     try {
       for (final overlap in overlaps) {
         final updated = await _repository.updateLecture(
-          summary: _currentSummary,
+          summary: summary,
           lectureId: overlap.id,
           action: TimetableLectureAction.delete,
         );
-        _replaceCurrentTimetable(updated);
+        _replaceTimetable(updated, requestId);
       }
       final updated = await _repository.updateLecture(
-        summary: _currentSummary,
+        summary: summary,
         lectureId: lecture.id,
         action: TimetableLectureAction.add,
       );
-      _replaceCurrentTimetable(updated);
+      _replaceTimetable(updated, requestId);
       notifyListeners();
       return TimetableAddResult.added;
     } catch (exception) {
@@ -442,14 +530,16 @@ class TimetableModel extends ChangeNotifier {
 
   Future<bool> removeLecture({required Lecture lecture}) async {
     if (!_hasEditableTimetable) return false;
+    final summary = _currentSummary;
+    final requestId = _loadRequestId;
     try {
       _error = null;
       final updated = await _repository.updateLecture(
-        summary: _currentSummary,
+        summary: summary,
         lectureId: lecture.id,
         action: TimetableLectureAction.delete,
       );
-      _replaceCurrentTimetable(updated);
+      _replaceTimetable(updated, requestId);
       notifyListeners();
       return true;
     } catch (exception) {
@@ -461,13 +551,17 @@ class TimetableModel extends ChangeNotifier {
 
   Future<bool> deleteTimetable() async {
     if (!_hasEditableTimetable) return false;
+    final id = currentTimetable.id;
+    final requestId = _loadRequestId;
     try {
       _error = null;
-      final deletedIndex = _selectedTimetableIndex;
-      await _repository.delete(currentTimetable.id);
+      await _repository.delete(id);
+      if (requestId != _loadRequestId) return true;
+      final deletedIndex = _timetables.indexWhere((table) => table.id == id);
+      if (deletedIndex < _firstSavedTimetableIndex) return true;
       _summaries.removeAt(deletedIndex - _firstSavedTimetableIndex);
       _timetables.removeAt(deletedIndex);
-      _selectedTimetableIndex = deletedIndex - _firstSavedTimetableIndex;
+      if (_selectedTimetableIndex >= deletedIndex) _selectedTimetableIndex--;
       if (_selectedTimetableIndex >= _timetables.length) {
         _selectedTimetableIndex = _timetables.length - 1;
       }
@@ -490,14 +584,15 @@ class TimetableModel extends ChangeNotifier {
   TimetableListItem get _currentSummary =>
       _summaries[_selectedTimetableIndex - _firstSavedTimetableIndex];
 
-  void _replaceCurrentTimetable(Timetable timetable) {
-    if (timetable.id != _currentSummary.id) {
-      throw StateError('Updated timetable id does not match its summary');
-    }
-    _timetables[_selectedTimetableIndex] = timetable;
+  void _replaceTimetable(Timetable timetable, int requestId) {
+    if (requestId != _loadRequestId) return;
+    final index = _timetables.indexWhere((table) => table.id == timetable.id);
+    if (index >= _firstSavedTimetableIndex) _timetables[index] = timetable;
   }
 
   Future<bool> shareTimetable(ShareType type, String language) async {
+    final timetable = currentTimetable;
+    final semester = selectedSemester;
     try {
       final response = await _legacyShareDio.get(
         API_SHARE_URL.replaceFirst(
@@ -505,20 +600,30 @@ class TimetableModel extends ChangeNotifier {
           type == ShareType.image ? 'image' : 'ical',
         ),
         queryParameters: {
-          'timetable': currentTimetable.id,
-          'year': selectedSemester.year,
-          'semester': selectedSemester.semester,
+          'timetable': timetable.id,
+          'year': semester.year,
+          'semester': semester.semester,
           'language': language,
         },
         options: Options(responseType: ResponseType.bytes),
       );
 
       final data = response.data;
-      final bytes = data == null
+      var bytes = data == null
           ? null
           : data is Uint8List
           ? data
           : Uint8List.fromList(data as List<int>);
+      if (type == ShareType.ical &&
+          bytes != null &&
+          timetable.customBlocks.isNotEmpty) {
+        bytes = appendCustomBlocksToCalendar(
+          bytes,
+          timetable.customBlocks,
+          semester,
+          timetable.id,
+        );
+      }
       await _fileWriter(type, bytes);
       return true;
     } catch (exception) {
