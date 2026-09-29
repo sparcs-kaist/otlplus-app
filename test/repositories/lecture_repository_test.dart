@@ -135,10 +135,7 @@ void main() {
       expect(classtime.begin, 1140);
       expect(classtime.end, 1320);
       expect(classtime.buildingCode, "Z02");
-      expect(
-        classtime.classroom,
-        "(Z02)여의도캠퍼스(기타) (1712호)강의실",
-      );
+      expect(classtime.classroom, "(Z02)여의도캠퍼스(기타) (1712호)강의실");
       expect(classtime.classroomShort, "Z02 (1712호)강의실");
       expect(classtime.roomName, "(1712호)강의실");
 
