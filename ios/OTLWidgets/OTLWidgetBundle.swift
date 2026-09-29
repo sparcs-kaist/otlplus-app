@@ -247,6 +247,62 @@ enum WidgetTokenVault {
     }
 }
 
+private let widgetRetryInterval: TimeInterval = 15 * 60
+private let widgetTimelineEntryCount = 24 * 5
+
+private func loadSavedTimetables(from defaults: UserDefaults?) -> [Timetable]? {
+    guard
+        let encoded = defaults?.string(forKey: "timetables"),
+        let data = encoded.data(using: .utf8)
+    else {
+        return nil
+    }
+    return try? JSONDecoder().decode([Timetable].self, from: data)
+}
+
+private func makeWidgetTimeline(
+    timetables: [Timetable],
+    configuration: ConfigurationIntent,
+    now: Date = Date(),
+    policy: TimelineReloadPolicy = .atEnd
+) -> Timeline<WidgetEntry> {
+    let entries = (0..<widgetTimelineEntryCount).compactMap { offset -> WidgetEntry? in
+        guard let date = Calendar.current.date(
+            byAdding: .minute,
+            value: offset * 12,
+            to: now
+        ) else {
+            return nil
+        }
+        return WidgetEntry(
+            date: date,
+            timetableData: timetables,
+            configuration: configuration
+        )
+    }
+    return Timeline(entries: entries, policy: policy)
+}
+
+private func makeWidgetRetryTimeline(
+    configuration: ConfigurationIntent,
+    defaults: UserDefaults?,
+    now: Date = Date()
+) -> Timeline<WidgetEntry> {
+    let retryDate = now.addingTimeInterval(widgetRetryInterval)
+    if let cached = loadSavedTimetables(from: defaults) {
+        return makeWidgetTimeline(
+            timetables: cached,
+            configuration: configuration,
+            now: now,
+            policy: .after(retryDate)
+        )
+    }
+    return Timeline(
+        entries: [WidgetEntry(date: now, timetableData: nil, configuration: configuration)],
+        policy: .after(retryDate)
+    )
+}
+
 struct Provider: IntentTimelineProvider {
     typealias Entry = WidgetEntry
     func placeholder(in context: Context) -> WidgetEntry {
@@ -381,20 +437,15 @@ struct Provider: IntentTimelineProvider {
                                 print(error)
                             }
                             
-                            let currentDate = Date()
-                            for minutesOffset in 0..<5 {
-                                let entryDate = Calendar.current.date(byAdding: .minute, value: minutesOffset*12, to: currentDate)!
-                                let entry = WidgetEntry(date: entryDate, timetableData: timetables, configuration: configuration)
-                                entries.append(entry)
-                            }
-                            
-                            let timeline = Timeline(entries: entries, policy: .atEnd)
-                            completion(timeline)
+                            completion(makeWidgetTimeline(
+                                timetables: timetables,
+                                configuration: configuration
+                            ))
                         case .failure(_):
-                            let currentDate = Date()
-                            entries = [WidgetEntry(date: currentDate, timetableData: nil, configuration: configuration)]
-                            let timeline = Timeline(entries: entries, policy: .never)
-                            completion(timeline)
+                            completion(makeWidgetRetryTimeline(
+                                configuration: configuration,
+                                defaults: sharedDefaults
+                            ))
                         }
                     }
 
@@ -407,26 +458,10 @@ struct Provider: IntentTimelineProvider {
                     }
                 }
             case .failure(_):
-                let decoder = JSONDecoder()
-                do {
-                    let data = try decoder.decode([Timetable].self, from: (sharedDefaults?.string(forKey: "timetables")?.data(using: .utf8)) ?? Data())
-                    
-                    let currentDate = Date()
-                    for minutesOffset in 0..<5 {
-                        let entryDate = Calendar.current.date(byAdding: .minute, value: minutesOffset*12, to: currentDate)!
-                        let entry = WidgetEntry(date: entryDate, timetableData: data, configuration: configuration)
-                        entries.append(entry)
-                    }
-                    
-                    let timeline = Timeline(entries: entries, policy: .atEnd)
-                    completion(timeline)
-                } catch {
-                    let currentDate = Date()
-                    entries = [WidgetEntry(date: currentDate, timetableData: nil, configuration: configuration)]
-                    
-                    let timeline = Timeline(entries: entries, policy: .never)
-                    completion(timeline)
-                }
+                completion(makeWidgetRetryTimeline(
+                    configuration: configuration,
+                    defaults: sharedDefaults
+                ))
             }
         }
         

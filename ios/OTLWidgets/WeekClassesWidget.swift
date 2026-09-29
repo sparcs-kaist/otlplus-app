@@ -13,6 +13,7 @@ import Intents
 struct WeekClassesWidgetData: Identifiable {
     let id = UUID()
     let title: String
+    let place: String
     let height: Double
     let y: Double
     let colour: Color
@@ -68,7 +69,11 @@ struct WeekClassesWidgetView: View {
                                             TableLineView()
                                             if let data = entry.timetableData, !data.isEmpty {
                                                 ForEach(getLecturesData(data: getLecturesForDay(timetable: data[0], day: number))) { lectureData in
-                                                    WeekClassesLectureView(lectureName: lectureData.title, colour: lectureData.colour)
+                                                    WeekClassesLectureView(
+                                                        lectureName: lectureData.title,
+                                                        lecturePlace: lectureData.place,
+                                                        colour: lectureData.colour
+                                                    )
                                                         .frame(height: lectureData.height)
                                                         .offset(y: lectureData.y)
                                                 }
@@ -156,6 +161,9 @@ struct WeekClassesWidgetView: View {
             let c = l.classes[i]
             
             let title = l.name + l.subtitle
+            let place = [c.buildingCode.isEmpty ? nil : "(\(c.buildingCode))", c.roomName.isEmpty ? nil : c.roomName]
+                .compactMap { $0 }
+                .joined(separator: " ")
             let minute = c.end - c.begin
             var height = 0.6833 * Double(minute)
             if minute/30 != 0 {
@@ -164,7 +172,7 @@ struct WeekClassesWidgetView: View {
             let y = 0.7166 * Double(c.begin - 540) + 5
             let colour = getColourForCourse(course: l.courseId)
             
-            tmp.append(WeekClassesWidgetData(title: title, height: height, y: y, colour: colour))
+            tmp.append(WeekClassesWidgetData(title: title, place: place, height: height, y: y, colour: colour))
         }
         
         return tmp
@@ -232,6 +240,7 @@ struct WeekClassesLectureView: View {
     @Environment(\.widgetRenderingMode) var renderingMode
     
     let lectureName: String
+    let lecturePlace: String
     let colour: Color
     
     var body: some View {
@@ -241,11 +250,22 @@ struct WeekClassesLectureView: View {
                 .padding(.vertical, 2)
                 .widgetAccentable()
                 .opacity(renderingMode == .accented ? 0.2 : 1)
-            Text(lectureName)
-                .font(.custom("NotoSansKR-Regular", size: 10))
-                .foregroundColor(.black)
-                .padding([.leading, .top, .trailing], 4)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(lectureName)
+                    .font(.custom("NotoSansKR-Regular", size: 10))
+                    .lineLimit(2)
+                if !lecturePlace.isEmpty {
+                    Text(lecturePlace)
+                        .font(.custom("NotoSansKR-Regular", size: 8))
+                        .foregroundColor(.black.opacity(0.6))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+            }
+            .foregroundColor(.black)
+            .padding([.leading, .top, .trailing], 4)
         }
+        .clipped()
     }
 }
 
