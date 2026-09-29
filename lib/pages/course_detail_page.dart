@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/enums.dart';
@@ -20,11 +22,42 @@ import 'package:otlplus/widgets/review_block.dart';
 import 'package:otlplus/widgets/review_write_block.dart';
 import 'package:otlplus/extensions/locale.dart';
 
-class CourseDetailPage extends StatelessWidget {
-  CourseDetailPage({Key? key}) : super(key: key);
+class CourseDetailPage extends StatefulWidget {
+  const CourseDetailPage({super.key});
   static String route = 'course_detail_page';
 
+  @override
+  State<CourseDetailPage> createState() => _CourseDetailPageState();
+}
+
+class _CourseDetailPageState extends State<CourseDetailPage> {
   final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.extentAfter > 200) {
+      return;
+    }
+
+    final model = context.read<CourseDetailModel>();
+    if (model.hasMoreReviews && !model.isLoadingMoreReviews) {
+      unawaited(model.loadMoreReviews());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +132,21 @@ class CourseDetailPage extends StatelessWidget {
         ),
         _buildReviewHeader(),
         _buildReviews(context, course),
+        if (context.select<CourseDetailModel, bool>(
+          (model) => model.isLoadingMoreReviews,
+        ))
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(top: 4, bottom: 12),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

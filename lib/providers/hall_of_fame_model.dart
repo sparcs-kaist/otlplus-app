@@ -15,6 +15,7 @@ class HallOfFameModel extends ChangeNotifier {
   bool _isLoading = false;
   bool _hasMore = true;
   bool _hasLoaded = false;
+  int _nextOffset = 0;
   Object? _error;
   Semester? _semester;
   ReviewTab _selectedMode = ReviewTab.hallOfFame;
@@ -65,20 +66,18 @@ class HallOfFameModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final offset = reset ? 0 : _nextOffset;
       final result = await _repository.fetchHallOfFame(
         year: _semester?.year,
         semester: _semester?.semester,
-        offset: reset ? 0 : _hallOfFame.length,
+        offset: offset,
         limit: _pageSize,
       );
       if (reset) _hallOfFame.clear();
       _hallOfFame.addAll(result.reviews);
       _hasLoaded = true;
-      // An empty page means the server has no more rows for this filter
-      // even when totalCount overpromises; stopping here prevents the
-      // infinite refetch loop that stalls scrolling at the same spot.
-      _hasMore =
-          result.reviews.isNotEmpty && _hallOfFame.length < result.totalCount;
+      _nextOffset = offset + _pageSize;
+      _hasMore = result.reviews.length == _pageSize;
     } catch (error) {
       _error = error;
     } finally {

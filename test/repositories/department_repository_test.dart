@@ -43,6 +43,8 @@ void main() {
     "EE": 9947,
     "AE": 9944,
     "CH": 620,
+    "BCS": 20684,
+    "AIC": 24354,
   };
 
   late CountingHttpAdapter adapter;
@@ -93,13 +95,13 @@ void main() {
   });
 
   test(
-    "resolves the brain-cognitive and ai graduate codes as primary",
+    "resolves the brain-cognitive sciences and ai computing codes as primary",
     () async {
-      expect(await repository.resolveFilterCodes(const <String>["BCE"]), <int>[
-        16412,
+      expect(await repository.resolveFilterCodes(const <String>["BCS"]), <int>[
+        20684,
       ]);
-      expect(await repository.resolveFilterCodes(const <String>["AI"]), <int>[
-        16413,
+      expect(await repository.resolveFilterCodes(const <String>["AIC"]), <int>[
+        24354,
       ]);
     },
   );

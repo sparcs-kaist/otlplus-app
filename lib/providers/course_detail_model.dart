@@ -19,6 +19,7 @@ class CourseDetailModel extends ChangeNotifier {
   final CourseRepository _courseRepository;
   final LectureRepository _lectureRepository;
   final ReviewRepository _reviewRepository;
+  static const int _reviewPageSize = 10;
 
   late Course _course;
   Course get course => _course;
@@ -58,6 +59,12 @@ class CourseDetailModel extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  bool _isLoadingMoreReviews = false;
+  bool get isLoadingMoreReviews => _isLoadingMoreReviews;
+
+  bool _hasMoreReviews = false;
+  bool get hasMoreReviews => _hasMoreReviews;
+
   Object? _error;
   Object? get error => _error;
 
@@ -68,12 +75,16 @@ class CourseDetailModel extends ChangeNotifier {
   bool get loadFailed => _loadFailed;
 
   int? _courseId;
+  int _nextReviewOffset = 0;
   int _requestGeneration = 0;
 
   Future<void> loadCourse(int courseId) async {
     _courseId = courseId;
     final generation = ++_requestGeneration;
     _isLoading = true;
+    _isLoadingMoreReviews = false;
+    _hasMoreReviews = false;
+    _nextReviewOffset = 0;
     _error = null;
     _hasData = false;
     _loadFailed = false;
@@ -84,7 +95,11 @@ class CourseDetailModel extends ChangeNotifier {
       final lectureRequest = _lectureRepository.fetchLegacyCourseLectures(
         courseId,
       );
-      final reviewRequest = _reviewRepository.fetchCourse(courseId);
+      final reviewRequest = _reviewRepository.fetchCourse(
+        courseId,
+        offset: 0,
+        limit: _reviewPageSize,
+      );
       late Course course;
       late List<Lecture> lectures;
       late ReviewListResult reviewResult;
@@ -111,6 +126,8 @@ class CourseDetailModel extends ChangeNotifier {
       _professors = lectures.expand((lecture) => lecture.professors).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
       _reviews = List<Review>.unmodifiable(reviewResult.reviews);
+      _nextReviewOffset = _reviewPageSize;
+      _hasMoreReviews = reviewResult.reviews.length == _reviewPageSize;
       _selectedFilter = "ALL";
       _isLoading = false;
       _hasData = true;
@@ -128,6 +145,45 @@ class CourseDetailModel extends ChangeNotifier {
   Future<void> retryLoad() async {
     final courseId = _courseId;
     if (courseId != null) await loadCourse(courseId);
+  }
+
+  Future<void> loadMoreReviews() async {
+    final courseId = _courseId;
+    if (courseId == null ||
+        _isLoading ||
+        _isLoadingMoreReviews ||
+        !_hasMoreReviews) {
+      return;
+    }
+
+    final generation = _requestGeneration;
+    final offset = _nextReviewOffset;
+    _isLoadingMoreReviews = true;
+    notifyListeners();
+
+    try {
+      final result = await _reviewRepository.fetchCourse(
+        courseId,
+        offset: offset,
+        limit: _reviewPageSize,
+      );
+      if (generation != _requestGeneration) return;
+
+      _reviews = List<Review>.unmodifiable(<Review>[
+        ..._reviews,
+        ...result.reviews,
+      ]);
+      _nextReviewOffset = offset + _reviewPageSize;
+      _hasMoreReviews = result.reviews.length == _reviewPageSize;
+    } catch (caughtError) {
+      if (generation != _requestGeneration) return;
+      _error = caughtError;
+    } finally {
+      if (generation == _requestGeneration) {
+        _isLoadingMoreReviews = false;
+        notifyListeners();
+      }
+    }
   }
 
   void updateCourseReviews(Review review) {

@@ -5,17 +5,18 @@ Size getTextSize(
   required String text,
   required TextStyle style,
   double maxWidth = double.infinity,
+  int? maxLines,
 }) {
   final TextPainter textPainter = TextPainter(
     text: TextSpan(text: text, style: style),
     textDirection: TextDirection.ltr,
+    maxLines: maxLines,
     textScaler: MediaQuery.of(context).textScaler,
   )..layout(minWidth: 0, maxWidth: maxWidth);
   return textPainter.size;
 }
 
 double singleHeight(BuildContext context, TextStyle style) {
-  return style.fontSize! *
-      style.height! *
+  return style.height! *
       MediaQuery.of(context).textScaler.scale(style.fontSize!);
 }

@@ -221,8 +221,8 @@
     "ts": "융인",
     "all": "전체",
     "etc": "기타",
-    "bce": "뇌인지공학",
-    "ai": "AI대학원"
+    "bcs": "뇌인지",
+    "aic": "AI컴"
   },
   "type": {
     "type": "구분",
@@ -257,5 +257,11 @@
     "join_the_event": "이벤트 참여하러 가기",
     "inapp_flexible_download_complete": "업데이트 다운로드가 완료되었습니다.",
     "inapp_flexible_restart": "재시작"
+  },
+  "update": {
+    "required_title": "업데이트가 필요합니다",
+    "required_description": "더 안정적인 서비스 이용을 위해 최신 버전으로 업데이트해 주세요.",
+    "open_store": "스토어에서 업데이트",
+    "store_open_failed": "스토어를 열지 못했습니다. 잠시 후 다시 시도해 주세요."
   }
 }

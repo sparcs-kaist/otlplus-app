@@ -43,8 +43,8 @@ class DepartmentRepository {
     "EE",
     "AE",
     "CH",
-    "BCE",
-    "AI",
+    "BCS",
+    "AIC",
   };
   static const Set<int> _legacyMsbDepartmentIds = <int>{3844, 4299};
 

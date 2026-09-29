@@ -61,8 +61,8 @@ class CourseSearchModel extends ChangeNotifier {
         <CodeLabelPair>[
           CodeLabelPair(code: "AE", label: "department.ae"),
           CodeLabelPair(code: "CH", label: "department.ch"),
-          CodeLabelPair(code: "BCE", label: "department.bce"),
-          CodeLabelPair(code: "AI", label: "department.ai"),
+          CodeLabelPair(code: "BCS", label: "department.bcs"),
+          CodeLabelPair(code: "AIC", label: "department.aic"),
           CodeLabelPair(code: "ETC", label: "department.etc"),
         ],
       ],

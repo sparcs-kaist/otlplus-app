@@ -98,6 +98,42 @@ void main() {
     expect(model.error, isNull);
   });
 
+  test("course detail paginates reviews with offset and limit", () async {
+    final courseRepository = _ControlledCourseRepository();
+    final lectureRepository = _ControlledLectureRepository();
+    final reviewRepository = _ControlledReviewRepository();
+    final model = CourseDetailModel(
+      courseRepository,
+      lectureRepository,
+      reviewRepository,
+    );
+
+    final load = model.loadCourse(SampleCourse.id);
+    await Future<void>.delayed(Duration.zero);
+    courseRepository.detailRequests.single.complete(SampleCourse.shared);
+    lectureRepository.courseLectureRequests.single.complete(<Lecture>[]);
+    reviewRepository.courseRequests.single.complete(
+      _reviewResult(reviewCount: 10, totalCount: 25),
+    );
+    await load;
+
+    expect(model.hasMoreReviews, isTrue);
+    expect(reviewRepository.offsets, <int>[0]);
+    expect(reviewRepository.limits, <int>[10]);
+
+    final loadMore = model.loadMoreReviews();
+    await Future<void>.delayed(Duration.zero);
+    expect(reviewRepository.offsets, <int>[0, 10]);
+    expect(reviewRepository.limits, <int>[10, 10]);
+    reviewRepository.courseRequests.last.complete(
+      _reviewResult(reviewCount: 10, totalCount: 25),
+    );
+    await loadMore;
+
+    expect(model.reviews, hasLength(20));
+    expect(model.hasMoreReviews, isTrue);
+  });
+
   test(
     "lecture detail overlaps retained v1 reviews with dependent course load",
     () async {
@@ -158,14 +194,16 @@ ReviewListResult _reviewResult({
   double averageGrade = 0,
   double averageLoad = 0,
   double averageSpeech = 0,
+  int reviewCount = 1,
+  int totalCount = 1,
 }) {
   return ReviewListResult(
-    reviews: <Review>[SampleReview.shared],
+    reviews: List<Review>.filled(reviewCount, SampleReview.shared),
     averageGrade: averageGrade,
     averageLoad: averageLoad,
     averageSpeech: averageSpeech,
     department: null,
-    totalCount: 1,
+    totalCount: totalCount,
   );
 }
 
@@ -223,6 +261,8 @@ class _ControlledReviewRepository extends ReviewRepository {
   _ControlledReviewRepository() : super(Dio());
 
   final courseIds = <int>[];
+  final offsets = <int>[];
+  final limits = <int>[];
   final courseRequests = <Completer<ReviewListResult>>[];
 
   @override
@@ -234,6 +274,8 @@ class _ControlledReviewRepository extends ReviewRepository {
     int limit = 10,
   }) {
     courseIds.add(courseId);
+    offsets.add(offset);
+    limits.add(limit);
     final request = Completer<ReviewListResult>();
     courseRequests.add(request);
     return request.future;

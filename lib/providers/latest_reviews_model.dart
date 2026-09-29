@@ -13,6 +13,7 @@ class LatestReviewsModel extends ChangeNotifier {
   bool _isLoading = false;
   bool _hasMore = true;
   bool _hasLoaded = false;
+  int _nextOffset = 0;
   Object? _error;
 
   List<Review> get latestReviews => List<Review>.unmodifiable(_latestReviews);
@@ -40,19 +41,16 @@ class LatestReviewsModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final offset = reset ? 0 : _nextOffset;
       final result = await _repository.fetchRecent(
-        offset: reset ? 0 : _latestReviews.length,
+        offset: offset,
         limit: _pageSize,
       );
       if (reset) _latestReviews.clear();
       _latestReviews.addAll(result.reviews);
       _hasLoaded = true;
-      // An empty page means the server has no more rows for this filter
-      // even when totalCount overpromises; stopping here prevents the
-      // infinite refetch loop that stalls scrolling at the same spot.
-      _hasMore =
-          result.reviews.isNotEmpty &&
-          _latestReviews.length < result.totalCount;
+      _nextOffset = offset + _pageSize;
+      _hasMore = result.reviews.length == _pageSize;
     } catch (error) {
       _error = error;
     } finally {
