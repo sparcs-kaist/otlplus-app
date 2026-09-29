@@ -64,11 +64,13 @@ class TimetableBlock extends StatelessWidget {
                     ).height
                   : 0.0;
 
-              final classRoomLineHeight =
-                  singleHeight(context, labelRegular.copyWith(fontSize: 10));
+              final classRoomLineHeight = singleHeight(
+                context,
+                labelRegular.copyWith(fontSize: 10),
+              );
               int classRoomMaxLines =
                   ((constraints.maxHeight - titleHeight - 4) ~/
-                      classRoomLineHeight);
+                  classRoomLineHeight);
 
               if (classRoomMaxLines < 1) classRoomMaxLines = 1;
 
