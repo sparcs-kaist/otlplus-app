@@ -41,14 +41,22 @@ class Classtime extends Time {
   factory Classtime.fromV2Json(Map<String, dynamic> json) {
     final buildingCode = json['buildingCode'] as String;
     final buildingName = json['buildingName'] as String;
+    final roomName = json['roomName'] as String? ?? "";
+
+    final classroomStr = roomName.isNotEmpty
+        ? "$buildingName $roomName"
+        : buildingName;
+    final classroomShortStr = roomName.isNotEmpty
+        ? "$buildingCode $roomName"
+        : buildingCode;
 
     return Classtime(
       buildingCode: buildingCode,
-      classroom: buildingName,
-      classroomEn: buildingName,
-      classroomShort: buildingCode,
-      classroomShortEn: buildingCode,
-      roomName: json['roomName'] as String,
+      classroom: classroomStr,
+      classroomEn: classroomStr,
+      classroomShort: classroomShortStr,
+      classroomShortEn: classroomShortStr,
+      roomName: roomName,
       day: Weekday.fromCode(json['day'] as int),
       begin: json['begin'] as int,
       end: json['end'] as int,
