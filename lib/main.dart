@@ -46,6 +46,8 @@ class _OTLAppState extends State<OTLApp> {
   late final DeepLinkHandler _deepLinkHandler;
   late final StorageService _storageService;
   bool _isLoading = true;
+  bool _isCheckingMinimumVersion = true;
+  bool _isMinimumVersionRequired = false;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
@@ -75,7 +77,20 @@ class _OTLAppState extends State<OTLApp> {
       );
     }
     _deepLinkHandler.initialize();
-    _appUpdateChecker.checkForUpdate();
+    _checkAppVersion();
+  }
+
+  Future<void> _checkAppVersion() async {
+    final isRequired = await _appUpdateChecker.isMinimumVersionRequired();
+    if (!mounted) return;
+
+    setState(() {
+      _isMinimumVersionRequired = isRequired;
+      _isCheckingMinimumVersion = false;
+    });
+    if (!isRequired) {
+      unawaited(_appUpdateChecker.checkForAndroidInAppUpdate());
+    }
   }
 
   @override
@@ -86,14 +101,18 @@ class _OTLAppState extends State<OTLApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return MaterialApp(
-        scaffoldMessengerKey: _scaffoldMessengerKey,
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
-      );
+    final authModel = context.watch<AuthModel>();
+    final Widget home;
+    if (_isLoading || _isCheckingMinimumVersion) {
+      home = const Scaffold(body: Center(child: CircularProgressIndicator()));
+    } else if (_isMinimumVersionRequired) {
+      home = ForceUpdatePage(onUpdate: _appUpdateChecker.openStore);
+    } else {
+      home =
+          widget.homeOverride ??
+          (authModel.isLogined ? const OTLHome() : LoginPage());
     }
 
-    final authModel = context.watch<AuthModel>();
     return MaterialApp(
       scaffoldMessengerKey: _scaffoldMessengerKey,
       builder: (context, child) => ScrollConfiguration(
@@ -104,9 +123,7 @@ class _OTLAppState extends State<OTLApp> {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       title: "OTL",
-      home:
-          widget.homeOverride ??
-          (authModel.isLogined ? const OTLHome() : LoginPage()),
+      home: home,
       routes: {
         LikedReviewPage.route: (_) => LikedReviewPage(),
         MyReviewPage.route: (_) => MyReviewPage(),
@@ -115,6 +132,81 @@ class _OTLAppState extends State<OTLApp> {
         LoginPage.route: (_) => LoginPage(),
       },
       theme: buildAppTheme(),
+    );
+  }
+}
+
+class ForceUpdatePage extends StatefulWidget {
+  const ForceUpdatePage({required this.onUpdate, super.key});
+
+  final Future<bool> Function() onUpdate;
+
+  @override
+  State<ForceUpdatePage> createState() => _ForceUpdatePageState();
+}
+
+class _ForceUpdatePageState extends State<ForceUpdatePage> {
+  bool _isOpeningStore = false;
+
+  Future<void> _openStore() async {
+    if (_isOpeningStore) return;
+    setState(() => _isOpeningStore = true);
+
+    var didOpen = false;
+    try {
+      didOpen = await widget.onUpdate();
+    } catch (error) {
+      debugPrint('Store launch error: $error');
+    } finally {
+      if (mounted) setState(() => _isOpeningStore = false);
+    }
+    if (!didOpen && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('update.store_open_failed'.tr())));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.system_update, size: 64),
+                  const SizedBox(height: 24),
+                  Text(
+                    'update.required_title'.tr(),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'update.required_description'.tr(),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isOpeningStore ? null : _openStore,
+                      child: Text('update.open_store'.tr()),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

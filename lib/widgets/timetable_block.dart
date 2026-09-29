@@ -34,57 +34,11 @@ class TimetableBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final contents = <Widget>[];
-    final validHeight = height - 16;
-    final lineHeight = singleHeight(context, labelRegular);
-    int maxLines = (validHeight - lineHeight) ~/ lineHeight;
     final isKo = context.locale == Locale('ko');
     final title = isKo ? lecture.title : lecture.titleEn;
     final classroomShort = isKo
         ? lecture.classtimes[classTimeIndex].classroomShort
         : lecture.classtimes[classTimeIndex].classroomShortEn;
-
-    if (showTitle) {
-      contents.add(
-        Text(
-          title,
-          style: labelRegular.copyWith(
-            color: isTemp ? OTLColor.grayF : OTLColor.gray0,
-            overflow: TextOverflow.ellipsis,
-          ),
-          maxLines: 2,
-        ),
-      );
-    }
-
-    if (showClassroom) {
-      maxLines =
-          (validHeight -
-              getTextSize(
-                context,
-                text: title,
-                style: labelRegular,
-                maxWidth: 54,
-              ).height) ~/
-          lineHeight;
-
-      contents.add(
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              classroomShort,
-              style: labelRegular.copyWith(
-                color: isTemp ? OTLColor.grayE : OTLColor.gray6,
-                overflow: TextOverflow.ellipsis,
-                fontSize: 10,
-              ),
-              maxLines: maxLines > 1 ? maxLines : 1,
-            ),
-          ),
-        ),
-      );
-    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(2.0),
@@ -98,9 +52,58 @@ class TimetableBlock extends StatelessWidget {
         onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.all(6.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: contents,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final titleHeight = showTitle
+                  ? getTextSize(
+                      context,
+                      text: title,
+                      style: labelRegular,
+                      maxWidth: constraints.maxWidth,
+                      maxLines: 2,
+                    ).height
+                  : 0.0;
+
+              final classRoomLineHeight = singleHeight(
+                context,
+                labelRegular.copyWith(fontSize: 10),
+              );
+              int classRoomMaxLines =
+                  ((constraints.maxHeight - titleHeight - 4) ~/
+                  classRoomLineHeight);
+
+              if (classRoomMaxLines < 1) classRoomMaxLines = 1;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (showTitle)
+                    Text(
+                      title,
+                      style: labelRegular.copyWith(
+                        color: isTemp ? OTLColor.grayF : OTLColor.gray0,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      maxLines: 2,
+                    ),
+                  if (showClassroom)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          classroomShort,
+                          style: labelRegular.copyWith(
+                            color: isTemp ? OTLColor.grayE : OTLColor.gray6,
+                            overflow: TextOverflow.ellipsis,
+                            fontSize: 10,
+                          ),
+                          maxLines: classRoomMaxLines,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),

@@ -32,6 +32,8 @@ dependencies:
   firebase_analytics: "^11.4.0"
   firebase_crashlytics: "^4.3.0"
   firebase_messaging: "^15.2.0"
+  firebase_remote_config: "^5.4.7"
+  package_info_plus: "^9.0.1"
   channel_talk_flutter:
     git:
       url: https://github.com/happycastle114/channel_talk_flutter

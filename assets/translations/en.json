@@ -220,8 +220,8 @@
     "ph": "PH",
     "ts": "TS",
     "etc": "ETC",
-    "bce": "Brain & Cognitive Eng.",
-    "ai": "Grad. School of AI"
+    "bcs": "BCS",
+    "aic": "AIC"
   },
   "type": {
     "type": "Type",
@@ -256,5 +256,11 @@
     "join_the_event": "Join the Event",
     "inapp_flexible_download_complete": "Update download is complete.",
     "inapp_flexible_restart": "Restart"
+  },
+  "update": {
+    "required_title": "Update required",
+    "required_description": "Please update to the latest version to continue using OTL.",
+    "open_store": "Update in Store",
+    "store_open_failed": "Could not open the store. Please try again."
   }
 }

@@ -63,8 +63,8 @@ class LectureSearchModel extends ChangeNotifier {
         [
           CodeLabelPair(code: "AE", label: "department.ae".tr()),
           CodeLabelPair(code: "CH", label: "department.ch".tr()),
-          CodeLabelPair(code: "BCE", label: "department.bce".tr()),
-          CodeLabelPair(code: "AI", label: "department.ai".tr()),
+          CodeLabelPair(code: "BCS", label: "department.bcs".tr()),
+          CodeLabelPair(code: "AIC", label: "department.aic".tr()),
           CodeLabelPair(code: "ETC", label: "department.etc".tr()),
         ],
       ],
