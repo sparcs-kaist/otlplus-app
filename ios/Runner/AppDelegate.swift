@@ -232,8 +232,8 @@ private enum SharedTokenVault {
   }
 }
 
-@UIApplicationMain
-@objc class AppDelegate: FlutterAppDelegate {
+@main
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private static let tokenVaultChannelName = "org.sparcs.otlplus/token_vault"
   private static let widgetAppGroup = "group.org.sparcs.otl"
   private static let legacyTokenKeys = Set(["accessToken", "refreshToken"])
@@ -246,15 +246,15 @@ private enum SharedTokenVault {
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     ChannelIO.initialize(application)
-    GeneratedPluginRegistrant.register(with: self)
-
-    if let controller = window?.rootViewController as? FlutterViewController {
-      configureTokenVaultChannel(binaryMessenger: controller.binaryMessenger)
-    }
     activateWatchSessionIfSupported()
     removeLegacyWidgetTokens()
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    configureTokenVaultChannel(binaryMessenger: engineBridge.applicationRegistrar.messenger())
   }
 
   private func configureTokenVaultChannel(binaryMessenger: FlutterBinaryMessenger) {
