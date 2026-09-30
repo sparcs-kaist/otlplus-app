@@ -264,5 +264,22 @@
     "required_description": "Please update to the latest version to continue using OTL.",
     "open_store": "Update in Store",
     "store_open_failed": "Could not open the store. Please try again."
+  },
+  "custom_block": {
+    "add_time": "Add time",
+    "remove_time": "Remove time",
+    "add": "Add custom block",
+    "edit": "Edit custom block",
+    "name": "Name",
+    "place": "Place (optional)",
+    "day": "Day",
+    "begin": "Start time (HH:mm)",
+    "end": "End time (HH:mm)",
+    "save": "Save",
+    "required": "Enter a name.",
+    "invalid_time": "Use 00:00–24:00 with the end after the start.",
+    "overlap": "This overlaps another custom block.",
+    "failed": "Unable to complete the action. Please try again.",
+    "confirm_delete": "Delete this custom block?"
   }
 }

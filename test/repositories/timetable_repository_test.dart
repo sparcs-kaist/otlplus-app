@@ -91,6 +91,7 @@ void main() {
       for (final summary in summaries) {
         adapter.register("GET", "/$API_V2_TIMETABLES_URL/${summary['id']}", {
           "lectures": <dynamic>[],
+          "timetableItems": <dynamic>[],
         });
       }
       final result = await repository.fetchBySemester(2025, 1);
@@ -229,6 +230,65 @@ void main() {
       expect(adapter.requests, isEmpty);
     });
   });
+
+  test('detail parses custom items without a second list request', () async {
+    adapter.register(
+      'GET',
+      '/$API_V2_TIMETABLES_URL?semester=3&year=2026',
+      listFixture,
+    );
+    final id = (listFixture['timetables'] as List).single['id'];
+    adapter.register('GET', '/$API_V2_TIMETABLES_URL/$id', {
+      ...detailFixture,
+      'timetableItems': [
+        {
+          'kind': 'custom',
+          'data': {
+            'id': 12,
+            'block_name': 'Study',
+            'place': '',
+            'day': 0,
+            'begin': 600,
+            'end': 660,
+            'times': [
+              {'day': 0, 'begin': 600, 'end': 660},
+              {'day': 6, 'begin': 0, 'end': 60},
+            ],
+          },
+        },
+      ],
+    });
+    final result = await repository.fetchBySemester(2026, 3);
+    expect(
+      result.timetables.single.customBlocks.single.occurrences,
+      hasLength(2),
+    );
+    expect(adapter.requests, hasLength(2));
+  });
+
+  test(
+    'older detail loads custom blocks through collection endpoint',
+    () async {
+      adapter.register(
+        'GET',
+        '/$API_V2_TIMETABLES_URL?semester=3&year=2026',
+        listFixture,
+      );
+      final id = (listFixture['timetables'] as List).single['id'];
+      adapter.register('GET', '/$API_V2_TIMETABLES_URL/$id', {'lectures': []});
+      adapter.register('GET', '/$API_V2_TIMETABLES_URL/$id/custom-blocks', {
+        'custom_blocks': [],
+      });
+      expect(
+        (await repository.fetchBySemester(
+          2026,
+          3,
+        )).timetables.single.customBlocks,
+        isEmpty,
+      );
+      expect(adapter.requests, hasLength(3));
+    },
+  );
 
   group("TimetableRepository.fetchMyTimetable", () {
     test("uses the dedicated endpoint and supplied semester context", () async {

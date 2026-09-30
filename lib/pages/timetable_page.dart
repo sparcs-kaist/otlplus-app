@@ -20,6 +20,7 @@ import 'package:otlplus/widgets/timetable.dart';
 import 'package:otlplus/widgets/timetable_block.dart';
 import 'package:otlplus/widgets/timetable_summary.dart';
 import 'package:otlplus/widgets/timetable_tabs.dart';
+import 'package:otlplus/widgets/custom_block_dialog.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class TimetablePage extends StatefulWidget {
@@ -125,6 +126,21 @@ class _TimetablePageState extends State<TimetablePage> {
                                     ),
                                   ),
                                 ),
+                                if (mode == TimetableViewMode.classes &&
+                                    !context
+                                        .watch<TimetableModel>()
+                                        .isMyTimetable)
+                                  IconButton(
+                                    tooltip: 'custom_block.add'.tr(),
+                                    icon: const Icon(
+                                      Icons.add_box_outlined,
+                                      color: OTLColor.pinksMain,
+                                    ),
+                                    onPressed: () => showCustomBlockEditor(
+                                      context,
+                                      context.read<TimetableModel>(),
+                                    ),
+                                  ),
                                 if (mode == TimetableViewMode.classes)
                                   GestureDetector(
                                     behavior: HitTestBehavior.translucent,
@@ -268,6 +284,17 @@ class _TimetablePageState extends State<TimetablePage> {
     return Timetable(
       lectures: (tempLecture == null) ? lectures : [...lectures, tempLecture],
       isExamTime: isExamTime,
+      customBlocks: context
+          .watch<TimetableModel>()
+          .currentTimetable
+          .customBlocks,
+      onCustomBlockTap: context.read<TimetableModel>().isMyTimetable
+          ? null
+          : (block) => showCustomBlockEditor(
+              context,
+              context.read<TimetableModel>(),
+              block: block,
+            ),
       builder: (lecture, classTimeIndex, blockHeight) {
         final isSelected = tempLecture == lecture;
         Key? key;
@@ -347,6 +374,21 @@ class _TimetablePageState extends State<TimetablePage> {
     }
   }
 
+  Future<void> _copyTimetable(
+    BuildContext context,
+    TimetableModel model,
+  ) async {
+    final copied = await model.createTimetable(
+      lectures: List.of(model.currentTimetable.lectures),
+      customBlocks: List.of(model.currentTimetable.customBlocks),
+    );
+    if (!copied && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('custom_block.failed'.tr())));
+    }
+  }
+
   void _handleTimetableTabAction(
     BuildContext context,
     TimetableModel timetableModel,
@@ -355,9 +397,7 @@ class _TimetablePageState extends State<TimetablePage> {
   ) {
     switch (action) {
       case TimetableTabAction.copy:
-        timetableModel.createTimetable(
-          lectures: timetableModel.currentTimetable.lectures,
-        );
+        _copyTimetable(context, timetableModel);
         return;
       case TimetableTabAction.exportImage:
         _exportTimetable(context, timetableModel, ShareType.image, index);
