@@ -139,7 +139,10 @@ void main() {
             "index into the empty timetable list",
       );
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.byKey(const Key('timetable_semester_loading')), findsOneWidget);
+      expect(
+        find.byKey(const Key('timetable_semester_loading')),
+        findsOneWidget,
+      );
       expect(tester.state(find.byType(SemesterPicker)), same(pickerState));
       expect(tester.state(find.byType(TimetableTabs)), same(tabsState));
       expect(tester.state<ScrollableState>(scrollableFinder), same(scrollable));
