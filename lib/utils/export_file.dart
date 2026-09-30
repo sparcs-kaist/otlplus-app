@@ -8,6 +8,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:open_app_file/open_app_file.dart';
 
+const MethodChannel _exportChannel = MethodChannel('org.sparcs.otlplus/export');
+
+Future<void> shareIosExport(String path) =>
+    _exportChannel.invokeMethod<void>('shareFile', {'path': path});
+
 const MethodChannel _channel = const MethodChannel("org.sparcs.otlplus");
 
 Future<void> exportImage(RenderRepaintBoundary boundary) async {
@@ -46,7 +51,11 @@ Future<void> writeFile(ShareType type, Uint8List? bytes) async {
     final directory = await getApplicationDocumentsDirectory();
     final path = "${directory.path}/$fileName";
     await writeBytesToFile(File(path), bytes);
-    await OpenAppFile.open(path);
+    if (Platform.isIOS) {
+      await shareIosExport(path);
+    } else {
+      await OpenAppFile.open(path);
+    }
   }
 }
 

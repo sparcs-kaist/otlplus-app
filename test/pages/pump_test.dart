@@ -156,7 +156,7 @@ void main() {
   testWidgets("pump TimetablePage", (WidgetTester tester) async {
     tester.pumpWidget(
       TimetablePage().materialAndNotifier(
-        TimetableModel(repository: timetableRepository, legacyShareDio: dio),
+        TimetableModel(repository: timetableRepository),
       ),
     );
   });

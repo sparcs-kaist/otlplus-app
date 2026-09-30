@@ -11,6 +11,7 @@ import 'package:otlplus/models/timetable.dart';
 import 'package:otlplus/models/user.dart';
 import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:otlplus/utils/export_file.dart';
+import 'package:otlplus/utils/timetable_export.dart';
 
 typedef TimetableFileWriter =
     Future<void> Function(ShareType type, Uint8List? bytes);
@@ -18,11 +19,9 @@ typedef TimetableFileWriter =
 class TimetableModel extends ChangeNotifier {
   TimetableModel({
     required TimetableRepository repository,
-    Dio? legacyShareDio,
     TimetableFileWriter? fileWriter,
     bool forTest = false,
   }) : _repository = repository,
-       _legacyShareDio = legacyShareDio ?? Dio(),
        _fileWriter = fileWriter ?? writeFile {
     if (forTest) {
       _user = User(
@@ -65,9 +64,6 @@ class TimetableModel extends ChangeNotifier {
 
   final TimetableRepository _repository;
 
-  // Image/iCal export has not moved to TimetableRepository yet. Keep this
-  // isolated boundary only for the retained share endpoints.
-  final Dio _legacyShareDio;
   final TimetableFileWriter _fileWriter;
 
   late User _user;
@@ -446,28 +442,34 @@ class TimetableModel extends ChangeNotifier {
     _timetables[_selectedTimetableIndex] = timetable;
   }
 
-  Future<bool> shareTimetable(ShareType type, String language) async {
+  Future<bool> shareTimetable(
+    ShareType type,
+    String language, {
+    String? name,
+  }) async {
     try {
-      final response = await _legacyShareDio.get(
-        API_SHARE_URL.replaceFirst(
-          '{share_type}',
-          type == ShareType.image ? 'image' : 'ical',
-        ),
-        queryParameters: {
-          'timetable': currentTimetable.id,
-          'year': selectedSemester.year,
-          'semester': selectedSemester.semester,
-          'language': language,
-        },
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      final data = response.data;
-      final bytes = data == null
-          ? null
-          : data is Uint8List
-          ? data
-          : Uint8List.fromList(data as List<int>);
+      final lectures = List<Lecture>.of(currentTimetable.lectures);
+      final semester = selectedSemester;
+      final exportName =
+          name ??
+          (isMyTimetable
+              ? (language == 'ko' ? '내 시간표' : 'My timetable')
+              : _currentSummary.name.trim().isEmpty
+              ? (language == 'ko' ? '이름 없음' : 'Untitled')
+              : _currentSummary.name);
+      final bytes = type == ShareType.image
+          ? await TimetableExport.image(
+              lectures: lectures,
+              semester: semester,
+              name: exportName,
+              language: language,
+            )
+          : TimetableExport.calendar(
+              lectures: lectures,
+              semester: semester,
+              name: exportName,
+              language: language,
+            );
       await _fileWriter(type, bytes);
       return true;
     } catch (exception) {
