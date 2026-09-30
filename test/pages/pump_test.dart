@@ -50,11 +50,7 @@ void main() {
   testWidgets("pump CourseDetailPage", (WidgetTester tester) async {
     tester.pumpWidget(
       CourseDetailPage().scaffoldAndNotifier(
-        CourseDetailModel(
-          courseRepository,
-          lectureRepository,
-          reviewRepository,
-        ),
+        CourseDetailModel(courseRepository, reviewRepository),
       ),
     );
   });
@@ -81,11 +77,8 @@ void main() {
           providers: [
             ChangeNotifierProvider<CourseSearchModel>.value(value: searchModel),
             ChangeNotifierProvider<CourseDetailModel>(
-              create: (_) => CourseDetailModel(
-                courseRepository,
-                lectureRepository,
-                reviewRepository,
-              ),
+              create: (_) =>
+                  CourseDetailModel(courseRepository, reviewRepository),
             ),
           ],
           child: const MaterialApp(home: Scaffold(body: DictionaryPage())),
@@ -101,7 +94,11 @@ void main() {
   testWidgets("pump LectureDetailPage", (WidgetTester tester) async {
     tester.pumpWidget(
       LectureDetailPage().scaffoldAndNotifier(
-        LectureDetailModel(courseRepository, lectureRepository),
+        LectureDetailModel(
+          courseRepository,
+          lectureRepository,
+          reviewRepository,
+        ),
       ),
     );
   });

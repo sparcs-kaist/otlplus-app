@@ -6,18 +6,19 @@ import 'package:otlplus/pages/lecture_detail_page.dart';
 import 'package:otlplus/utils/navigator.dart';
 import 'package:provider/provider.dart';
 import 'package:otlplus/constants/color.dart';
-import 'package:otlplus/extensions/lecture.dart';
-import 'package:otlplus/models/lecture.dart';
+import 'package:otlplus/models/course.dart';
 import 'package:otlplus/providers/lecture_detail_model.dart';
 import 'package:otlplus/extensions/locale.dart';
 
 class LectureGroupSimpleBlock extends StatelessWidget {
-  final List<Lecture> lectures;
+  final Course course;
+  final CourseHistory history;
   final int semester;
   final String? filter;
 
   LectureGroupSimpleBlock({
-    required this.lectures,
+    required this.course,
+    required this.history,
     required this.semester,
     this.filter,
   });
@@ -39,19 +40,19 @@ class LectureGroupSimpleBlock extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: ListTile.divideTiles(
               color: OTLColor.gray0,
-              tiles: lectures.map(
-                (lecture) => Container(
+              tiles: history.classes.map(
+                (entry) => Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.vertical(
-                      top: (lectures.first == lecture)
+                      top: (history.classes.first == entry)
                           ? const Radius.circular(4.0)
                           : Radius.zero,
-                      bottom: (lectures.last == lecture)
+                      bottom: (history.classes.last == entry)
                           ? const Radius.circular(4.0)
                           : Radius.zero,
                     ),
                     color:
-                        (lecture.professors.any(
+                        (entry.professors.any(
                           (professor) =>
                               professor.professorId.toString() == filter,
                         ))
@@ -60,18 +61,19 @@ class LectureGroupSimpleBlock extends StatelessWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.vertical(
-                      top: (lectures.first == lecture)
+                      top: (history.classes.first == entry)
                           ? const Radius.circular(4.0)
                           : Radius.zero,
-                      bottom: (lectures.last == lecture)
+                      bottom: (history.classes.last == entry)
                           ? const Radius.circular(4.0)
                           : Radius.zero,
                     ),
                     child: BackgroundButton(
                       onTap: () {
-                        context.read<LectureDetailModel>().loadLecture(
-                          lecture.id,
-                          false,
+                        context.read<LectureDetailModel>().loadHistoryLecture(
+                          course,
+                          history,
+                          entry,
                         );
                         OTLNavigator.push(
                           context,
@@ -88,14 +90,25 @@ class LectureGroupSimpleBlock extends StatelessWidget {
                             style: bodyRegular,
                             children: [
                               TextSpan(
-                                text: lecture.classTitle,
+                                text: [
+                                  entry.classNo,
+                                  entry.subtitle,
+                                ].where((value) => value.isNotEmpty).join(' '),
                                 style: bodyBold,
                               ),
                               TextSpan(text: ' '),
                               TextSpan(
                                 text: isEn
-                                    ? lecture.professorsStrShortEn
-                                    : lecture.professorsStrShort,
+                                    ? entry.professors
+                                          .map(
+                                            (p) => p.nameEn.isEmpty
+                                                ? p.name
+                                                : p.nameEn,
+                                          )
+                                          .join(", ")
+                                    : entry.professors
+                                          .map((p) => p.name)
+                                          .join(", "),
                               ),
                             ],
                           ),

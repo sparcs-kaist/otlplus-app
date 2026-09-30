@@ -15,7 +15,6 @@ import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/repositories/course_repository.dart';
 import 'package:otlplus/repositories/info_repository.dart';
-import 'package:otlplus/repositories/lecture_repository.dart';
 import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/widgets/hall_of_fame_control.dart';
 import 'package:otlplus/widgets/review_block.dart';
@@ -55,8 +54,8 @@ void main() {
     tester,
   ) async {
     final lectures = [
-      _lecture(2, id: 2, classTitle: 'Summer class'),
-      _lecture(4, id: 4, classTitle: 'Winter class'),
+      _lecture(2, id: 2, classTitle: 'Summer class', classNo: 'A'),
+      _lecture(4, id: 4, classTitle: 'Winter class', classNo: 'B'),
     ];
 
     await tester.pumpWidget(
@@ -73,8 +72,8 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Summer class'), findsOneWidget);
-    expect(find.textContaining('Winter class'), findsOneWidget);
+    expect(find.textContaining('A Summer class'), findsOneWidget);
+    expect(find.textContaining('B Winter class'), findsOneWidget);
   });
 
   testWidgets('ReviewBlock renders all known season labels', (tester) async {
@@ -138,13 +137,19 @@ Semester _semester(int code) {
   );
 }
 
-Lecture _lecture(int semester, {required int id, String classTitle = ''}) {
+Lecture _lecture(
+  int semester, {
+  required int id,
+  String classTitle = '',
+  String classNo = '',
+}) {
   return Lecture.fromJson({
     ...SampleLecture.shared.toJson(),
     'id': id,
     'year': 2024,
     'semester': semester,
     'class_title': classTitle,
+    'class_no': classNo,
   });
 }
 
@@ -220,11 +225,7 @@ class _InfoModel extends InfoModel {
 
 class _CourseDetailModel extends CourseDetailModel {
   _CourseDetailModel(this.lectureValues)
-    : super(
-        CourseRepository(Dio()),
-        LectureRepository(Dio()),
-        ReviewRepository(Dio()),
-      );
+    : super(CourseRepository(Dio()), ReviewRepository(Dio()));
 
   final List<Lecture> lectureValues;
 
@@ -232,16 +233,41 @@ class _CourseDetailModel extends CourseDetailModel {
   bool get hasData => true;
 
   @override
-  Course get course => SampleCourse.shared;
+  Course get course => Course(
+    id: SampleCourse.id,
+    oldCode: SampleCourse.shared.oldCode,
+    type: SampleCourse.shared.type,
+    typeEn: SampleCourse.shared.typeEn,
+    title: SampleCourse.shared.title,
+    titleEn: SampleCourse.shared.titleEn,
+    summary: '',
+    reviewTotalWeight: 0,
+    professors: SampleCourse.professors,
+    grade: 0,
+    load: 0,
+    speech: 0,
+    userspecificIsRead: false,
+    history: lectureValues
+        .map(
+          (lecture) => CourseHistory(
+            year: lecture.year,
+            semester: lecture.semester,
+            myLectureId: null,
+            classes: [
+              CourseHistoryClass(
+                professors: lecture.professors,
+                classNo: lecture.classNo,
+                lectureId: lecture.id,
+                subtitle: lecture.classTitle,
+              ),
+            ],
+          ),
+        )
+        .toList(),
+  );
 
   @override
   String get selectedFilter => 'ALL';
-
-  @override
-  Lecture? get selectedLecture => null;
-
-  @override
-  List<Lecture> get lectures => lectureValues;
 
   @override
   List<Professor> get professors => SampleCourse.professors;

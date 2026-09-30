@@ -125,7 +125,7 @@ class _LectureSearchState extends State<LectureSearch> {
       itemBuilder: (context, index) => LectureGroupBlock(
         lectures: lectures[index],
         onLongPress: (lecture) {
-          context.read<LectureDetailModel>().loadLecture(lecture.id, true);
+          context.read<LectureDetailModel>().loadLecture(lecture, true);
           OTLNavigator.push(context, LectureDetailPage());
         },
       ),

@@ -1,111 +1,64 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:otlplus/constants/url.dart';
+import 'dart:io';
 
 import 'package:otlplus/models/lecture.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('check typeIdx', () {
-    late Map<String, String> params;
+    late Map<String, dynamic> lectureJson;
 
     setUpAll(() async {
-      final response = await http.get(
-        Uri.https(BASE_AUTHORITY, API_SEMESTER_URL, {
-          'order[0]': 'year',
-          'order[1]': 'semester',
-        }),
+      final fixture =
+          jsonDecode(
+                await File(
+                  'test/fixtures/v2/lectures_search.json',
+                ).readAsString(),
+              )
+              as Map<String, dynamic>;
+      lectureJson = Map<String, dynamic>.from(
+        fixture['courses'][0]['lectures'][0] as Map<String, dynamic>,
       );
-      final List<dynamic> body = json.decode(response.body);
-      final String year = body[body.length - 1]['year'].toString();
-      final String semester = body[body.length - 1]['semester'].toString();
-      params = {
-        'year': year,
-        'semester': semester,
-        'keyword': '',
-        'department': 'ALL',
-        'level': 'ALL',
-        'order': 'old_code',
-        'limit': '1',
-      };
     });
 
-    test('BR type index should be 0', () async {
-      final url = Uri.https(
-        BASE_AUTHORITY,
-        API_LECTURE_URL,
-        params..addAll({'type': 'BR'}),
-      ).toString();
-      final response = await http.get(Uri.parse(url));
-      final lectures = json.decode(response.body);
-      assert(lectures.isNotEmpty);
-      for (Map<String, dynamic> l in lectures) {
-        final Lecture lecture = Lecture.fromJson(l);
-        expect(lecture.typeIdx, 0);
-      }
-    });
+    const localizedTypes = ['기초필수', '기초선택', '전공필수', '전공선택', '인문사회선택'];
+    for (var index = 0; index < TYPES.length; index++) {
+      test('${TYPES[index]} and localized type map to $index', () {
+        for (final type in [TYPES[index], localizedTypes[index]]) {
+          final lecture = Lecture.fromV2Json(
+            {...lectureJson, 'type': type},
+            year: 2026,
+            semester: 1,
+          );
+          expect(lecture.typeIdx, index);
+        }
+      });
+    }
 
-    test('BE type index should be 1', () async {
-      final url = Uri.https(
-        BASE_AUTHORITY,
-        API_LECTURE_URL,
-        params..addAll({'type': 'BE'}),
-      ).toString();
-      final response = await http.get(Uri.parse(url));
-      final lectures = json.decode(response.body);
-      assert(lectures.isNotEmpty);
-      for (Map<String, dynamic> l in lectures) {
-        final Lecture lecture = Lecture.fromJson(l);
-        expect(lecture.typeIdx, 1);
-      }
-    });
+    test(
+      'v2 averages preserve score availability for shared lecture details',
+      () {
+        final lecture = Lecture.fromV2Json(
+          {
+            ...lectureJson,
+            'averageGrade': 4,
+            'averageLoad': 3,
+            'averageSpeech': 2,
+          },
+          year: 2026,
+          semester: 1,
+        );
+        expect(lecture.reviewTotalWeight, greaterThan(0));
+      },
+    );
 
-    test('MR type index should be 2', () async {
-      final url = Uri.https(
-        BASE_AUTHORITY,
-        API_LECTURE_URL,
-        params..addAll({'type': 'MR'}),
-      ).toString();
-      final response = await http.get(Uri.parse(url));
-      final lectures = json.decode(response.body);
-      assert(lectures.isNotEmpty);
-      for (Map<String, dynamic> l in lectures) {
-        final Lecture lecture = Lecture.fromJson(l);
-        expect(lecture.typeIdx, 2);
-      }
-    });
-
-    test('ME type index should be 3', () async {
-      final url = Uri.https(
-        BASE_AUTHORITY,
-        API_LECTURE_URL,
-        params..addAll({'type': 'ME'}),
-      ).toString();
-      final response = await http.get(Uri.parse(url));
-      final lectures = json.decode(response.body);
-      assert(lectures.isNotEmpty);
-      for (Map<String, dynamic> l in lectures) {
-        final Lecture lecture = Lecture.fromJson(l);
-        expect(lecture.typeIdx, 3);
-      }
-    });
-
-    test('HSE type index should be 4', () async {
-      final url = Uri.https(
-        BASE_AUTHORITY,
-        API_LECTURE_URL,
-        params..addAll({'type': 'HSE'}),
-      ).toString();
-      final response = await http.get(Uri.parse(url));
-      final lectures = json.decode(response.body);
-      print(url);
-      // 2024년 가을학기부터 HSE 강의 없음
-      // 2025년 1월 10일 기준 있음
-      assert(!lectures.isEmpty);
-      for (Map<String, dynamic> l in lectures) {
-        final Lecture lecture = Lecture.fromJson(l);
-        expect(lecture.typeIdx, 4);
-      }
+    test('other types map to ETC', () {
+      final lecture = Lecture.fromV2Json(
+        {...lectureJson, 'type': '선택(석/박사)'},
+        year: 2026,
+        semester: 1,
+      );
+      expect(lecture.typeIdx, 5);
     });
   });
 }

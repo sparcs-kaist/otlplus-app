@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:otlplus/constants/text_styles.dart';
 import 'package:otlplus/extensions/semester.dart';
@@ -197,29 +199,48 @@ class LectureDetailPage extends StatelessWidget {
           ),
         ),
         IconTextButton(
-          onTap: () => FlutterWebBrowser.openWebPage(
-            url: _getSyllabusUrl(lecture),
-            customTabsOptions: CustomTabsOptions(
-              colorScheme: CustomTabsColorScheme.light,
-              defaultColorSchemeParams: CustomTabsColorSchemeParams(
-                toolbarColor: OTLColor.pinksLight,
-              ),
-              shareState: CustomTabsShareState.on,
-              instantAppsEnabled: true,
-              showTitle: true,
-              urlBarHidingEnabled: true,
-            ),
-            safariVCOptions: SafariViewControllerOptions(
-              barCollapsingEnabled: true,
-              dismissButtonStyle: SafariViewControllerDismissButtonStyle.close,
-              modalPresentationCapturesStatusBarAppearance: true,
-            ),
-          ),
+          onTap: () => _openSyllabus(context, lecture),
           text: "dictionary.syllabus".tr(),
           textStyle: bodyRegular.copyWith(color: OTLColor.pinksMain),
         ),
       ],
     );
+  }
+
+  Future<void> _openSyllabus(BuildContext context, Lecture lecture) async {
+    try {
+      final url = _getSyllabusUrl(lecture);
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        // flutter_web_browser uses AppDelegate.window, which is not the
+        // presenting window in this app's UIScene lifecycle.
+        final opened = await launchUrl(
+          Uri.parse(url),
+          mode: LaunchMode.externalApplication,
+        );
+        if (!opened) throw StateError('Could not open syllabus');
+      } else {
+        await FlutterWebBrowser.openWebPage(
+          url: url,
+          customTabsOptions: CustomTabsOptions(
+            colorScheme: CustomTabsColorScheme.light,
+            defaultColorSchemeParams: CustomTabsColorSchemeParams(
+              toolbarColor: OTLColor.pinksLight,
+            ),
+            shareState: CustomTabsShareState.on,
+            instantAppsEnabled: true,
+            showTitle: true,
+            urlBarHidingEnabled: true,
+          ),
+        );
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Failed to open syllabus: $error\n$stackTrace');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('error.open_syllabus'.tr())));
+      }
+    }
   }
 
   CustomScrollView _buildScrollView(BuildContext context, Lecture lecture) {
@@ -300,7 +321,7 @@ class LectureDetailPage extends StatelessWidget {
               final isUpdateEnabled = detailModel.isUpdateEnabled;
               await Future.wait<void>(<Future<void>>[
                 infoModel.reload(),
-                detailModel.loadLecture(lecture.id, isUpdateEnabled),
+                detailModel.loadLecture(lecture, isUpdateEnabled),
               ]);
             },
           ),

@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 
 const TYPES_SHORT = ["br", "be", "mr", "me", "hse", "etc"];
 const LETTERS = [
-  "?",
   "F",
   "F",
   "F",
@@ -24,7 +23,17 @@ const LETTERS = [
   "A-",
   "A",
   "A+",
+  "A+",
+  "A+",
+  "A+",
 ];
+
+String _scoreLetter(double total, int count) {
+  if (count == 0) return '?';
+  final score = (total / count) / 3;
+  final index = (score * 3).floor().clamp(0, LETTERS.length - 1);
+  return LETTERS[index];
+}
 
 class TimetableSummary extends StatelessWidget {
   const TimetableSummary({Key? key}) : super(key: key);
@@ -54,55 +63,26 @@ class TimetableSummary extends StatelessWidget {
       0,
       (acc, lecture) => acc + lecture.creditAu,
     );
-    int targetNum = lectures.fold(
-      0,
-      (acc, lecture) =>
-          acc +
-          ((lecture.reviewTotalWeight > 0)
-              ? (lecture.credit + lecture.creditAu)
-              : 0),
-    );
-    double grade = lectures.fold(
-      0,
-      (acc, lecture) =>
-          acc +
-          ((lecture.reviewTotalWeight > 0)
-              ? (lecture.grade * (lecture.credit + lecture.creditAu))
-              : 0),
-    );
-    double load = lectures.fold(
-      0,
-      (acc, lecture) =>
-          acc +
-          ((lecture.reviewTotalWeight > 0)
-              ? (lecture.load * (lecture.credit + lecture.creditAu))
-              : 0),
-    );
-    double speech = lectures.fold(
-      0,
-      (acc, lecture) =>
-          acc +
-          ((lecture.reviewTotalWeight > 0)
-              ? (lecture.speech * (lecture.credit + lecture.creditAu))
-              : 0),
-    );
+    final scoredLectures = [...lectures, if (tempLecture != null) tempLecture]
+        .where(
+          (lecture) =>
+              lecture.grade != 0 || lecture.load != 0 || lecture.speech != 0,
+        );
+    var targetNum = 0;
+    var grade = 0.0;
+    var load = 0.0;
+    var speech = 0.0;
+    for (final lecture in scoredLectures) {
+      targetNum++;
+      grade += lecture.grade;
+      load += lecture.load;
+      speech += lecture.speech;
+    }
     if (tempLecture != null) {
       typeCredit[tempLecture.typeIdx] +=
           (tempLecture.credit + tempLecture.creditAu);
       allCreditCredit += tempLecture.credit;
       allAuCredit += tempLecture.creditAu;
-      targetNum += ((tempLecture.reviewTotalWeight > 0)
-          ? (tempLecture.credit + tempLecture.creditAu)
-          : 0);
-      grade += ((tempLecture.reviewTotalWeight > 0)
-          ? (tempLecture.grade * (tempLecture.credit + tempLecture.creditAu))
-          : 0);
-      load += ((tempLecture.reviewTotalWeight > 0)
-          ? (tempLecture.load * (tempLecture.credit + tempLecture.creditAu))
-          : 0);
-      speech += ((tempLecture.reviewTotalWeight > 0)
-          ? (tempLecture.speech * (tempLecture.credit + tempLecture.creditAu))
-          : 0);
     }
 
     return Container(
@@ -146,17 +126,17 @@ class TimetableSummary extends StatelessWidget {
           ),
           _buildScore(
             'timetable.summary.grade'.tr(),
-            targetNum > 0 ? LETTERS[(grade / targetNum).round()] : "?",
+            _scoreLetter(grade, targetNum),
             tempLecture != null && tempLecture.grade > 0,
           ),
           _buildScore(
             'timetable.summary.load'.tr(),
-            targetNum > 0 ? LETTERS[(load / targetNum).round()] : "?",
+            _scoreLetter(load, targetNum),
             tempLecture != null && tempLecture.load > 0,
           ),
           _buildScore(
             'timetable.summary.speech'.tr(),
-            targetNum > 0 ? LETTERS[(speech / targetNum).round()] : "?",
+            _scoreLetter(speech, targetNum),
             tempLecture != null && tempLecture.speech > 0,
           ),
         ],

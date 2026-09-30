@@ -11,21 +11,17 @@ void main() {
 
   setUp(() {
     adapter = FakeHttpAdapter();
-    adapter.register("GET", "/$API_SEMESTER_URL", <Map<String, dynamic>>[
-      <String, dynamic>{
-        "year": 2026,
-        "semester": 3,
-        "beginning": "2026-09-01T00:00:00.000Z",
-        "end": "2026-12-31T00:00:00.000Z",
-        "courseDesciptionSubmission": null,
-        "courseRegistrationPeriodStart": null,
-        "courseRegistrationPeriodEnd": null,
-        "courseAddDropPeriodEnd": null,
-        "courseDropDeadline": null,
-        "courseEvaluationDeadline": null,
-        "gradePosting": null,
-      },
-    ]);
+    adapter.register("GET", "/$API_V2_SEMESTERS_URL", <String, dynamic>{
+      "semesters": <Map<String, dynamic>>[
+        <String, dynamic>{
+          "year": 2026,
+          "semester": 3,
+          "beginning": "2026-09-01T00:00:00.000Z",
+          "end": "2026-12-31T00:00:00.000Z",
+          "courseRegistrationPeriodStart": null,
+        },
+      ],
+    });
     adapter.register("GET", "/$SESSION_INFO_URL", <String, dynamic>{
       "id": 42,
       "email": "test@example.com",
@@ -44,13 +40,15 @@ void main() {
     repository = InfoRepository(dio);
   });
 
-  test("fetchSemesters parses the legacy semester list", () async {
+  test("fetchSemesters uses the v2 semester list", () async {
     final semesters = await repository.fetchSemesters();
 
     expect(semesters, hasLength(1));
     expect(semesters.single.year, 2026);
     expect(semesters.single.semester, 3);
     expect(semesters.single.courseRegistrationPeriodStart, isNull);
+    expect(semesters.single.beginning, DateTime.utc(2026, 9, 1));
+    expect(semesters.single.end, DateTime.utc(2026, 12, 31));
   });
 
   test("fetchSessionInfo parses the legacy session user", () async {

@@ -5,11 +5,6 @@ int _requirePositive(int value, String field) {
   return value;
 }
 
-String _requireNonBlank(String value, String field) {
-  if (value.trim().isEmpty) throw FormatException('$field must not be blank');
-  return value;
-}
-
 int _requireSemester(int value) {
   if (value < 1 || value > 4) {
     throw FormatException('semester must be between 1 and 4');
@@ -63,7 +58,7 @@ class TimetableListItem {
 
     return TimetableListItem(
       id: _requirePositive(id, 'id'),
-      name: _requireNonBlank(name, 'name'),
+      name: name,
       year: _requirePositive(year, 'year'),
       semester: _requireSemester(semester),
       timeTableOrder: _requireNonNegative(timeTableOrder, 'timeTableOrder'),

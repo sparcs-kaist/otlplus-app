@@ -74,6 +74,38 @@ void main() {
   });
 
   group("TimetableRepository.fetchBySemester", () {
+    test("loads ten unnamed 2025 timetables using GET requests only", () async {
+      final summaries = List.generate(
+        10,
+        (index) => <String, dynamic>{
+          "id": index + 1,
+          "name": "",
+          "year": 2025,
+          "semester": 1,
+          "timeTableOrder": index,
+        },
+      );
+      adapter.register("GET", "/$API_V2_TIMETABLES_URL?semester=1&year=2025", {
+        "timetables": summaries,
+      });
+      for (final summary in summaries) {
+        adapter.register("GET", "/$API_V2_TIMETABLES_URL/${summary['id']}", {
+          "lectures": <dynamic>[],
+        });
+      }
+      final result = await repository.fetchBySemester(2025, 1);
+      expect(result.summaries, hasLength(10));
+      expect(result.timetables, hasLength(10));
+      expect(
+        result.summaries.map((summary) => summary.name),
+        everyElement(isEmpty),
+      );
+      expect(
+        adapter.requests.map((request) => request.method),
+        everyElement("GET"),
+      );
+    });
+
     test("fetches details concurrently and preserves summary order", () async {
       adapter = CapturingHttpAdapter(
         detailDelay: const Duration(milliseconds: 20),

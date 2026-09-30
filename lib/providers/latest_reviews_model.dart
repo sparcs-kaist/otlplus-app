@@ -5,7 +5,7 @@ import 'package:otlplus/repositories/review_repository.dart';
 class LatestReviewsModel extends ChangeNotifier {
   LatestReviewsModel(this._repository);
 
-  static const int _pageSize = 10;
+  static const int _pageSize = ReviewRepository.pageSize;
 
   final ReviewRepository _repository;
   final List<Review> _latestReviews = <Review>[];

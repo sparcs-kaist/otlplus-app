@@ -7,7 +7,7 @@ import 'package:otlplus/repositories/review_repository.dart';
 class HallOfFameModel extends ChangeNotifier {
   HallOfFameModel(this._repository);
 
-  static const int _pageSize = 10;
+  static const int _pageSize = ReviewRepository.pageSize;
 
   final ReviewRepository _repository;
   final List<Review> _hallOfFame = <Review>[];
@@ -16,6 +16,7 @@ class HallOfFameModel extends ChangeNotifier {
   bool _hasMore = true;
   bool _hasLoaded = false;
   int _nextOffset = 0;
+  int _requestGeneration = 0;
   Object? _error;
   Semester? _semester;
   ReviewTab _selectedMode = ReviewTab.hallOfFame;
@@ -59,7 +60,8 @@ class HallOfFameModel extends ChangeNotifier {
   }
 
   Future<void> _fetch({required bool reset}) async {
-    if (_isLoading) return;
+    if (_isLoading && !reset) return;
+    final generation = ++_requestGeneration;
 
     _isLoading = true;
     _error = null;
@@ -73,16 +75,19 @@ class HallOfFameModel extends ChangeNotifier {
         offset: offset,
         limit: _pageSize,
       );
+      if (generation != _requestGeneration) return;
       if (reset) _hallOfFame.clear();
       _hallOfFame.addAll(result.reviews);
       _hasLoaded = true;
       _nextOffset = offset + _pageSize;
       _hasMore = result.reviews.length == _pageSize;
     } catch (error) {
-      _error = error;
+      if (generation == _requestGeneration) _error = error;
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (generation == _requestGeneration) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 }

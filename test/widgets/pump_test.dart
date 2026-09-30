@@ -1,3 +1,4 @@
+import 'package:otlplus/models/course.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -74,7 +75,16 @@ void main() {
 
   testWidgets('pump LectureGroupSimpleBlock', (WidgetTester tester) async {
     await tester.pumpWidget(
-      LectureGroupSimpleBlock(lectures: [], semester: 1).material,
+      LectureGroupSimpleBlock(
+        course: SampleCourse.shared,
+        history: CourseHistory(
+          year: 2026,
+          semester: 1,
+          classes: [],
+          myLectureId: null,
+        ),
+        semester: 1,
+      ).material,
     );
   });
 

@@ -7,7 +7,7 @@ import 'package:otlplus/repositories/review_repository.dart';
 class LikedReviewModel extends ChangeNotifier {
   LikedReviewModel(this._repository);
 
-  static const int _pageSize = 10;
+  static const int _pageSize = ReviewRepository.pageSize;
 
   final ReviewRepository _repository;
   final List<Review> _allLikedReviews = <Review>[];

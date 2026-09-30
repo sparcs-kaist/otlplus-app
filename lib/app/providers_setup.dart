@@ -110,14 +110,14 @@ Widget buildAppProviders({
         create: (context) => HallOfFameModel(context.read<ReviewRepository>()),
       ),
       ChangeNotifierProvider(
-        create: (_) => CourseDetailModel(
+        create: (_) => CourseDetailModel(courseRepository, reviewRepository),
+      ),
+      ChangeNotifierProvider(
+        create: (_) => LectureDetailModel(
           courseRepository,
           lectureRepository,
           reviewRepository,
         ),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => LectureDetailModel(courseRepository, lectureRepository),
       ),
       ChangeNotifierProvider(
         create: (_) => SettingsModel(

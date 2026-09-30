@@ -285,7 +285,7 @@ class _TimetablePageState extends State<TimetablePage> {
           isTemp: isSelected,
           isExamTime: isExamTime,
           onTap: () {
-            context.read<LectureDetailModel>().loadLecture(lecture.id, true);
+            context.read<LectureDetailModel>().loadLecture(lecture, true);
             OTLNavigator.push(context, LectureDetailPage());
           },
           onLongPress:
@@ -310,6 +310,16 @@ class _TimetablePageState extends State<TimetablePage> {
         );
       },
     );
+  }
+
+  String _timetableLabel(TimetableModel model, int index) {
+    if (model.isMyTimetableIndex(index)) return 'timetable.my_tab'.tr();
+    final summaryIndex = index - 1;
+    if (summaryIndex >= 0 && summaryIndex < model.summaries.length) {
+      final name = model.summaries[summaryIndex].name;
+      if (name.trim().isNotEmpty) return name;
+    }
+    return 'timetable.unnamed'.tr();
   }
 
   void _handleTimetableTabAction(
@@ -344,9 +354,7 @@ class _TimetablePageState extends State<TimetablePage> {
               builder: (_) => OTLDialog(
                 type: OTLDialogType.accountDeleted,
                 namedArgs: {
-                  'timetable': 'timetable.tab'.tr(
-                    args: [timetableModel.selectedIndex.toString()],
-                  ),
+                  'timetable': _timetableLabel(timetableModel, index),
                 },
                 onTapPos: () {},
               ),
@@ -359,9 +367,7 @@ class _TimetablePageState extends State<TimetablePage> {
               builder: (_) => OTLDialog(
                 type: OTLDialogType.disabledDeleteLastTab,
                 namedArgs: {
-                  'timetable': 'timetable.tab'.tr(
-                    args: [timetableModel.selectedIndex.toString()],
-                  ),
+                  'timetable': _timetableLabel(timetableModel, index),
                 },
               ),
             );
@@ -373,9 +379,7 @@ class _TimetablePageState extends State<TimetablePage> {
               builder: (_) => OTLDialog(
                 type: OTLDialogType.deleteTab,
                 namedArgs: {
-                  'timetable': 'timetable.tab'.tr(
-                    args: [timetableModel.selectedIndex.toString()],
-                  ),
+                  'timetable': _timetableLabel(timetableModel, index),
                 },
                 onTapPos: () =>
                     context.read<TimetableModel>().deleteTimetable(),
@@ -393,6 +397,9 @@ class _TimetablePageState extends State<TimetablePage> {
     return TimetableTabs(
       index: timetableModel.selectedIndex,
       length: timetableModel.timetables.length,
+      savedNames: timetableModel.summaries
+          .map((summary) => summary.name)
+          .toList(),
       onTap: (i) {
         final timetableModel = context.read<TimetableModel>();
 

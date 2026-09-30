@@ -47,12 +47,26 @@ class _ReviewBlockState extends State<ReviewBlock> {
   late int _like;
   late bool _liked;
   bool _isLikeUpdating = false;
+  int _likeGeneration = 0;
 
   @override
   void initState() {
     super.initState();
     _like = widget.review.like;
     _liked = widget.review.userspecificIsLiked;
+  }
+
+  @override
+  void didUpdateWidget(covariant ReviewBlock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Review equality compares IDs only. A refreshed instance can carry new
+    // likes even when its ID has not changed.
+    if (!identical(oldWidget.review, widget.review)) {
+      _likeGeneration++;
+      _like = widget.review.like;
+      _liked = widget.review.userspecificIsLiked;
+      _isLikeUpdating = false;
+    }
   }
 
   @override
@@ -201,6 +215,8 @@ class _ReviewBlockState extends State<ReviewBlock> {
   Future<void> _updateLike(ReviewLikeAction action) async {
     if (_isLikeUpdating) return;
 
+    final generation = ++_likeGeneration;
+    final reviewId = widget.review.id;
     final wasLiked = _liked;
     final previousLikeCount = _like;
     setState(() {
@@ -211,12 +227,12 @@ class _ReviewBlockState extends State<ReviewBlock> {
 
     try {
       await context.read<ReviewRepository>().updateLiked(
-        reviewId: widget.review.id,
+        reviewId: reviewId,
         action: action,
       );
     } catch (error, stackTrace) {
       debugPrint('Failed to update review like: $error\n$stackTrace');
-      if (mounted) {
+      if (mounted && generation == _likeGeneration) {
         setState(() {
           _liked = wasLiked;
           _like = previousLikeCount;
@@ -224,7 +240,7 @@ class _ReviewBlockState extends State<ReviewBlock> {
       }
       rethrow;
     } finally {
-      if (mounted) {
+      if (mounted && generation == _likeGeneration) {
         setState(() {
           _isLikeUpdating = false;
         });

@@ -23,6 +23,7 @@
     "coming": "Coming Soon"
   },
   "error": {
+    "open_syllabus": "Could not open the syllabus. Please try again.",
     "load_timetable": "Unable to load timetable.",
     "load_user_info": "Unable to load your info.",
     "load_semesters": "Unable to load semesters.",
@@ -74,6 +75,7 @@
     }
   },
   "timetable": {
+    "unnamed": "Untitled",
     "my_tab": "My Table",
     "tab": "Table {}",
     "dialog": {

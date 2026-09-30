@@ -134,7 +134,7 @@ void main() {
   });
 
   test(
-    "unparseable past semester responses degrade to the placeholder",
+    "unparseable saved timetable responses show an error without creating records",
     () async {
       repository.myTimetableParseError = const FormatException(
         "legacy lecture payload missing field",
@@ -143,15 +143,9 @@ void main() {
 
       await model.loadSemesters(user: user, semesters: <Semester>[semester]);
 
-      expect(
-        model.loadFailed,
-        isFalse,
-        reason:
-            "a 200 response the app cannot parse (older semester data) "
-            "must degrade to the read-only view, not the error screen",
-      );
-      expect(model.isLoaded, isTrue);
-      expect(model.currentTimetable.lectures, isEmpty);
+      expect(model.loadFailed, isTrue);
+      expect(model.isLoaded, isFalse);
+      expect(repository.createCalls, isEmpty);
     },
   );
 
@@ -199,7 +193,7 @@ void main() {
   });
 
   test(
-    "past semester rejects my-timetable and collection gracefully",
+    "saved timetable HTTP failures do not masquerade as an empty collection",
     () async {
       repository.myTimetableError = DioException(
         requestOptions: RequestOptions(path: "/api/v2/timetables/my-timetable"),
@@ -220,15 +214,8 @@ void main() {
 
       await model.loadSemesters(user: user, semesters: <Semester>[semester]);
 
-      expect(
-        model.loadFailed,
-        isFalse,
-        reason:
-            "server refusing to serve a past semester must render the "
-            "read-only view, not the load-failure screen",
-      );
-      expect(model.isLoaded, isTrue);
-      expect(model.currentTimetable.lectures, isEmpty);
+      expect(model.loadFailed, isTrue);
+      expect(repository.createCalls, isEmpty);
     },
   );
 
@@ -298,31 +285,22 @@ void main() {
     expect(model.selectedIndex, 0);
   });
 
-  test("load creates an empty server timetable and refetches", () async {
-    final createdSummary = _summary(9, order: 0);
-    repository.createdIds.add(9);
-    repository.collections
-      ..add(
-        TimetableCollection(
-          summaries: <TimetableListItem>[],
-          timetables: <Timetable>[],
-        ),
-      )
-      ..add(
-        TimetableCollection(
-          summaries: <TimetableListItem>[createdSummary],
-          timetables: <Timetable>[Timetable(id: 9, lectures: <Lecture>[])],
-        ),
-      );
-
-    await model.loadSemesters(user: user, semesters: <Semester>[semester]);
-
-    expect(repository.createCalls, hasLength(1));
-    expect(repository.createCalls.single.lectureIds, isEmpty);
-    expect(repository.fetchCalls, hasLength(2));
-    expect(model.timetables.map((timetable) => timetable.id), <int>[-1, 9]);
-    expect(model.selectedIndex, 0);
-  });
+  test(
+    "loading and retrying an empty semester never creates a timetable",
+    () async {
+      for (var i = 0; i < 2; i++) {
+        repository.collections.add(
+          TimetableCollection(summaries: [], timetables: []),
+        );
+      }
+      await model.loadSemesters(user: user, semesters: [semester]);
+      await model.retryLoad();
+      expect(repository.createCalls, isEmpty);
+      expect(repository.fetchCalls, hasLength(2));
+      expect(model.timetables.map((timetable) => timetable.id), [-1]);
+      expect(model.isLoaded, isTrue);
+    },
+  );
 
   test(
     "load exposes an explicit error and leaves no invalid selection",

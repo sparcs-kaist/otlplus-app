@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:otlplus/repositories/review_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -67,6 +71,47 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(ReviewWriteBlock), findsOneWidget);
   });
+  for (final success in [true, false]) {
+    testWidgets(
+      'iOS syllabus opens the system browser (success=$success)',
+      (tester) async {
+        _useLargeViewport(tester);
+        final originalLauncher = UrlLauncherPlatform.instance;
+        final launcher = _SyllabusLauncher(success);
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() {
+          UrlLauncherPlatform.instance = originalLauncher;
+        });
+        final lecture = SampleLecture.shared;
+        await tester.pumpWidget(
+          _harness(
+            infoModel: _InfoModel(),
+            detailModel: _LectureDetailModel(lecture, []),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('실라버스'));
+        await tester.pump(const Duration(seconds: 1));
+        final uri = Uri.parse(launcher.url!);
+        expect(uri.host, 'erp.kaist.ac.kr');
+        expect(uri.queryParameters['link'], 'estblSubjt');
+        expect(
+          jsonDecode(utf8.decode(base64Decode(uri.queryParameters['params']!))),
+          {
+            'syy': lecture.year.toString(),
+            'smtDivCd': lecture.semester.toString(),
+            'subjtCd': lecture.oldCode,
+          },
+        );
+        expect(launcher.options!.mode, PreferredLaunchMode.externalApplication);
+        if (!success) {
+          expect(find.text('실라버스를 열지 못했습니다. 잠시 후 다시 시도해 주세요.'), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+      },
+      variant: TargetPlatformVariant({TargetPlatform.iOS}),
+    );
+  }
 }
 
 void _useLargeViewport(WidgetTester tester) {
@@ -145,7 +190,11 @@ class _InfoModel extends InfoModel {
 
 class _LectureDetailModel extends LectureDetailModel {
   _LectureDetailModel(this.lectureValue, this.reviewValues)
-    : super(CourseRepository(Dio()), LectureRepository(Dio()));
+    : super(
+        CourseRepository(Dio()),
+        LectureRepository(Dio()),
+        ReviewRepository(Dio()),
+      );
 
   final Lecture lectureValue;
   final List<Review> reviewValues;
@@ -164,4 +213,19 @@ class _LectureDetailModel extends LectureDetailModel {
 
   @override
   List<Review> get reviews => reviewValues;
+}
+
+class _SyllabusLauncher extends UrlLauncherPlatform {
+  _SyllabusLauncher(this.success);
+  final bool success;
+  String? url;
+  LaunchOptions? options;
+  @override
+  LinkDelegate? get linkDelegate => null;
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    this.url = url;
+    this.options = options;
+    return success;
+  }
 }

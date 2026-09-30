@@ -134,6 +134,7 @@ class Course {
     required double grade,
     required double load,
     required double speech,
+    int? reviewCount,
   }) {
     return Course(
       id: id,
@@ -144,7 +145,7 @@ class Course {
       title: title,
       titleEn: titleEn,
       summary: summary,
-      reviewTotalWeight: reviewTotalWeight,
+      reviewTotalWeight: reviewCount?.toDouble() ?? reviewTotalWeight,
       professors: professors,
       grade: grade,
       load: load,

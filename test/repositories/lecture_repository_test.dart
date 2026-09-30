@@ -11,7 +11,6 @@ import "package:otlplus/models/time.dart";
 import "package:otlplus/repositories/lecture_repository.dart";
 
 import "../utils/fake_http.dart";
-import "../utils/samples.dart";
 
 class CapturingHttpAdapter extends FakeHttpAdapter {
   final List<RequestOptions> requests = <RequestOptions>[];
@@ -237,58 +236,50 @@ void main() {
     );
   });
 
-  test("keeps v1 lecture detail and related review calls explicit", () async {
+  test("resolves history details using v2 term and code search", () async {
     final adapter = CapturingHttpAdapter();
-    final reviewJson = SampleReview.shared.toJson();
-    (reviewJson["course"] as Map<String, dynamic>)["department"] =
-        SampleDepartment.shared.toJson();
     adapter.register(
       "GET",
-      "/$API_LECTURE_URL/${SampleLecture.id}",
-      SampleLecture.shared.toJson(),
-    );
-    adapter.register(
-      "GET",
-      "/${API_LECTURE_RELATED_REVIEWS_URL.replaceFirst("{id}", SampleLecture.id.toString())}",
-      <Map<String, dynamic>>[reviewJson],
+      "/$API_V2_LECTURES_URL?keyword=BAF.60073&limit=100&offset=0&semester=1&year=2026",
+      searchFixture,
     );
     final repository = LectureRepository(
       Dio(BaseOptions(baseUrl: "http://test/"))..httpClientAdapter = adapter,
     );
-
-    final lecture = await repository.fetchLegacyDetail(SampleLecture.id);
-    final reviews = await repository.fetchLegacyRelatedReviews(
-      SampleLecture.id,
+    final lecture = await repository.fetchHistoryDetail(
+      lectureId: 1921750,
+      courseId: 23742,
+      code: "BAF.60073",
+      year: 2026,
+      semester: 1,
     );
-
-    expect(lecture, SampleLecture.shared);
-    expect(reviews, <Object>[SampleReview.shared]);
-    expect(adapter.requests.map((request) => request.uri.path).toList(), <
-      String
-    >[
-      "/$API_LECTURE_URL/${SampleLecture.id}",
-      "/${API_LECTURE_RELATED_REVIEWS_URL.replaceFirst("{id}", SampleLecture.id.toString())}",
-    ]);
+    expect(lecture.id, 1921750);
+    expect(lecture.classtimes, isNotEmpty);
+    expect(adapter.requests.single.uri.path, "/$API_V2_LECTURES_URL");
   });
 
-  test("fetches retained v1 course lectures through the named route", () async {
-    final adapter = CapturingHttpAdapter();
-    final path = API_COURSE_LECTURES_URL.replaceFirst(
-      "{id}",
-      SampleCourse.id.toString(),
-    );
-    adapter.register("GET", "/$path", <Map<String, dynamic>>[
-      SampleLecture.shared.toJson(),
-    ]);
-    final repository = LectureRepository(
-      Dio(BaseOptions(baseUrl: "http://test/"))..httpClientAdapter = adapter,
-    );
-
-    final lectures = await repository.fetchLegacyCourseLectures(
-      SampleCourse.id,
-    );
-
-    expect(lectures, <Lecture>[SampleLecture.shared]);
-    expect(adapter.requests.single.uri.path, "/$path");
-  });
+  test(
+    "does not substitute a different lecture for a missing history entry",
+    () async {
+      final adapter = CapturingHttpAdapter();
+      adapter.register(
+        "GET",
+        "/$API_V2_LECTURES_URL?keyword=BAF.60073&limit=100&offset=0&semester=1&year=2026",
+        searchFixture,
+      );
+      final repository = LectureRepository(
+        Dio(BaseOptions(baseUrl: "http://test/"))..httpClientAdapter = adapter,
+      );
+      await expectLater(
+        repository.fetchHistoryDetail(
+          lectureId: 999,
+          courseId: 23742,
+          code: "BAF.60073",
+          year: 2026,
+          semester: 1,
+        ),
+        throwsStateError,
+      );
+    },
+  );
 }

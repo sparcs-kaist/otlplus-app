@@ -132,7 +132,7 @@ class MyReviewPage extends StatelessWidget {
       lecture: lecture,
       hasReview: user.reviews.any((review) => review.lecture.id == lecture.id),
       onTap: () {
-        context.read<LectureDetailModel>().loadLecture(lecture.id, false);
+        context.read<LectureDetailModel>().loadLecture(lecture, false);
         OTLNavigator.push(context, LectureDetailPage());
       },
     );

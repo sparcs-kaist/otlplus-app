@@ -23,6 +23,7 @@
     "coming": "준비 중입니다."
   },
   "error": {
+    "open_syllabus": "실라버스를 열지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "load_timetable": "시간표를 불러오지 못했습니다.",
     "load_user_info": "내 정보를 불러오지 못했습니다.",
     "load_semesters": "학기 정보를 불러오지 못했습니다.",
@@ -74,6 +75,7 @@
     }
   },
   "timetable": {
+    "unnamed": "이름 없음",
     "my_tab": "내 시간표",
     "tab": "시간표 {}",
     "dialog": {

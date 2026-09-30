@@ -68,7 +68,7 @@ void main() {
     adapter.register(
       "GET",
       "/$API_V2_REVIEWS_URL"
-          "?limit=10&mode=hall-of-fame&offset=0&semester=1&year=2025",
+          "?limit=100&mode=hall-of-fame&offset=0&semester=1&year=2025",
       fixture,
     );
 
@@ -79,7 +79,7 @@ void main() {
       "year": 2025,
       "semester": 1,
       "offset": 0,
-      "limit": 10,
+      "limit": 100,
     });
   });
 
@@ -87,7 +87,7 @@ void main() {
     adapter.register(
       "GET",
       "/$API_V2_REVIEWS_URL"
-          "?courseId=24732&limit=10&mode=default&offset=0",
+          "?courseId=24732&limit=100&mode=default&offset=0",
       fixture,
     );
 
@@ -97,9 +97,28 @@ void main() {
       "mode": "default",
       "courseId": 24732,
       "offset": 0,
-      "limit": 10,
+      "limit": 100,
     });
   });
+
+  test(
+    "fetchCourse applies professor filtering without restricting the year",
+    () async {
+      adapter.register(
+        "GET",
+        "/$API_V2_REVIEWS_URL?courseId=24732&limit=100&mode=default&offset=0&professorId=229",
+        fixture,
+      );
+      await repository.fetchCourse(24732, professorId: 229);
+      expect(adapter.requests.single.queryParameters, {
+        "mode": "default",
+        "courseId": 24732,
+        "professorId": 229,
+        "offset": 0,
+        "limit": 100,
+      });
+    },
+  );
 
   test("fetchLiked replaces the user ID in the v2 path", () async {
     final path = API_V2_LIKED_REVIEWS_URL.replaceFirst("{user_id}", "42");
@@ -115,7 +134,7 @@ void main() {
   test("parses response metadata and compatibility review fields", () async {
     adapter.register(
       "GET",
-      "/$API_V2_REVIEWS_URL?limit=10&mode=recent&offset=0",
+      "/$API_V2_REVIEWS_URL?limit=100&mode=recent&offset=0",
       fixture,
     );
 
