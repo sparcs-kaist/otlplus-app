@@ -31,29 +31,29 @@ void main() {
   test('latest reviews load and paginate with explicit offsets', () async {
     final repository = _FakeReviewRepository(
       recentResults: <ReviewListResult>[
-        _result(reviewCount: 10, totalCount: 12),
-        _result(reviewCount: 2, totalCount: 12),
+        _result(reviewCount: 100, totalCount: 102),
+        _result(reviewCount: 2, totalCount: 102),
       ],
     );
     final model = LatestReviewsModel(repository);
 
     await model.load();
 
-    expect(model.latestReviews, hasLength(10));
+    expect(model.latestReviews, hasLength(100));
     expect(model.hasMore, isTrue);
     expect(model.error, isNull);
     expect(repository.recentRequests, <_PageRequest>[
-      const _PageRequest(offset: 0, limit: 10),
+      const _PageRequest(offset: 0, limit: 100),
     ]);
 
     await model.loadMore();
     await model.loadMore();
 
-    expect(model.latestReviews, hasLength(12));
+    expect(model.latestReviews, hasLength(102));
     expect(model.hasMore, isFalse);
     expect(repository.recentRequests, <_PageRequest>[
-      const _PageRequest(offset: 0, limit: 10),
-      const _PageRequest(offset: 10, limit: 10),
+      const _PageRequest(offset: 0, limit: 100),
+      const _PageRequest(offset: 100, limit: 100),
     ]);
   });
 
@@ -62,10 +62,10 @@ void main() {
       hallOfFameResults: <ReviewListResult>[
         ...List<ReviewListResult>.generate(
           4,
-          (_) => _result(reviewCount: 10, totalCount: 10),
+          (_) => _result(reviewCount: 100, totalCount: 100),
         ),
-        _result(reviewCount: 10, totalCount: 12),
-        _result(reviewCount: 2, totalCount: 12),
+        _result(reviewCount: 100, totalCount: 102),
+        _result(reviewCount: 2, totalCount: 102),
       ],
     );
     final model = HallOfFameModel(repository);
@@ -84,11 +84,11 @@ void main() {
     await model.refresh();
     await model.loadMore();
 
-    expect(model.hallOfFame, hasLength(12));
+    expect(model.hallOfFame, hasLength(102));
     expect(model.hasMore, isFalse);
     expect(
       repository.hallOfFameRequests.last,
-      const _PageRequest(offset: 10, limit: 10, year: 2024, semester: 4),
+      const _PageRequest(offset: 100, limit: 100, year: 2024, semester: 4),
     );
   });
 
@@ -96,23 +96,23 @@ void main() {
     'liked reviews paginate in memory after one repository request',
     () async {
       final repository = _FakeReviewRepository(
-        likedResult: List<Review>.filled(23, SampleReview.shared),
+        likedResult: List<Review>.filled(203, SampleReview.shared),
       );
       final model = LikedReviewModel(repository);
 
       await model.load(42);
 
-      expect(model.likedReviews, hasLength(10));
+      expect(model.likedReviews, hasLength(100));
       expect(model.hasMore, isTrue);
       expect(repository.likedUserIds, <int>[42]);
 
       await model.loadMore();
-      expect(model.likedReviews, hasLength(20));
+      expect(model.likedReviews, hasLength(200));
       expect(repository.likedUserIds, <int>[42]);
 
       await model.loadMore();
       await model.loadMore();
-      expect(model.likedReviews, hasLength(23));
+      expect(model.likedReviews, hasLength(203));
       expect(model.hasMore, isFalse);
       expect(repository.likedUserIds, <int>[42]);
     },
@@ -151,6 +151,22 @@ void main() {
       expect(notificationCount, 3);
     },
   );
+
+  test('a new semester supersedes a pending hall of fame response', () async {
+    final repository = _DeferredHallRepository();
+    final model = HallOfFameModel(repository);
+    model.setSemester(_semester(1));
+    final first = model.refresh();
+    model.setSemester(_semester(3));
+    final second = model.refresh();
+    repository.pending[1].complete(_result(reviewCount: 2, totalCount: 2));
+    await second;
+    repository.pending[0].complete(_result(reviewCount: 1, totalCount: 1));
+    await first;
+    expect(model.semester!.semester, 3);
+    expect(model.hallOfFame, hasLength(2));
+    expect(model.isLoading, isFalse);
+  });
 
   test('failed loads expose an error and always clear loading state', () async {
     final failure = StateError('failed');
@@ -354,7 +370,7 @@ class _FakeReviewRepository extends ReviewRepository {
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = 100,
   }) async {
     recentRequests.add(
       _PageRequest(
@@ -374,7 +390,7 @@ class _FakeReviewRepository extends ReviewRepository {
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = 100,
   }) async {
     hallOfFameRequests.add(
       _PageRequest(
@@ -391,5 +407,21 @@ class _FakeReviewRepository extends ReviewRepository {
   Future<List<Review>> fetchLiked(int userId) async {
     likedUserIds.add(userId);
     return likedResult;
+  }
+}
+
+class _DeferredHallRepository extends ReviewRepository {
+  _DeferredHallRepository() : super(Dio());
+  final pending = <Completer<ReviewListResult>>[];
+  @override
+  Future<ReviewListResult> fetchHallOfFame({
+    int? year,
+    int? semester,
+    int offset = 0,
+    int limit = 100,
+  }) {
+    final request = Completer<ReviewListResult>();
+    pending.add(request);
+    return request.future;
   }
 }

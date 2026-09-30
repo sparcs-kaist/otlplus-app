@@ -130,6 +130,69 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'reused cards synchronize refreshed likes even for the same review ID',
+    (tester) async {
+      await tester.pumpWidget(
+        ReviewBlock(
+          review: _reviewWithContent('first', like: 97, liked: true),
+        ).material,
+      );
+      expect(find.byIcon(Icons.thumb_up_alt), findsOneWidget);
+      await tester.pumpWidget(
+        ReviewBlock(
+          review: _reviewWithContent('refreshed', like: 23, liked: false),
+        ).material,
+      );
+      expect(find.byIcon(Icons.thumb_up_alt_outlined), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              widget.textSpan?.toPlainText().contains('23') == true,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              widget.textSpan?.toPlainText().contains('97') == true,
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('reused list positions display the replacement review likes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ReviewBlock(
+        review: _reviewWithContent('first', id: 1, like: 97, liked: true),
+      ).material,
+    );
+    await tester.pumpWidget(
+      ReviewBlock(
+        review: _reviewWithContent(
+          'next semester',
+          id: 2,
+          like: 23,
+          liked: false,
+        ),
+      ).material,
+    );
+    expect(find.byIcon(Icons.thumb_up_alt_outlined), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.textSpan?.toPlainText().contains('23') == true,
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('report review triggers mailto launch', (tester) async {
     final telemetry = _RecordingTelemetryCoordinator();
     final review = _reviewWithContent('reportable review content');
@@ -171,9 +234,9 @@ void main() {
   });
 }
 
-Review _reviewWithContent(String content, {int? like, bool? liked}) {
+Review _reviewWithContent(String content, {int? id, int? like, bool? liked}) {
   return Review(
-    id: SampleReview.id,
+    id: id ?? SampleReview.id,
     course: SampleReview.course,
     lecture: SampleReview.lecture,
     content: content,

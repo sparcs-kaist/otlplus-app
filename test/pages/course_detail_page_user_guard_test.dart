@@ -13,7 +13,6 @@ import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
 import 'package:otlplus/repositories/course_repository.dart';
 import 'package:otlplus/repositories/info_repository.dart';
-import 'package:otlplus/repositories/lecture_repository.dart';
 import 'package:otlplus/repositories/review_repository.dart';
 import 'package:otlplus/widgets/review_block.dart';
 import 'package:otlplus/widgets/review_write_block.dart';
@@ -148,11 +147,7 @@ class _InfoModel extends InfoModel {
 
 class _CourseDetailModel extends CourseDetailModel {
   _CourseDetailModel(this.lectureValue, this.reviewValues)
-    : super(
-        CourseRepository(Dio()),
-        LectureRepository(Dio()),
-        ReviewRepository(Dio()),
-      );
+    : super(CourseRepository(Dio()), ReviewRepository(Dio()));
 
   final Lecture lectureValue;
   final List<Review> reviewValues;
@@ -168,12 +163,6 @@ class _CourseDetailModel extends CourseDetailModel {
 
   @override
   String get selectedFilter => 'ALL';
-
-  @override
-  Lecture? get selectedLecture => null;
-
-  @override
-  List<Lecture> get lectures => <Lecture>[lectureValue];
 
   @override
   List<Professor> get professors => SampleCourse.professors;

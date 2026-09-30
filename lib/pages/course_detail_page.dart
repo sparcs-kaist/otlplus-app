@@ -10,9 +10,7 @@ import 'package:otlplus/widgets/otl_scaffold.dart';
 import 'package:provider/provider.dart';
 import 'package:otlplus/constants/color.dart';
 import 'package:otlplus/extensions/course.dart';
-import 'package:otlplus/extensions/lecture.dart';
 import 'package:otlplus/models/course.dart';
-import 'package:otlplus/models/lecture.dart';
 import 'package:otlplus/models/professor.dart';
 import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/info_model.dart';
@@ -265,25 +263,12 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
   }
 
   Widget _buildScores(BuildContext context, Course course) {
-    final lecture = context.select<CourseDetailModel, Lecture?>(
-      (model) => model.selectedLecture,
-    );
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
-        _buildStatus(
-          "review.grade".tr(),
-          (lecture == null) ? course.gradeLetter : lecture.gradeLetter,
-        ),
-        _buildStatus(
-          "review.load".tr(),
-          (lecture == null) ? course.loadLetter : lecture.loadLetter,
-        ),
-        _buildStatus(
-          "review.speech".tr(),
-          (lecture == null) ? course.speechLetter : lecture.speechLetter,
-        ),
+        _buildStatus("review.grade".tr(), course.gradeLetter),
+        _buildStatus("review.load".tr(), course.loadLetter),
+        _buildStatus("review.speech".tr(), course.speechLetter),
       ],
     );
   }
@@ -347,7 +332,7 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
             for (final season in [Season.spring, Season.summer])
               _buildHistoryRow(
                 context,
-                courseDetailModel.lectures,
+                courseDetailModel.course,
                 years,
                 season,
                 courseDetailModel.selectedFilter,
@@ -373,7 +358,7 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
             for (final season in [Season.fall, Season.winter])
               _buildHistoryRow(
                 context,
-                courseDetailModel.lectures,
+                courseDetailModel.course,
                 years,
                 season,
                 courseDetailModel.selectedFilter,
@@ -386,7 +371,7 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
 
   Widget _buildHistoryRow(
     BuildContext context,
-    List<Lecture> lectures,
+    Course course,
     Set<int> years,
     Season season,
     String selectedFilter,
@@ -396,14 +381,17 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
     return IntrinsicHeight(
       child: Row(
         children: years.map((year) {
-          final filteredLectures = lectures
+          final histories = course.history
               .where(
-                (lecture) =>
-                    lecture.year == year &&
-                    Season.fromCode(lecture.semester) == season,
+                (history) =>
+                    history.year == year &&
+                    Season.fromCode(history.semester) == season,
               )
               .toList();
-          if (filteredLectures.length == 0)
+          final entries = histories
+              .expand((history) => history.classes)
+              .toList();
+          if (entries.isEmpty)
             return Container(
               width: isEn ? 150.0 : 100.0,
               margin: const EdgeInsets.symmetric(
@@ -417,7 +405,8 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
               ),
             );
           return LectureGroupSimpleBlock(
-            lectures: filteredLectures,
+            course: course,
+            history: histories.first,
             semester: season.code,
             filter: selectedFilter,
           );

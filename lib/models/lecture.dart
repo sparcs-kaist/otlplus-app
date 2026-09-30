@@ -197,7 +197,15 @@ class Lecture {
       commonTitleEn: name,
       classTitle: subtitle,
       classTitleEn: subtitle,
-      reviewTotalWeight: 0.0,
+      // v2 omits the legacy weight. Zero averages mean no review scores.
+      reviewTotalWeight:
+          [
+            'averageGrade',
+            'averageLoad',
+            'averageSpeech',
+          ].any((key) => (json[key] as num) > 0)
+          ? 1.0
+          : 0.0,
       professors: (json['professors'] as List<dynamic>).map((professorJson) {
         final professor = professorJson as Map<String, dynamic>;
         final localizedName = professor['name'] as String;

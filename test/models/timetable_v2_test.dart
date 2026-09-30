@@ -39,9 +39,21 @@ void main() {
       expect(item.timeTableOrder, 0);
     });
 
+    test('accepts blank timetable names from older semesters', () {
+      for (final name in ['', ' ']) {
+        final item = TimetableListItem.fromV2Json({
+          'id': 1,
+          'name': name,
+          'year': 2025,
+          'semester': 1,
+          'timeTableOrder': 0,
+        });
+        expect(item.name, name);
+      }
+    });
+
     for (final invalidCase in <({String field, Object value})>[
       (field: 'id', value: 0),
-      (field: 'name', value: ' '),
       (field: 'year', value: 0),
       (field: 'semester', value: 0),
       (field: 'semester', value: 5),

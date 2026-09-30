@@ -55,6 +55,7 @@ class ReviewListResult {
 enum ReviewLikeAction { like, unlike }
 
 class ReviewRepository {
+  static const int pageSize = 100;
   ReviewRepository(this._dio);
 
   final Dio _dio;
@@ -63,7 +64,7 @@ class ReviewRepository {
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = pageSize,
   }) {
     return _fetchReviews(
       mode: "recent",
@@ -78,7 +79,7 @@ class ReviewRepository {
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = pageSize,
   }) {
     return _fetchReviews(
       mode: "hall-of-fame",
@@ -91,14 +92,16 @@ class ReviewRepository {
 
   Future<ReviewListResult> fetchCourse(
     int courseId, {
+    int? professorId,
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = pageSize,
   }) {
     return _fetchReviews(
       mode: "default",
       courseId: courseId,
+      professorId: professorId,
       year: year,
       semester: semester,
       offset: offset,
@@ -171,6 +174,7 @@ class ReviewRepository {
   Future<ReviewListResult> _fetchReviews({
     required String mode,
     int? courseId,
+    int? professorId,
     int? year,
     int? semester,
     required int offset,
@@ -181,6 +185,7 @@ class ReviewRepository {
       queryParameters: <String, dynamic>{
         "mode": mode,
         if (courseId != null) "courseId": courseId,
+        if (professorId != null) "professorId": professorId,
         if (year != null) "year": year,
         if (semester != null) "semester": semester,
         "offset": offset,

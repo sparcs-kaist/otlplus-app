@@ -1,25 +1,20 @@
 import "package:flutter/foundation.dart";
 import "package:otlplus/models/course.dart";
-import "package:otlplus/models/lecture.dart";
 import "package:otlplus/models/professor.dart";
 import "package:otlplus/models/review.dart";
 import "package:otlplus/repositories/course_repository.dart";
-import "package:otlplus/repositories/lecture_repository.dart";
 import "package:otlplus/repositories/review_repository.dart";
 
 class CourseDetailModel extends ChangeNotifier {
   CourseDetailModel(
     CourseRepository courseRepository,
-    LectureRepository lectureRepository,
     ReviewRepository reviewRepository,
   ) : _courseRepository = courseRepository,
-      _lectureRepository = lectureRepository,
       _reviewRepository = reviewRepository;
 
   final CourseRepository _courseRepository;
-  final LectureRepository _lectureRepository;
   final ReviewRepository _reviewRepository;
-  static const int _reviewPageSize = 10;
+  static const int _reviewPageSize = ReviewRepository.pageSize;
 
   late Course _course;
   Course get course => _course;
@@ -27,34 +22,11 @@ class CourseDetailModel extends ChangeNotifier {
   String _selectedFilter = "ALL";
   String get selectedFilter => _selectedFilter;
 
-  Lecture? get selectedLecture {
-    if (_selectedFilter == "ALL") return null;
-    for (final lecture in _lectures) {
-      final matchesProfessor = lecture.professors.any(
-        (professor) => professor.professorId.toString() == _selectedFilter,
-      );
-      if (matchesProfessor) return lecture;
-    }
-    return null;
-  }
-
-  List<Lecture> _lectures = const <Lecture>[];
-  List<Lecture> get lectures => _lectures;
-
   List<Professor> _professors = const <Professor>[];
   List<Professor> get professors => _professors;
 
   List<Review> _reviews = const <Review>[];
-  List<Review> get reviews {
-    if (_selectedFilter == "ALL") return _reviews;
-    return _reviews
-        .where(
-          (review) => review.lecture.professors.any(
-            (professor) => professor.professorId.toString() == _selectedFilter,
-          ),
-        )
-        .toList(growable: false);
-  }
+  List<Review> get reviews => _reviews;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -92,24 +64,17 @@ class CourseDetailModel extends ChangeNotifier {
 
     try {
       final courseRequest = _courseRepository.fetchDetail(courseId);
-      final lectureRequest = _lectureRepository.fetchLegacyCourseLectures(
-        courseId,
-      );
       final reviewRequest = _reviewRepository.fetchCourse(
         courseId,
         offset: 0,
         limit: _reviewPageSize,
       );
       late Course course;
-      late List<Lecture> lectures;
       late ReviewListResult reviewResult;
 
       await Future.wait<void>(<Future<void>>[
         courseRequest.then((value) {
           course = value;
-        }),
-        lectureRequest.then((value) {
-          lectures = value;
         }),
         reviewRequest.then((value) {
           reviewResult = value;
@@ -121,9 +86,9 @@ class CourseDetailModel extends ChangeNotifier {
         grade: reviewResult.averageGrade,
         load: reviewResult.averageLoad,
         speech: reviewResult.averageSpeech,
+        reviewCount: reviewResult.totalCount,
       );
-      _lectures = List<Lecture>.unmodifiable(lectures);
-      _professors = lectures.expand((lecture) => lecture.professors).toList()
+      _professors = course.professors.toList()
         ..sort((a, b) => a.name.compareTo(b.name));
       _reviews = List<Review>.unmodifiable(reviewResult.reviews);
       _nextReviewOffset = _reviewPageSize;
@@ -164,6 +129,7 @@ class CourseDetailModel extends ChangeNotifier {
     try {
       final result = await _reviewRepository.fetchCourse(
         courseId,
+        professorId: int.tryParse(_selectedFilter),
         offset: offset,
         limit: _reviewPageSize,
       );
@@ -198,8 +164,42 @@ class CourseDetailModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFilter(String filter) {
+  Future<void> setFilter(String filter) async {
+    final courseId = _courseId;
+    if (courseId == null || filter == _selectedFilter) return;
     _selectedFilter = filter;
+    final generation = ++_requestGeneration;
+    _reviews = const [];
+    _nextReviewOffset = 0;
+    _hasMoreReviews = false;
+    _isLoadingMoreReviews = true;
+    _error = null;
     notifyListeners();
+    try {
+      final result = await _reviewRepository.fetchCourse(
+        courseId,
+        professorId: int.tryParse(filter),
+        offset: 0,
+        limit: _reviewPageSize,
+      );
+      if (generation != _requestGeneration) return;
+      _reviews = result.reviews;
+      _course = _course.withReviewAverages(
+        grade: result.averageGrade,
+        load: result.averageLoad,
+        speech: result.averageSpeech,
+        reviewCount: result.totalCount,
+      );
+      _nextReviewOffset = _reviewPageSize;
+      _hasMoreReviews = result.reviews.length == _reviewPageSize;
+    } catch (error) {
+      if (generation != _requestGeneration) return;
+      _error = error;
+    } finally {
+      if (generation == _requestGeneration) {
+        _isLoadingMoreReviews = false;
+        notifyListeners();
+      }
+    }
   }
 }

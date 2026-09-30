@@ -130,7 +130,7 @@ void main() {
   ) async {
     final repository = _PagingReviewRepository(
       totalRecent: 0,
-      totalHallOfFame: 25,
+      totalHallOfFame: 205,
     );
     final hallOfFameModel = HallOfFameModel(repository);
     final latestReviewsModel = LatestReviewsModel(repository);
@@ -142,20 +142,19 @@ void main() {
     expect(_richTextContaining('hof-content-0'), findsOneWidget);
 
     for (var drag = 0; drag < 12; drag++) {
-      await tester.drag(
-        find.byType(CustomScrollView),
-        const Offset(0, -1200),
-        warnIfMissed: false,
-      );
+      final controller = tester
+          .widget<CustomScrollView>(find.byType(CustomScrollView))
+          .controller!;
+      controller.jumpTo(controller.position.maxScrollExtent);
       await tester.pumpAndSettle();
     }
 
     expect(
       repository.hallOfFameOffsets,
-      [0, 10, 20],
+      [0, 100, 200],
       reason: 'scrolling to the bottom must keep fetching next pages',
     );
-    expect(_richTextContaining('hof-content-24'), findsOneWidget);
+    expect(_richTextContaining('hof-content-204'), findsOneWidget);
   });
 
   testWidgets(
@@ -163,8 +162,8 @@ void main() {
     (tester) async {
       final repository = _PagingReviewRepository(
         totalRecent: 0,
-        totalHallOfFame: 40,
-        serverItemCap: 20,
+        totalHallOfFame: 400,
+        serverItemCap: 200,
       );
       final hallOfFameModel = HallOfFameModel(repository);
       final latestReviewsModel = LatestReviewsModel(repository);
@@ -175,30 +174,29 @@ void main() {
       await tester.pumpAndSettle();
 
       for (var drag = 0; drag < 12; drag++) {
-        await tester.drag(
-          find.byType(CustomScrollView),
-          const Offset(0, -1200),
-          warnIfMissed: false,
-        );
+        final controller = tester
+            .widget<CustomScrollView>(find.byType(CustomScrollView))
+            .controller!;
+        controller.jumpTo(controller.position.maxScrollExtent);
         await tester.pumpAndSettle();
       }
 
       expect(
         repository.hallOfFameOffsets,
-        [0, 10, 20],
+        [0, 100, 200],
         reason:
             'after the server returns an empty page, pagination must stop '
             'instead of refiring forever at the same scroll position',
       );
       expect(hallOfFameModel.hasMore, isFalse);
-      expect(_richTextContaining('hof-content-19'), findsOneWidget);
+      expect(_richTextContaining('hof-content-199'), findsOneWidget);
     },
   );
 
   testWidgets('latest feed keeps paginating until the last page', (
     tester,
   ) async {
-    final repository = _PagingReviewRepository(totalRecent: 25);
+    final repository = _PagingReviewRepository(totalRecent: 205);
     final hallOfFameModel = HallOfFameModel(repository)
       ..setMode(ReviewTab.latest);
     final latestReviewsModel = LatestReviewsModel(repository);
@@ -225,20 +223,19 @@ void main() {
     expect(_richTextContaining('paging-content-0'), findsOneWidget);
 
     for (var drag = 0; drag < 12; drag++) {
-      await tester.drag(
-        find.byType(CustomScrollView),
-        const Offset(0, -1200),
-        warnIfMissed: false,
-      );
+      final controller = tester
+          .widget<CustomScrollView>(find.byType(CustomScrollView))
+          .controller!;
+      controller.jumpTo(controller.position.maxScrollExtent);
       await tester.pumpAndSettle();
     }
 
     expect(
       repository.recentOffsets,
-      [0, 10, 20],
+      [0, 100, 200],
       reason: 'scrolling to the bottom must keep fetching next pages',
     );
-    expect(_richTextContaining('paging-content-24'), findsOneWidget);
+    expect(_richTextContaining('paging-content-204'), findsOneWidget);
   });
 }
 
@@ -344,7 +341,7 @@ class _PagingReviewRepository extends ReviewRepository {
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = 100,
   }) async {
     recentOffsets.add(offset);
     final available = serverItemCap == null
@@ -381,7 +378,7 @@ class _PagingReviewRepository extends ReviewRepository {
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = 100,
   }) async {
     hallOfFameOffsets.add(offset);
     final available = serverItemCap == null
@@ -429,7 +426,7 @@ class _FakeReviewRepository extends ReviewRepository {
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = 100,
   }) async {
     return ReviewListResult(
       reviews: recentReviews,
@@ -446,7 +443,7 @@ class _FakeReviewRepository extends ReviewRepository {
     int? year,
     int? semester,
     int offset = 0,
-    int limit = 10,
+    int limit = 100,
   }) async {
     hallOfFameCallCount++;
     return ReviewListResult(

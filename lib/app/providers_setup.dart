@@ -71,17 +71,10 @@ Widget buildAppProviders({
         },
       ),
       ChangeNotifierProxyProvider<InfoModel, TimetableModel>(
-        create: (context) => TimetableModel(
-          repository: timetableRepository,
-          legacyShareDio: dio,
-        ),
+        create: (context) => TimetableModel(repository: timetableRepository),
         update: (context, infoModel, timetableModel) {
           final model =
-              timetableModel ??
-              TimetableModel(
-                repository: timetableRepository,
-                legacyShareDio: dio,
-              );
+              timetableModel ?? TimetableModel(repository: timetableRepository);
           if (infoModel.hasData) {
             model.loadSemesters(
               user: infoModel.user,
@@ -110,14 +103,14 @@ Widget buildAppProviders({
         create: (context) => HallOfFameModel(context.read<ReviewRepository>()),
       ),
       ChangeNotifierProvider(
-        create: (_) => CourseDetailModel(
+        create: (_) => CourseDetailModel(courseRepository, reviewRepository),
+      ),
+      ChangeNotifierProvider(
+        create: (_) => LectureDetailModel(
           courseRepository,
           lectureRepository,
           reviewRepository,
         ),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => LectureDetailModel(courseRepository, lectureRepository),
       ),
       ChangeNotifierProvider(
         create: (_) => SettingsModel(

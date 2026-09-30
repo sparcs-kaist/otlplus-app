@@ -144,11 +144,7 @@ class _EmptySemestersInfoModel extends InfoModel {
 
 class _FailedCourseDetailModel extends CourseDetailModel {
   _FailedCourseDetailModel()
-    : super(
-        CourseRepository(Dio()),
-        LectureRepository(Dio()),
-        ReviewRepository(Dio()),
-      );
+    : super(CourseRepository(Dio()), ReviewRepository(Dio()));
 
   @override
   bool get hasData => false;
@@ -159,7 +155,11 @@ class _FailedCourseDetailModel extends CourseDetailModel {
 
 class _FailedLectureDetailModel extends LectureDetailModel {
   _FailedLectureDetailModel()
-    : super(CourseRepository(Dio()), LectureRepository(Dio()));
+    : super(
+        CourseRepository(Dio()),
+        LectureRepository(Dio()),
+        ReviewRepository(Dio()),
+      );
 
   @override
   bool get hasData => false;

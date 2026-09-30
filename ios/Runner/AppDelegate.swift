@@ -238,6 +238,7 @@ private enum SharedTokenVault {
   private static let widgetAppGroup = "group.org.sparcs.otl"
   private static let legacyTokenKeys = Set(["accessToken", "refreshToken"])
 
+  private var exportChannel: FlutterMethodChannel?
   private var tokenVaultChannel: FlutterMethodChannel?
   private var watchSession: WCSession?
 
@@ -255,6 +256,61 @@ private enum SharedTokenVault {
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     configureTokenVaultChannel(binaryMessenger: engineBridge.applicationRegistrar.messenger())
+    configureExportChannel(binaryMessenger: engineBridge.applicationRegistrar.messenger())
+  }
+
+  private func configureExportChannel(binaryMessenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "org.sparcs.otlplus/export",
+      binaryMessenger: binaryMessenger
+    )
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "shareFile" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      guard let arguments = call.arguments as? [String: Any],
+            let path = arguments["path"] as? String,
+            FileManager.default.fileExists(atPath: path) else {
+        result(FlutterError(code: "export_file_missing", message: "Export file is missing.", details: nil))
+        return
+      }
+      DispatchQueue.main.async {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let window = scenes
+          .filter({ $0.activationState == .foregroundActive })
+          .flatMap({ $0.windows }).first(where: { $0.isKeyWindow }),
+          var presenter = window.rootViewController else {
+          result(FlutterError(code: "export_no_window", message: "No active window for export.", details: nil))
+          return
+        }
+        while let presented = presenter.presentedViewController {
+          presenter = presented
+        }
+        guard !presenter.isBeingDismissed else {
+          result(FlutterError(code: "export_busy", message: "The current screen is closing.", details: nil))
+          return
+        }
+        let activity = UIActivityViewController(
+          activityItems: [URL(fileURLWithPath: path)], applicationActivities: nil
+        )
+        if let popover = activity.popoverPresentationController {
+          popover.sourceView = presenter.view
+          popover.sourceRect = CGRect(x: presenter.view.bounds.midX,
+                                     y: presenter.view.bounds.midY, width: 1, height: 1)
+          popover.permittedArrowDirections = []
+        }
+        activity.completionWithItemsHandler = { _, _, _, error in
+          if let error = error {
+            result(FlutterError(code: "export_failed", message: error.localizedDescription, details: nil))
+          } else {
+            result(nil)
+          }
+        }
+        presenter.present(activity, animated: true)
+      }
+    }
+    exportChannel = channel
   }
 
   private func configureTokenVaultChannel(binaryMessenger: FlutterBinaryMessenger) {

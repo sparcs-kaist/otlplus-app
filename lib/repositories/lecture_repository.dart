@@ -1,7 +1,6 @@
 import "package:dio/dio.dart";
 import "package:otlplus/constants/url.dart";
 import "package:otlplus/models/lecture.dart";
-import "package:otlplus/models/review.dart";
 
 class LectureSearchQuery {
   const LectureSearchQuery({
@@ -85,39 +84,38 @@ class LectureRepository {
     return List<Lecture>.unmodifiable(lectures);
   }
 
-  /// Fetches a lecture detail from the retained v1 `api/lectures/{id}` API.
-  Future<Lecture> fetchLegacyDetail(int lectureId) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      "$API_LECTURE_URL/$lectureId",
-    );
-    return Lecture.fromJson(response.data ?? const <String, dynamic>{});
-  }
-
-  /// Fetches course lectures from the retained v1 course lectures API.
-  Future<List<Lecture>> fetchLegacyCourseLectures(int courseId) async {
-    final response = await _dio.get<List<dynamic>>(
-      API_COURSE_LECTURES_URL.replaceFirst("{id}", courseId.toString()),
-    );
-    return List<Lecture>.unmodifiable(
-      (response.data ?? const <dynamic>[]).whereType<Map>().map(
-        (lecture) => Lecture.fromJson(Map<String, dynamic>.from(lecture)),
-      ),
-    );
-  }
-
-  /// Fetches reviews from the retained v1 lecture related-reviews API.
-  Future<List<Review>> fetchLegacyRelatedReviews(int lectureId) async {
-    final response = await _dio.get<List<dynamic>>(
-      API_LECTURE_RELATED_REVIEWS_URL.replaceFirst(
-        "{id}",
-        lectureId.toString(),
-      ),
-    );
-    return List<Review>.unmodifiable(
-      (response.data ?? const <dynamic>[]).whereType<Map>().map(
-        (review) => Review.fromJson(Map<String, dynamic>.from(review)),
-      ),
-    );
+  /// Resolves a history entry that does not include timetable attributes.
+  Future<Lecture> fetchHistoryDetail({
+    required int lectureId,
+    required int courseId,
+    required String code,
+    required int year,
+    required int semester,
+  }) async {
+    for (var offset = 0; ; offset += pageSize) {
+      final response = await _dio.get<Map<String, dynamic>>(
+        API_V2_LECTURES_URL,
+        queryParameters: {
+          "year": year,
+          "semester": semester,
+          "keyword": code,
+          "limit": pageSize,
+          "offset": offset,
+        },
+      );
+      final courses = _jsonList(response.data?["courses"]);
+      final lectures = courses
+          .expand((course) => _jsonList(course["lectures"]))
+          .toList();
+      for (final json in lectures) {
+        if (json["id"] == lectureId && json["courseId"] == courseId) {
+          return Lecture.fromV2Json(json, year: year, semester: semester);
+        }
+      }
+      if (lectures.length < pageSize) {
+        throw StateError("Lecture $lectureId was not found in v2 search");
+      }
+    }
   }
 }
 

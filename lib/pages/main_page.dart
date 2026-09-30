@@ -448,7 +448,7 @@ class _MainPageState extends State<MainPage> {
             lecture: lecture,
             classTimeIndex: classTimeIndex,
             onTap: () {
-              context.read<LectureDetailModel>().loadLecture(lecture.id, false);
+              context.read<LectureDetailModel>().loadLecture(lecture, false);
               OTLNavigator.push(context, LectureDetailPage());
             },
           ),

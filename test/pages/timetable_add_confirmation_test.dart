@@ -64,7 +64,11 @@ class RecordingTimetableModel extends TimetableModel {
 
 class LoadedLectureDetailModel extends LectureDetailModel {
   LoadedLectureDetailModel(this.loadedLecture)
-    : super(CourseRepository(Dio()), LectureRepository(Dio()));
+    : super(
+        CourseRepository(Dio()),
+        LectureRepository(Dio()),
+        ReviewRepository(Dio()),
+      );
 
   final Lecture loadedLecture;
 
@@ -135,7 +139,6 @@ void main() {
               ChangeNotifierProvider<CourseDetailModel>.value(
                 value: CourseDetailModel(
                   CourseRepository(Dio()),
-                  LectureRepository(Dio()),
                   ReviewRepository(Dio()),
                 ),
               ),

@@ -285,7 +285,7 @@ class _TimetablePageState extends State<TimetablePage> {
           isTemp: isSelected,
           isExamTime: isExamTime,
           onTap: () {
-            context.read<LectureDetailModel>().loadLecture(lecture.id, true);
+            context.read<LectureDetailModel>().loadLecture(lecture, true);
             OTLNavigator.push(context, LectureDetailPage());
           },
           onLongPress:
@@ -312,6 +312,41 @@ class _TimetablePageState extends State<TimetablePage> {
     );
   }
 
+  String _timetableLabel(TimetableModel model, int index) {
+    if (model.isMyTimetableIndex(index)) return 'timetable.my_tab'.tr();
+    final summaryIndex = index - 1;
+    if (summaryIndex >= 0 && summaryIndex < model.summaries.length) {
+      final name = model.summaries[summaryIndex].name;
+      if (name.trim().isNotEmpty) return name;
+    }
+    return 'timetable.unnamed'.tr();
+  }
+
+  Future<void> _exportTimetable(
+    BuildContext context,
+    TimetableModel model,
+    ShareType type,
+    int index,
+  ) async {
+    final language = context.locale.languageCode;
+    final success = await model.shareTimetable(
+      type,
+      language,
+      name: _timetableLabel(model, index),
+    );
+    if (!success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            language == 'ko'
+                ? '시간표 내보내기에 실패했습니다.'
+                : 'Could not export timetable.',
+          ),
+        ),
+      );
+    }
+  }
+
   void _handleTimetableTabAction(
     BuildContext context,
     TimetableModel timetableModel,
@@ -325,16 +360,10 @@ class _TimetablePageState extends State<TimetablePage> {
         );
         return;
       case TimetableTabAction.exportImage:
-        timetableModel.shareTimetable(
-          ShareType.image,
-          context.locale.languageCode,
-        );
+        _exportTimetable(context, timetableModel, ShareType.image, index);
         return;
       case TimetableTabAction.exportIcal:
-        timetableModel.shareTimetable(
-          ShareType.ical,
-          context.locale.languageCode,
-        );
+        _exportTimetable(context, timetableModel, ShareType.ical, index);
         return;
       case TimetableTabAction.delete:
         if (timetableModel.isMyTimetableIndex(index)) {
@@ -344,9 +373,7 @@ class _TimetablePageState extends State<TimetablePage> {
               builder: (_) => OTLDialog(
                 type: OTLDialogType.accountDeleted,
                 namedArgs: {
-                  'timetable': 'timetable.tab'.tr(
-                    args: [timetableModel.selectedIndex.toString()],
-                  ),
+                  'timetable': _timetableLabel(timetableModel, index),
                 },
                 onTapPos: () {},
               ),
@@ -359,9 +386,7 @@ class _TimetablePageState extends State<TimetablePage> {
               builder: (_) => OTLDialog(
                 type: OTLDialogType.disabledDeleteLastTab,
                 namedArgs: {
-                  'timetable': 'timetable.tab'.tr(
-                    args: [timetableModel.selectedIndex.toString()],
-                  ),
+                  'timetable': _timetableLabel(timetableModel, index),
                 },
               ),
             );
@@ -373,9 +398,7 @@ class _TimetablePageState extends State<TimetablePage> {
               builder: (_) => OTLDialog(
                 type: OTLDialogType.deleteTab,
                 namedArgs: {
-                  'timetable': 'timetable.tab'.tr(
-                    args: [timetableModel.selectedIndex.toString()],
-                  ),
+                  'timetable': _timetableLabel(timetableModel, index),
                 },
                 onTapPos: () =>
                     context.read<TimetableModel>().deleteTimetable(),
@@ -393,6 +416,9 @@ class _TimetablePageState extends State<TimetablePage> {
     return TimetableTabs(
       index: timetableModel.selectedIndex,
       length: timetableModel.timetables.length,
+      savedNames: timetableModel.summaries
+          .map((summary) => summary.name)
+          .toList(),
       onTap: (i) {
         final timetableModel = context.read<TimetableModel>();
 

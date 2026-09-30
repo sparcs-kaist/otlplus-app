@@ -9,9 +9,7 @@ import 'package:otlplus/providers/course_detail_model.dart';
 import 'package:otlplus/providers/course_search_model.dart';
 import 'package:otlplus/repositories/course_repository.dart';
 import 'package:otlplus/repositories/department_repository.dart';
-import 'package:otlplus/repositories/lecture_repository.dart';
 import 'package:otlplus/repositories/review_repository.dart';
-import 'package:otlplus/utils/navigator.dart';
 import 'package:otlplus/widgets/course_block.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,7 +81,8 @@ void main() {
       expect(detailModel.loadedCourseIds, <int>[courses[7].id]);
       expect(tester.takeException(), isNull);
 
-      OTLNavigator.pop(navigatorKey.currentContext!);
+      await tester.pump(const Duration(milliseconds: 300));
+      navigatorKey.currentState!.pop();
       await tester.pumpAndSettle();
     },
   );
@@ -164,11 +163,7 @@ class _FlakyCourseSearchModel extends CourseSearchModel {
 
 class _CourseDetailModel extends CourseDetailModel {
   _CourseDetailModel()
-    : super(
-        CourseRepository(Dio()),
-        LectureRepository(Dio()),
-        ReviewRepository(Dio()),
-      );
+    : super(CourseRepository(Dio()), ReviewRepository(Dio()));
 
   final List<int> loadedCourseIds = <int>[];
 

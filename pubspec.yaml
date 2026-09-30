@@ -64,6 +64,7 @@ flutter:
   - assets/
   - assets/people/
   - assets/images/
+  - assets/images/timetable/
   - assets/translations/
   - assets/icons/
   - assets/popups/

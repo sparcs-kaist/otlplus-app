@@ -63,6 +63,23 @@ void main() {
     expect(selectedIndex, selectedTabIndex);
   }
 
+  testWidgets('tabs show API names and placeholders for empty names', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      TimetableTabs(
+        length: 4,
+        savedNames: ['월수금 시간표', '', '  '],
+        onTap: (_) {},
+        onAction: (_, __) {},
+      ).scaffold,
+    );
+    expect(find.text('내 시간표'), findsOneWidget);
+    expect(find.text('월수금 시간표'), findsOneWidget);
+    expect(find.text('이름 없음'), findsNWidgets(2));
+    expect(find.text('시간표 1'), findsNothing);
+  });
+
   testWidgets('timetable tab menu emits copy action', (tester) async {
     await expectTabAction(
       tester,

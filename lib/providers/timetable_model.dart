@@ -11,6 +11,7 @@ import 'package:otlplus/models/timetable.dart';
 import 'package:otlplus/models/user.dart';
 import 'package:otlplus/repositories/timetable_repository.dart';
 import 'package:otlplus/utils/export_file.dart';
+import 'package:otlplus/utils/timetable_export.dart';
 
 typedef TimetableFileWriter =
     Future<void> Function(ShareType type, Uint8List? bytes);
@@ -18,11 +19,9 @@ typedef TimetableFileWriter =
 class TimetableModel extends ChangeNotifier {
   TimetableModel({
     required TimetableRepository repository,
-    Dio? legacyShareDio,
     TimetableFileWriter? fileWriter,
     bool forTest = false,
   }) : _repository = repository,
-       _legacyShareDio = legacyShareDio ?? Dio(),
        _fileWriter = fileWriter ?? writeFile {
     if (forTest) {
       _user = User(
@@ -65,9 +64,6 @@ class TimetableModel extends ChangeNotifier {
 
   final TimetableRepository _repository;
 
-  // Image/iCal export has not moved to TimetableRepository yet. Keep this
-  // isolated boundary only for the retained share endpoints.
-  final Dio _legacyShareDio;
   final TimetableFileWriter _fileWriter;
 
   late User _user;
@@ -220,27 +216,6 @@ class TimetableModel extends ChangeNotifier {
     }
   }
 
-  /// Same lenient policy as [_fetchMyTimetableLenient]; null also signals
-  /// that auto-creation must be skipped for this term.
-  Future<TimetableCollection?> _fetchCollectionLenient(
-    int year,
-    int seasonCode,
-  ) async {
-    try {
-      return await _repository.fetchBySemester(year, seasonCode);
-    } on DioException catch (exception) {
-      final status = exception.response?.statusCode ?? 0;
-      if (exception.response != null && status >= 400 && status < 500) {
-        return null;
-      }
-      rethrow;
-    } on FormatException {
-      return null;
-    } on TypeError {
-      return null;
-    }
-  }
-
   Future<bool> _loadTimetable() async {
     final requestId = ++_loadRequestId;
     final semester = selectedSemester;
@@ -255,47 +230,19 @@ class TimetableModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Past semesters can be refused by the server (no record, locked
-      // term). Those refusals degrade to placeholders instead of failing
-      // the load; connection-level errors still surface as load failures.
+      // My timetable may be unavailable for a past term. Saved timetable
+      // errors must remain visible, and browsing must never create records.
       final results = await Future.wait<Object?>(<Future<Object?>>[
         _fetchMyTimetableLenient(semester.year, semester.semester),
-        _fetchCollectionLenient(semester.year, semester.semester),
+        _repository.fetchBySemester(semester.year, semester.semester),
       ]);
       final primary = results[0] as Timetable?;
-      var collection = results[1] as TimetableCollection?;
+      final collection = results[1] as TimetableCollection;
       if (requestId != _loadRequestId) return false;
-      collection ??= TimetableCollection(
-        summaries: <TimetableListItem>[],
-        timetables: <Timetable>[],
-      );
-
-      if (collection.summaries.isEmpty) {
-        // Seed the first editable timetable for the semester. Semesters that
-        // refuse creation just browse with the read-only my timetable.
-        try {
-          await _repository.create(
-            year: semester.year,
-            semester: semester.semester,
-            lectureIds: <int>[],
-          );
-          collection = await _repository.fetchBySemester(
-            semester.year,
-            semester.semester,
-          );
-        } catch (exception) {
-          collection = TimetableCollection(
-            summaries: <TimetableListItem>[],
-            timetables: <Timetable>[],
-          );
-        }
-      }
-      if (requestId != _loadRequestId) return false;
-
       _applyCollection(
         primary ?? _reloadPlaceholder,
         collection,
-        selectServerTimetable: selectServerTimetable && primary != null,
+        selectServerTimetable: selectServerTimetable,
       );
       _isLoading = false;
       _isLoaded = true;
@@ -495,28 +442,34 @@ class TimetableModel extends ChangeNotifier {
     _timetables[_selectedTimetableIndex] = timetable;
   }
 
-  Future<bool> shareTimetable(ShareType type, String language) async {
+  Future<bool> shareTimetable(
+    ShareType type,
+    String language, {
+    String? name,
+  }) async {
     try {
-      final response = await _legacyShareDio.get(
-        API_SHARE_URL.replaceFirst(
-          '{share_type}',
-          type == ShareType.image ? 'image' : 'ical',
-        ),
-        queryParameters: {
-          'timetable': currentTimetable.id,
-          'year': selectedSemester.year,
-          'semester': selectedSemester.semester,
-          'language': language,
-        },
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      final data = response.data;
-      final bytes = data == null
-          ? null
-          : data is Uint8List
-          ? data
-          : Uint8List.fromList(data as List<int>);
+      final lectures = List<Lecture>.of(currentTimetable.lectures);
+      final semester = selectedSemester;
+      final exportName =
+          name ??
+          (isMyTimetable
+              ? (language == 'ko' ? '내 시간표' : 'My timetable')
+              : _currentSummary.name.trim().isEmpty
+              ? (language == 'ko' ? '이름 없음' : 'Untitled')
+              : _currentSummary.name);
+      final bytes = type == ShareType.image
+          ? await TimetableExport.image(
+              lectures: lectures,
+              semester: semester,
+              name: exportName,
+              language: language,
+            )
+          : TimetableExport.calendar(
+              lectures: lectures,
+              semester: semester,
+              name: exportName,
+              language: language,
+            );
       await _fileWriter(type, bytes);
       return true;
     } catch (exception) {

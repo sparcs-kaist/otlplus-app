@@ -15,12 +15,14 @@ class TimetableTabs extends StatefulWidget {
 
   final int index;
   final int length;
+  final List<String> savedNames;
   final ValueChanged<int> onTap;
   final TimetableTabActionCallback onAction;
 
   TimetableTabs({
     this.index = 0,
     required this.length,
+    this.savedNames = const [],
     required this.onTap,
     required this.onAction,
   });
@@ -88,7 +90,10 @@ class _TimetableTabsState extends State<TimetableTabs> {
     Text text = Text(
       kind == TimetableTabKind.myTimetable
           ? 'timetable.my_tab'.tr()
-          : 'timetable.tab'.tr(args: [i.toString()]),
+          : i - 1 < widget.savedNames.length &&
+                widget.savedNames[i - 1].trim().isNotEmpty
+          ? widget.savedNames[i - 1]
+          : 'timetable.unnamed'.tr(),
       style: bodyBold.copyWith(
         color: i == _index ? OTLColor.grayF : OTLColor.gray0,
       ),
