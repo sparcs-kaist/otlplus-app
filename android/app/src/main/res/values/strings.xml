@@ -26,4 +26,6 @@
     <string name="widget_save">저장</string>
     <string name="widget_cancel">취소</string>
     <string name="widget_retry">다시 시도</string>
+    <string name="widget_earlier_events">↑ 이전 일정 %1$d개</string>
+    <string name="widget_later_events">↓ 이후 일정 %1$d개</string>
 </resources>

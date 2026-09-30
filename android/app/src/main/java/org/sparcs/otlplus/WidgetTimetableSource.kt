@@ -50,6 +50,18 @@ internal class WidgetTimetableSource(
         } else {
             "$baseUrl/api/v2/timetables/$id"
         }
-        return get(url)
+        val result = get(url)
+        if (id == 0 || result.body == null) return result
+        val detail = JSONObject(result.body)
+        if (detail.has("timetableItems")) return result
+        val customResult = get("$url/custom-blocks")
+        val body = customResult.body ?: return customResult
+        val blocks = JSONObject(body).getJSONArray("custom_blocks")
+        val items = org.json.JSONArray()
+        for (index in 0 until blocks.length()) {
+            items.put(JSONObject().put("kind", "custom").put("data", blocks.getJSONObject(index)))
+        }
+        detail.put("timetableItems", items)
+        return ApiLoadResult(body = detail.toString())
     }
 }

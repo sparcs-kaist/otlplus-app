@@ -6,6 +6,8 @@ enum class WeekDays {
     Wed,
     Thu,
     Fri,
+    Sat,
+    Sun,
     Undef,
 }
 

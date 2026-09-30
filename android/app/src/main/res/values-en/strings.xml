@@ -9,4 +9,6 @@
     <string name="widget_save">Save</string>
     <string name="widget_cancel">Cancel</string>
     <string name="widget_retry">Retry</string>
+    <string name="widget_earlier_events">↑ %1$d earlier events</string>
+    <string name="widget_later_events">↓ %1$d later events</string>
 </resources>

@@ -9,9 +9,24 @@ import org.sparcs.otlplus.api.ApiLoadResult
 
 class WidgetTimetableSourceTest {
     @Test
+    fun `saved detail without items fetches v2 custom blocks`() {
+        val urls = mutableListOf<String>()
+        val source = WidgetTimetableSource({ url ->
+            urls += url
+            ApiLoadResult(body = if (url.endsWith("/custom-blocks"))
+                """{"custom_blocks":[{"id":1,"block_name":"Study","place":"Library","times":[{"day":0,"begin":600,"end":660}]}]}"""
+                else """{"lectures":[]}""")
+        })
+        val table = org.sparcs.otlplus.api.TimetableData(source.timetable(72, null).body!!)
+        assertEquals("Study", table.schedule.single().name)
+        assertEquals(listOf("https://otl.kaist.ac.kr/api/v2/timetables/72",
+            "https://otl.kaist.ac.kr/api/v2/timetables/72/custom-blocks"), urls)
+    }
+
+    @Test
     fun `my timetable uses current semester while saved timetable uses stable id`() {
         val urls = mutableListOf<String>()
-        val source = WidgetTimetableSource({ url -> urls += url; ApiLoadResult(body = "{\"lectures\":[]}") })
+        val source = WidgetTimetableSource({ url -> urls += url; ApiLoadResult(body = "{\"lectures\":[],\"timetableItems\":[]}") })
         source.timetable(0, WidgetSemester(2026, 3))
         source.timetable(72, null)
         assertEquals(listOf(
@@ -42,7 +57,7 @@ class WidgetTimetableSourceTest {
     fun `different widget selections resolve independently`() {
         val source = WidgetTimetableSource({ url ->
             if (url.endsWith("/13")) ApiLoadResult(failure = ApiLoadFailure.UNAVAILABLE)
-            else ApiLoadResult(body = "{\"lectures\":[]}")
+            else ApiLoadResult(body = "{\"lectures\":[],\"timetableItems\":[]}")
         })
         assertNull(source.timetable(13, null).body)
         assertNotNull(source.timetable(72, null).body)
@@ -53,7 +68,7 @@ class WidgetTimetableSourceTest {
         val source = WidgetTimetableSource({ url ->
             urls += url
             if (url.endsWith("/current")) ApiLoadResult(failure = ApiLoadFailure.UNAVAILABLE)
-            else ApiLoadResult(body = "{\"lectures\":[]}")
+            else ApiLoadResult(body = "{\"lectures\":[],\"timetableItems\":[]}")
         })
         val loaded = source.loadSelections(listOf(0, 72, 72))
         assertNull(loaded.getValue(0).body)

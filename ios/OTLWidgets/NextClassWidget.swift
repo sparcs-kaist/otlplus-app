@@ -18,16 +18,16 @@ struct NextClassWidgetEntryView : View {
     var entry: Provider.Entry
     
     // Helper to get the next class lecture
-    private var currentLecture: Lecture? {
+    private var currentLecture: WidgetScheduleItem? {
         guard
             let timetableData = entry.timetableData,
             !timetableData.isEmpty,
-            !timetableData[0].lectures.isEmpty
+            !timetableData[0].scheduleItems.isEmpty
         else {
             return nil
         }
         
-        return getNextClass(timetable: timetableData[0], date: entry.date).1
+        return getNextClass(timetable: timetableData[0], date: entry.date)?.1
     }
     
     // Helper for background color based on theme
@@ -130,44 +130,47 @@ struct NextClassWidgetEntryView : View {
     }
     
     func getName(timetable: Timetable, date: Date) -> String {
-        let c = getNextClass(timetable: timetable, date: date)
-        let lecture: Lecture = c.1
+        guard let c = getNextClass(timetable: timetable, date: date) else { return "" }
+        let lecture: WidgetScheduleItem = c.1
         
         return lecture.name + lecture.subtitle
     }
     
     func getProfessor(timetable: Timetable, date: Date) -> String {
-        let c = getNextClass(timetable: timetable, date: date)
-        let lecture: Lecture = c.1
+        guard let c = getNextClass(timetable: timetable, date: date) else { return "" }
+        let lecture: WidgetScheduleItem = c.1
         
-        return String(format: String(localized: "nextclasswidget.professor"), lecture.professors[0].name)
+        guard let professor = lecture.professors.first else { return "" }
+        return String(format: String(localized: "nextclasswidget.professor"), professor.name)
     }
     
     func getPlace(timetable: Timetable, date: Date) -> String {
-        let c = getNextClass(timetable: timetable, date: date)
+        guard let c = getNextClass(timetable: timetable, date: date) else { return "" }
         let index = c.0
-        let lecture: Lecture = c.1
+        let lecture: WidgetScheduleItem = c.1
         
-        return "(" + lecture.classes[index].buildingCode + ") " + lecture.classes[index].roomName
+        return lecture.classes[index].place
     }
     
     func getTimeLeft(timetable: Timetable, date: Date) -> String {
-        let c = getNextClass(timetable: timetable, date: date)
+        guard let c = getNextClass(timetable: timetable, date: date) else { return "" }
         let index = c.0
-        let lecture: Lecture = c.1
+        let lecture: WidgetScheduleItem = c.1
         
-        let calendar = Calendar.current
+        let calendar = widgetCalendar()
         let day = getDayWithWeekDay(weekday: calendar.component(.weekday, from: date))
         
         
         let begin = lecture.classes[index].begin
         let lday = lecture.classes[index].day
         
-        if lday == day {
+        let minutes = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
+        let daysAway = (lday - day + 7) % 7
+        if daysAway == 0 && begin >= minutes {
             return String(format: String(localized: "nextclasswidget.today.timeformat"), begin/60, begin%60)
-        } else if lday == day+1 {
+        } else if daysAway == 1 {
             return String(format: String(localized: "nextclasswidget.tomorrow.timeformat"), begin/60, begin%60)
-        } else if lday > day+1 {
+        } else if daysAway > 1 {
             return String(format: String(localized: "nextclasswidget.day.timeformat"), getDayInString(day: lday), begin/60, begin%60)
         } else {
             return String(format: String(localized: "nextclasswidget.nextweek.timeformat"), getDayInString(day: lday))
@@ -175,7 +178,7 @@ struct NextClassWidgetEntryView : View {
     }
     
     func getColour(timetable: Timetable, date: Date) -> Color {
-        let c = getNextClass(timetable: timetable, date: date)
+        guard let c = getNextClass(timetable: timetable, date: date) else { return getColourForCourse(course: 1) }
         let course = c.1.courseId
         
         return getColourForCourse(course: course)
@@ -207,38 +210,8 @@ struct LoginPromptView: View {
     }
 }
 
-// Refactored getNextClass for better readability
-func getNextClass(timetable: Timetable, date: Date) -> (Int, Lecture) {
-    let calendar = Calendar.current
-    let day = getDayWithWeekDay(weekday: calendar.component(.weekday, from: date))
-    let minutes = calendar.component(.minute, from: date) + calendar.component(.hour, from: date) * 60
-    
-    // Find today's next class
-    if let nextClass = getUpcomingLecture(on: day, after: minutes, from: timetable) {
-        return nextClass
-    }
-    
-    // Find tomorrow's or next available class
-    return findNextAvailableLecture(from: timetable, date: date)
-}
-
-private func getUpcomingLecture(on day: Int, after minutes: Int, from timetable: Timetable) -> (Int, Lecture)? {
-    let lectures = getLecturesForDay(timetable: timetable, day: day)
-    return lectures.first(where: { $0.1.classes[$0.0].begin >= minutes })
-}
-
-private func findNextAvailableLecture(from timetable: Timetable, date: Date) -> (Int, Lecture) {
-    var tmrDate = Calendar.current.date(byAdding: .day, value: 1, to: date)!
-    
-    // Loop until a lecture is found
-    while true {
-        let day = getDayWithWeekDay(weekday: Calendar.current.component(.weekday, from: tmrDate))
-        let lectures = getLecturesForDay(timetable: timetable, day: day)
-        if let nextLecture = lectures.first {
-            return nextLecture
-        }
-        tmrDate = Calendar.current.date(byAdding: .day, value: 1, to: tmrDate)!
-    }
+func getNextClass(timetable: Timetable, date: Date) -> (Int, WidgetScheduleItem)? {
+    nextWidgetItem(timetable: timetable, date: date)
 }
 
 // Widget definition

@@ -31,7 +31,10 @@ class UpdateWidgetWorker(context: Context, params: WorkerParameters) : Worker(co
                     if (result.failure != ApiLoadFailure.REJECTED) needsRetry = true
                     continue
                 }
-                val timetableData = TimetableData(body)
+                val timetableData = try { TimetableData(body) } catch (_: JSONException) {
+                    needsRetry = true
+                    continue
+                }
                 for (widgetId in widgetIds) {
                     // Do not apply an old fetch after the user reconfigures this widget.
                     if (preferences.selectedId(widgetId) != selection) continue

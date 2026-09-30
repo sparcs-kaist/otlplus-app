@@ -20,7 +20,7 @@ struct NextClassAccessoryEntryView : View {
         case .accessoryCircular:
             ZStack {
                 AccessoryWidgetBackground()
-                if let data = entry.timetableData, !data.isEmpty, !data[0].lectures.isEmpty {
+                if let data = entry.timetableData, !data.isEmpty, !data[0].scheduleItems.isEmpty {
                     VStack {
                         Image(systemName: "tablecells")
                             .font(.caption2)
@@ -49,7 +49,7 @@ struct NextClassAccessoryEntryView : View {
             }
         case .accessoryRectangular:
             HStack {
-                if let data = entry.timetableData, !data.isEmpty, !data[0].lectures.isEmpty {
+                if let data = entry.timetableData, !data.isEmpty, !data[0].scheduleItems.isEmpty {
                     VStack(alignment: .leading) {
                         HStack(alignment: .center, spacing: 4) {
                             Circle()
@@ -88,51 +88,10 @@ struct NextClassAccessoryEntryView : View {
         }
     }
     
-    func getNextClass(timetable: Timetable, date: Date) -> (Int, Lecture) {
-        var lecture: Lecture = timetable.lectures[0]
-        var begin = 1440
-        var index = 0
-        
-        let calendar = Calendar.current
-        let day = getDayWithWeekDay(weekday: calendar.component(.weekday, from: date))
-        var minutes = calendar.component(.minute, from: date) + calendar.component(.hour, from: date) * 60
-        
-        var lectures: [(Int, Lecture)] = getLecturesForDay(timetable: timetable, day: day)
-        
-        for (i, l) in lectures {
-            if l.classes[i].begin >= minutes && begin >= l.classes[i].begin {
-                begin = l.classes[i].begin
-                index = i
-                lecture = l
-            }
-        }
-        
-        if begin == 1440 {
-            var tmrDate = calendar.date(byAdding: .day, value: 1, to: date)!
-            lectures = getLecturesForDay(timetable: timetable, day: getDayWithWeekDay(weekday: calendar.component(.weekday, from: tmrDate)))
-            minutes = 0
-            
-            while lectures.count == 0 {
-                tmrDate = calendar.date(byAdding: .day, value: 1, to: tmrDate)!
-                lectures = getLecturesForDay(timetable: timetable, day: getDayWithWeekDay(weekday: calendar.component(.weekday, from: tmrDate)))
-            }
-            
-            for (i, l) in lectures {
-                if l.classes[i].begin >= minutes && begin >= l.classes[i].begin {
-                    begin = l.classes[i].begin
-                    index = i
-                    lecture = l
-                }
-            }
-        }
-        
-        return (index, lecture)
-    }
-    
     func getBeginInTwelveHour(timetable: Timetable, date: Date) -> (String, String) {
-        let c = getNextClass(timetable: timetable, date: date)
+        guard let c = getNextClass(timetable: timetable, date: date) else { return ("", "") }
         let index = c.0
-        let lecture: Lecture = c.1
+        let lecture: WidgetScheduleItem = c.1
         
         var hour = (lecture.classes[index].begin >= 720) ? (lecture.classes[index].begin-720)/60 : lecture.classes[index].begin/60
         hour = (hour == 0) ? 12 : hour
@@ -151,32 +110,32 @@ struct NextClassAccessoryEntryView : View {
     }
     
     func getName(timetable: Timetable, date: Date) -> String {
-        let c = getNextClass(timetable: timetable, date: date)
-        let lecture: Lecture = c.1
+        guard let c = getNextClass(timetable: timetable, date: date) else { return "" }
+        let lecture: WidgetScheduleItem = c.1
         
         return lecture.name + lecture.subtitle
     }
     
     func getBegin(timetable: Timetable, date: Date) -> String {
-        let c = getNextClass(timetable: timetable, date: date)
+        guard let c = getNextClass(timetable: timetable, date: date) else { return "" }
         let index = c.0
-        let lecture: Lecture = c.1
+        let lecture: WidgetScheduleItem = c.1
         
         return String(format:"%02d:%02d", lecture.classes[index].begin/60, lecture.classes[index].begin%60)
     }
     
     func getPlace(timetable: Timetable, date: Date) -> String {
-        let c = getNextClass(timetable: timetable, date: date)
+        guard let c = getNextClass(timetable: timetable, date: date) else { return "" }
         let index = c.0
-        let lecture: Lecture = c.1
+        let lecture: WidgetScheduleItem = c.1
         
-        return "(" + lecture.classes[index].buildingCode + ") " + lecture.classes[index].roomName
+        return lecture.classes[index].place
     }
     
     func getEnd(timetable: Timetable, date: Date) -> String {
-        let c = getNextClass(timetable: timetable, date: date)
+        guard let c = getNextClass(timetable: timetable, date: date) else { return "" }
         let index = c.0
-        let lecture: Lecture = c.1
+        let lecture: WidgetScheduleItem = c.1
         
         return String(format:"%02d:%02d", lecture.classes[index].end/60, lecture.classes[index].end%60)
     }
