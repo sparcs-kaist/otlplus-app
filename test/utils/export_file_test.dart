@@ -19,7 +19,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
             received = call;
-        return null;
+            return null;
           });
       await shareIosExport('/tmp/timetable.ics');
       expect(received?.method, 'shareFile');
