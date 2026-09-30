@@ -28,7 +28,8 @@
     "load_semesters": "학기 정보를 불러오지 못했습니다.",
     "load_course_details": "과목 정보를 불러오지 못했습니다.",
     "load_lecture_details": "강의 정보를 불러오지 못했습니다.",
-    "save_review": "후기를 저장하지 못했습니다."
+    "save_review": "후기를 저장하지 못했습니다.",
+    "update_review_like": "좋아요를 변경하지 못했습니다. 다시 시도해 주세요."
   },
   "semester": {
     "spring": "봄",

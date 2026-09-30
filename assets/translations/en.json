@@ -28,7 +28,8 @@
     "load_semesters": "Unable to load semesters.",
     "load_course_details": "Unable to load course details.",
     "load_lecture_details": "Unable to load lecture details.",
-    "save_review": "Failed to save review."
+    "save_review": "Failed to save review.",
+    "update_review_like": "Unable to update your like. Please try again."
   },
   "semester": {
     "spring": "Spring",

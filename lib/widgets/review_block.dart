@@ -47,12 +47,30 @@ class _ReviewBlockState extends State<ReviewBlock> {
   late int _like;
   late bool _liked;
   bool _isLikeUpdating = false;
+  int _reviewGeneration = 0;
 
   @override
   void initState() {
     super.initState();
     _like = widget.review.like;
     _liked = widget.review.userspecificIsLiked;
+  }
+
+  @override
+  void didUpdateWidget(covariant ReviewBlock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.review.id != widget.review.id) {
+      _reviewGeneration++;
+      _isLikeUpdating = false;
+      _like = widget.review.like;
+      _liked = widget.review.userspecificIsLiked;
+    } else if (!_isLikeUpdating &&
+        (oldWidget.review.like != widget.review.like ||
+            oldWidget.review.userspecificIsLiked !=
+                widget.review.userspecificIsLiked)) {
+      _like = widget.review.like;
+      _liked = widget.review.userspecificIsLiked;
+    }
   }
 
   @override
@@ -201,6 +219,10 @@ class _ReviewBlockState extends State<ReviewBlock> {
   Future<void> _updateLike(ReviewLikeAction action) async {
     if (_isLikeUpdating) return;
 
+    final generation = _reviewGeneration;
+    final telemetry = context
+        .findAncestorWidgetOfExactType<TelemetrySynchronizer>()
+        ?.telemetry;
     final wasLiked = _liked;
     final previousLikeCount = _like;
     setState(() {
@@ -216,15 +238,22 @@ class _ReviewBlockState extends State<ReviewBlock> {
       );
     } catch (error, stackTrace) {
       debugPrint('Failed to update review like: $error\n$stackTrace');
-      if (mounted) {
+      if (mounted && generation == _reviewGeneration) {
         setState(() {
           _liked = wasLiked;
           _like = previousLikeCount;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('error.update_review_like'.tr())),
+        );
       }
-      rethrow;
+      await telemetry?.recordNonFatal(
+        error,
+        stackTrace,
+        operation: 'update_review_like',
+      );
     } finally {
-      if (mounted) {
+      if (mounted && generation == _reviewGeneration) {
         setState(() {
           _isLikeUpdating = false;
         });

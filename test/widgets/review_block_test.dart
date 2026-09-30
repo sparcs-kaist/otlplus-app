@@ -24,9 +24,11 @@ import '../utils/extensions.dart';
 import '../utils/samples.dart';
 
 class _FakeReviewRepository extends ReviewRepository {
-  _FakeReviewRepository({this.error}) : super(Dio());
+  _FakeReviewRepository({this.error, this.pending}) : super(Dio());
 
-  final Object? error;
+  Object? error;
+  Completer<int>? pending;
+  int calls = 0;
   ReviewLikeAction? action;
   int? reviewId;
 
@@ -37,7 +39,9 @@ class _FakeReviewRepository extends ReviewRepository {
   }) async {
     this.reviewId = reviewId;
     this.action = action;
+    calls++;
     if (error != null) throw error!;
+    if (pending != null) return pending!.future;
     return reviewId;
   }
 }
@@ -97,27 +101,30 @@ void main() {
   testWidgets('failed unlike rolls back optimistic state without crashing', (
     tester,
   ) async {
-    final failure = StateError('update failed');
+    final options = RequestOptions(path: '/reviews/1/liked');
+    final failure = DioException.badResponse(
+      statusCode: 400,
+      requestOptions: options,
+      response: Response(requestOptions: options, statusCode: 400),
+    );
     final repository = _FakeReviewRepository(error: failure);
+    final telemetry = _RecordingTelemetryCoordinator();
     final escapedErrors = <Object>[];
     final review = _reviewWithContent(
       'rollback review content',
       like: 97,
       liked: true,
     );
-    await tester.pumpWidget(
-      Provider<ReviewRepository>.value(
-        value: repository,
-        child: ReviewBlock(review: review).material,
-      ),
-    );
+    await _pumpReviewBlock(tester, review, telemetry, repository: repository);
 
     await runZonedGuarded<Future<void>>(() async {
       await tester.tap(find.byIcon(Icons.thumb_up_alt));
       await tester.pump(const Duration(seconds: 1));
     }, (error, stackTrace) => escapedErrors.add(error));
 
-    expect(escapedErrors, <Object>[failure]);
+    expect(escapedErrors, isEmpty);
+    expect(telemetry.operations, ['update_review_like']);
+    expect(find.text('좋아요를 변경하지 못했습니다. 다시 시도해 주세요.'), findsOneWidget);
     expect(find.byIcon(Icons.thumb_up_alt), findsOneWidget);
     expect(
       find.byWidgetPredicate(
@@ -127,6 +134,69 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(tester.takeException(), isNull);
+
+    repository.error = null;
+    await tester.tap(find.byIcon(Icons.thumb_up_alt));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byIcon(Icons.thumb_up_alt_outlined), findsOneWidget);
+  });
+
+  testWidgets('replacement review uses its own like state and action', (
+    tester,
+  ) async {
+    final repository = _FakeReviewRepository();
+    Future<void> show(Review review) => tester.pumpWidget(
+      Provider<ReviewRepository>.value(
+        value: repository,
+        child: ReviewBlock(review: review).scaffold,
+      ),
+    );
+    await show(_reviewWithContent('first', liked: true));
+    await show(
+      _reviewWithContent('second', id: SampleReview.id + 1, liked: false),
+    );
+    expect(find.byIcon(Icons.thumb_up_alt_outlined), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.thumb_up_alt_outlined));
+    await tester.pump(const Duration(seconds: 1));
+    expect(repository.reviewId, SampleReview.id + 1);
+    expect(repository.action, ReviewLikeAction.like);
+  });
+
+  testWidgets('refresh of the same review updates its server like state', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ReviewBlock(review: _reviewWithContent('before', liked: true)).scaffold,
+    );
+    await tester.pumpWidget(
+      ReviewBlock(review: _reviewWithContent('after', liked: false)).scaffold,
+    );
+    expect(find.byIcon(Icons.thumb_up_alt_outlined), findsOneWidget);
+  });
+
+  testWidgets('pending failure after removal is observed without escaping', (
+    tester,
+  ) async {
+    final telemetry = _RecordingTelemetryCoordinator();
+    final escapedErrors = <Object>[];
+    await runZonedGuarded<Future<void>>(() async {
+      final pending = Completer<int>();
+      final repository = _FakeReviewRepository(pending: pending);
+      await _pumpReviewBlock(
+        tester,
+        SampleReview.shared,
+        telemetry,
+        repository: repository,
+      );
+      await tester.tap(find.byIcon(Icons.thumb_up_alt));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpWidget(const SizedBox.shrink());
+      pending.completeError(StateError('late failure'));
+      await tester.pump();
+    }, (error, stack) => escapedErrors.add(error));
+    expect(escapedErrors, isEmpty);
+    expect(telemetry.operations, ['update_review_like']);
     expect(tester.takeException(), isNull);
   });
 
@@ -143,6 +213,73 @@ void main() {
     expect(telemetry.operations, isEmpty);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('failed like with expired session rolls back and is observed', (
+    tester,
+  ) async {
+    final options = RequestOptions(path: '/reviews/1/liked');
+    final repository = _FakeReviewRepository(
+      error: DioException.badResponse(
+        statusCode: 401,
+        requestOptions: options,
+        response: Response(requestOptions: options, statusCode: 401),
+      ),
+    );
+    final telemetry = _RecordingTelemetryCoordinator();
+    await _pumpReviewBlock(
+      tester,
+      _reviewWithContent('expired session', liked: false),
+      telemetry,
+      repository: repository,
+    );
+    await tester.tap(find.byIcon(Icons.thumb_up_alt_outlined));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byIcon(Icons.thumb_up_alt_outlined), findsOneWidget);
+    expect(telemetry.operations, ['update_review_like']);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'old request cannot roll back a replacement review or block its button',
+    (tester) async {
+      final pending = Completer<int>();
+      final repository = _FakeReviewRepository(pending: pending);
+      final selected = ValueNotifier(_reviewWithContent('first', liked: true));
+      addTearDown(selected.dispose);
+      await tester.pumpWidget(
+        Provider<ReviewRepository>.value(
+          value: repository,
+          child: ValueListenableBuilder<Review>(
+            valueListenable: selected,
+            builder: (_, review, __) => ReviewBlock(review: review),
+          ).scaffold,
+        ),
+      );
+      await tester.tap(find.byIcon(Icons.thumb_up_alt));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.byIcon(Icons.thumb_up_alt_outlined));
+      await tester.pump(const Duration(seconds: 1));
+      expect(repository.calls, 1);
+      selected.value = _reviewWithContent(
+        'second',
+        id: SampleReview.id + 1,
+        liked: false,
+      );
+      await tester.pump();
+      pending.completeError(StateError('old request failed'));
+      await tester.pump();
+      expect(find.byIcon(Icons.thumb_up_alt_outlined), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      repository.pending = null;
+      await tester.tap(find.byIcon(Icons.thumb_up_alt_outlined));
+      await tester.pump(const Duration(seconds: 1));
+      expect(repository.calls, 2);
+      expect(repository.reviewId, SampleReview.id + 1);
+      expect(repository.action, ReviewLikeAction.like);
+      expect(find.byIcon(Icons.thumb_up_alt), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('failing report mailto launch is observed and does not escape', (
     tester,
@@ -171,9 +308,9 @@ void main() {
   });
 }
 
-Review _reviewWithContent(String content, {int? like, bool? liked}) {
+Review _reviewWithContent(String content, {int? id, int? like, bool? liked}) {
   return Review(
-    id: SampleReview.id,
+    id: id ?? SampleReview.id,
     course: SampleReview.course,
     lecture: SampleReview.lecture,
     content: content,
@@ -189,11 +326,14 @@ Review _reviewWithContent(String content, {int? like, bool? liked}) {
 Future<void> _pumpReviewBlock(
   WidgetTester tester,
   Review review,
-  TelemetryCoordinator telemetry,
-) async {
+  TelemetryCoordinator telemetry, {
+  ReviewRepository? repository,
+}) async {
   await tester.pumpWidget(
     MultiProvider(
       providers: [
+        if (repository != null)
+          Provider<ReviewRepository>.value(value: repository),
         ChangeNotifierProvider<SettingsModel>.value(
           value: SettingsModel(forTest: true),
         ),
