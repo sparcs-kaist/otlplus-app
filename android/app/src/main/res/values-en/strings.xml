@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_choose_timetable">Choose widget timetable</string>
+    <string name="widget_my_timetable">My timetable</string>
+    <string name="widget_unnamed_timetable">Untitled</string>
+    <string name="widget_previous_timetable">Previously selected timetable</string>
+    <string name="widget_loading">Loading timetables…</string>
+    <string name="widget_load_failed">Could not load timetables. Check your login in the app and try again.</string>
+    <string name="widget_save">Save</string>
+    <string name="widget_cancel">Cancel</string>
+    <string name="widget_retry">Retry</string>
+</resources>

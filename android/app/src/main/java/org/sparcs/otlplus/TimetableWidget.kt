@@ -42,6 +42,15 @@ class TimetableWidget : AppWidgetProvider() {
         WidgetRefreshDispatcher.refresh(context)
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        WidgetTimetablePreferences(context).delete(appWidgetIds)
+    }
+
+    override fun onRestored(context: Context, oldWidgetIds: IntArray, newWidgetIds: IntArray) {
+        WidgetTimetablePreferences(context).restore(oldWidgetIds, newWidgetIds)
+        WidgetRefreshDispatcher.refresh(context)
+    }
+
     override fun onEnabled(context: Context) {
         schedulePeriodicUpdate(context)
     }
@@ -72,6 +81,8 @@ internal fun updateTimetableWidget(
     timetableData: TimetableData,
 ) {
     val views = RemoteViews(context.packageName, R.layout.timetable_widget)
+    views.setOnClickPendingIntent(R.id.timetable_start, widgetConfigurationIntent(context, appWidgetId))
+    views.setContentDescription(R.id.timetable_start, context.getString(R.string.widget_choose_timetable))
 
     for (timetableColumn in timeTableColumns) {
         views.removeAllViews(timetableColumn)
