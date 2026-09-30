@@ -136,11 +136,10 @@ class OTLLayout extends StatefulWidget {
 }
 
 class _OTLLayoutState extends State<OTLLayout> {
-  final bool canPopRightLeft = OTLNavigator.canPopRightLeft;
-  final bool canPopDownUp = OTLNavigator.canPopDownUp;
-
   @override
   Widget build(BuildContext context) {
+    final canPopRightLeft = OTLNavigator.canPopRightLeftOf(context);
+    final canPopDownUp = OTLNavigator.canPopDownUpOf(context);
     final ScaffoldState? scaffold = Scaffold.maybeOf(context);
     final bool hasDrawer = scaffold?.hasDrawer ?? false;
     final bool hasEndDrawer = scaffold?.hasEndDrawer ?? false;

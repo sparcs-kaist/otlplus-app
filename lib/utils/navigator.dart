@@ -3,91 +3,84 @@ import 'package:otlplus/constants/color.dart';
 
 enum OTLNavigatorTransition { rightLeft, downUp, immediate }
 
-enum _TransitionHistory { rightLeft, downUp, immediate, dialog }
+class _NavigationEntry {
+  _NavigationEntry(this.route, this.transition);
+
+  final Route<dynamic> route;
+  final OTLNavigatorTransition? transition;
+}
 
 class OTLNavigator {
-  static List<Route> _rightleftTransitionHistory = [];
-  static List<Route> _downupTransitionHistory = [];
-  static List<_TransitionHistory> _history = [];
+  static final List<_NavigationEntry> _history = [];
 
-  static void _removeLastHistory() {
-    if (_history.isEmpty) return;
-
-    switch (_history.removeLast()) {
-      case _TransitionHistory.rightLeft:
-        if (_rightleftTransitionHistory.isNotEmpty) {
-          _rightleftTransitionHistory.removeLast();
-        }
-        break;
-      case _TransitionHistory.downUp:
-      case _TransitionHistory.immediate:
-        if (_downupTransitionHistory.isNotEmpty) {
-          _downupTransitionHistory.removeLast();
-        }
-        break;
-      case _TransitionHistory.dialog:
-        break;
-    }
-  }
-
-  static void _removeLastUntil(
-    bool Function(_TransitionHistory mode) predicate,
+  static Future<T?> _push<T>(
+    NavigatorState navigator,
+    Route<T> route,
+    OTLNavigatorTransition? transition,
   ) {
-    while (_history.isNotEmpty && !predicate(_history.last)) {
-      _removeLastHistory();
-    }
-    if (_history.isNotEmpty) _removeLastHistory();
+    final entry = _NavigationEntry(route, transition);
+    _history.add(entry);
+    return navigator.push(route).then((result) {
+      _history.remove(entry);
+      return result;
+    });
   }
+
+  // Only entries at or below this layout's own route may supply its buttons.
+  // Covered routes can rebuild (for example when the locale changes).
+  static Iterable<_NavigationEntry> _entriesFor(BuildContext context) {
+    final route = ModalRoute.of(context);
+    if (route == null || route.isFirst) return const [];
+    final index = _history.indexWhere((entry) => entry.route == route);
+    if (index < 0) return const [];
+    return _history
+        .take(index + 1)
+        .where(
+          (entry) =>
+              entry.route.isActive && entry.route.navigator == route.navigator,
+        );
+  }
+
+  static bool canPopRightLeftOf(BuildContext context) => _entriesFor(
+    context,
+  ).any((entry) => entry.transition == OTLNavigatorTransition.rightLeft);
+
+  static bool canPopDownUpOf(BuildContext context) => _entriesFor(context).any(
+    (entry) =>
+        entry.transition == OTLNavigatorTransition.downUp ||
+        entry.transition == OTLNavigatorTransition.immediate,
+  );
 
   static Future<T?> push<T extends Object?>(
     BuildContext context,
     Widget page, {
     OTLNavigatorTransition transition = OTLNavigatorTransition.rightLeft,
-  }) {
-    Route<T> _route;
-    switch (transition) {
-      case OTLNavigatorTransition.rightLeft:
-        _route = buildRightLeftPageRoute<T>(page);
-        _rightleftTransitionHistory.add(_route);
-        _history.add(_TransitionHistory.rightLeft);
-        break;
-      case OTLNavigatorTransition.downUp:
-        _route = buildDownUpPageRoute<T>(page);
-        _downupTransitionHistory.add(_route);
-        _history.add(_TransitionHistory.downUp);
-        break;
-      case OTLNavigatorTransition.immediate:
-        _route = buildImmediatePageRoute<T>(page);
-        _downupTransitionHistory.add(_route);
-        _history.add(_TransitionHistory.immediate);
-        break;
-    }
-    return Navigator.of(context).push(_route);
-  }
+  }) => _push(
+    Navigator.of(context),
+    _buildRoute<T>(page, transition),
+    transition,
+  );
+
+  static Route<T> _buildRoute<T extends Object?>(
+    Widget page,
+    OTLNavigatorTransition transition,
+  ) => switch (transition) {
+    OTLNavigatorTransition.rightLeft => buildRightLeftPageRoute<T>(page),
+    OTLNavigatorTransition.downUp => buildDownUpPageRoute<T>(page),
+    OTLNavigatorTransition.immediate => buildImmediatePageRoute<T>(page),
+  };
 
   static Future<T?> pushRoot<T extends Object?>(
     BuildContext context,
     Widget page, {
     OTLNavigatorTransition transition = OTLNavigatorTransition.immediate,
   }) {
-    _rightleftTransitionHistory.clear();
-    _downupTransitionHistory.clear();
-    _history.clear();
-    Route<T> _route;
-    switch (transition) {
-      case OTLNavigatorTransition.rightLeft:
-        _route = buildRightLeftPageRoute<T>(page);
-        break;
-      case OTLNavigatorTransition.downUp:
-        _route = buildDownUpPageRoute<T>(page);
-        break;
-      case OTLNavigatorTransition.immediate:
-        _route = buildImmediatePageRoute<T>(page);
-        break;
-    }
-    return Navigator.of(
-      context,
-    ).pushAndRemoveUntil(_route, (Route<dynamic> route) => false);
+    final navigator = Navigator.of(context);
+    _history.removeWhere((entry) => entry.route.navigator == navigator);
+    return navigator.pushAndRemoveUntil(
+      _buildRoute<T>(page, transition),
+      (route) => false,
+    );
   }
 
   static void pop<T extends Object?>(
@@ -95,43 +88,40 @@ class OTLNavigator {
     OTLNavigatorTransition? until,
     T? result,
   }) {
-    if (_history.isEmpty) return;
-
-    NavigatorState navigator = Navigator.of(context);
+    final navigator = Navigator.of(context);
+    final entries = _entriesFor(context).toList();
+    if (entries.isEmpty || !navigator.canPop()) return;
     if (until == null) {
-      _removeLastHistory();
-      return navigator.pop(result);
-    } else if (until == OTLNavigatorTransition.rightLeft) {
-      if (_rightleftTransitionHistory.isEmpty) return;
-      navigator.popUntil(
-        (Route<dynamic> route) =>
-            (_rightleftTransitionHistory.isNotEmpty &&
-                _rightleftTransitionHistory.last == route) ||
-            route.isFirst,
-      );
-      _removeLastUntil((mode) => mode == _TransitionHistory.rightLeft);
-      return navigator.pop(result);
-    } else {
-      if (_downupTransitionHistory.isEmpty) return;
-      navigator.popUntil(
-        (Route<dynamic> route) =>
-            (_downupTransitionHistory.isNotEmpty &&
-                _downupTransitionHistory.last == route) ||
-            route.isFirst,
-      );
-      _removeLastUntil(
-        (mode) =>
-            (mode == _TransitionHistory.downUp ||
-            mode == _TransitionHistory.immediate),
-      );
-      return navigator.pop(result);
+      navigator.pop(result);
+      return;
+    }
+    final targets = entries.where(
+      (entry) => until == OTLNavigatorTransition.rightLeft
+          ? entry.transition == OTLNavigatorTransition.rightLeft
+          : entry.transition == OTLNavigatorTransition.downUp ||
+                entry.transition == OTLNavigatorTransition.immediate,
+    );
+    if (targets.isEmpty) return;
+    final target = targets.last.route;
+    navigator.popUntil((route) => route == target || route.isFirst);
+    // Never pop the root if the target has already been removed.
+    if (target.isCurrent && !target.isFirst && navigator.canPop()) {
+      navigator.pop(result);
     }
   }
 
-  static bool get canPop => _history.isNotEmpty;
-
-  static bool get canPopRightLeft => _rightleftTransitionHistory.isNotEmpty;
-  static bool get canPopDownUp => _downupTransitionHistory.isNotEmpty;
+  static bool get canPop => _history.any((entry) => entry.route.isActive);
+  static bool get canPopRightLeft => _history.any(
+    (entry) =>
+        entry.route.isActive &&
+        entry.transition == OTLNavigatorTransition.rightLeft,
+  );
+  static bool get canPopDownUp => _history.any(
+    (entry) =>
+        entry.route.isActive &&
+        (entry.transition == OTLNavigatorTransition.downUp ||
+            entry.transition == OTLNavigatorTransition.immediate),
+  );
 
   static Future<T?> pushDialog<T>({
     required BuildContext context,
@@ -145,18 +135,22 @@ class OTLNavigator {
     Offset? anchorPoint,
     TraversalEdgeBehavior? traversalEdgeBehavior,
   }) {
-    _history.add(_TransitionHistory.dialog);
-    return showDialog(
-      context: context,
-      builder: builder,
-      barrierDismissible: barrierDismissible,
-      barrierColor: barrierColor,
-      barrierLabel: barrierLabel,
-      useSafeArea: useSafeArea,
-      useRootNavigator: useRootNavigator,
-      routeSettings: routeSettings,
-      anchorPoint: anchorPoint,
-      traversalEdgeBehavior: traversalEdgeBehavior,
+    final navigator = Navigator.of(context, rootNavigator: useRootNavigator);
+    return _push(
+      navigator,
+      DialogRoute<T>(
+        context: context,
+        builder: builder,
+        themes: InheritedTheme.capture(from: context, to: navigator.context),
+        barrierDismissible: barrierDismissible,
+        barrierColor: barrierColor,
+        barrierLabel: barrierLabel,
+        useSafeArea: useSafeArea,
+        settings: routeSettings,
+        anchorPoint: anchorPoint,
+        traversalEdgeBehavior: traversalEdgeBehavior,
+      ),
+      null,
     );
   }
 }
