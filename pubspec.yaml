@@ -1,7 +1,7 @@
 ---
 name: otlplus
 description: Online Timeplanner with Lectures Plus App @ KAIST
-version: 2.5.32+260929
+version: 2.5.33+261001
 environment:
   sdk: ">=3.8.0 <4.0.0"
   flutter: ">=3.32.0"
