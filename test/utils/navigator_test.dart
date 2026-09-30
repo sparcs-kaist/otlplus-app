@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/utils/navigator.dart';
@@ -108,6 +109,52 @@ void main() {
     expect(navigator.currentState!.canPop(), isFalse);
     expect(find.byKey(const ValueKey('root')), findsOneWidget);
   });
+
+  for (final transition in [
+    OTLNavigatorTransition.rightLeft,
+    OTLNavigatorTransition.downUp,
+  ]) {
+    testWidgets('iOS edge swipe pops $transition and clears history', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.iOS),
+          home: _page('root'),
+        ),
+      );
+      OTLNavigator.push(
+        tester.element(find.byKey(const ValueKey('root'))),
+        _page('detail'),
+        transition: transition,
+      );
+      await tester.pumpAndSettle();
+      final detail = tester.element(find.byKey(const ValueKey('detail')));
+      expect(ModalRoute.of(detail), isA<CupertinoPageRoute<dynamic>>());
+      expect(ModalRoute.of(detail)!.popGestureEnabled, isTrue);
+
+      // A short, slow swipe cancels, preserving both route and history.
+      await tester.timedDragFrom(
+        const Offset(1, 300),
+        const Offset(40, 0),
+        const Duration(seconds: 1),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('detail')), findsOneWidget);
+      expect(OTLNavigator.canPop, isTrue);
+
+      await tester.timedDragFrom(
+        const Offset(1, 300),
+        const Offset(600, 0),
+        const Duration(milliseconds: 500),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('root')), findsOneWidget);
+      expect(OTLNavigator.canPop, isFalse);
+      expect(find.byIcon(Icons.navigate_before), findsNothing);
+      expect(find.byIcon(Icons.close), findsNothing);
+    });
+  }
 
   testWidgets('barrier dismissal removes only the dialog history', (
     tester,

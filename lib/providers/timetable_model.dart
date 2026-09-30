@@ -159,6 +159,8 @@ class TimetableModel extends ChangeNotifier {
     required List<Semester> semesters,
   }) async {
     _user = user;
+    _summaries = <TimetableListItem>[];
+    _timetables = <Timetable>[];
     _semesters = List<Semester>.of(semesters);
     if (_semesters.isEmpty) {
       _setLoadError(StateError('At least one semester is required'));
@@ -241,14 +243,15 @@ class TimetableModel extends ChangeNotifier {
 
   Future<bool> _loadTimetable() async {
     final requestId = ++_loadRequestId;
+    final semester = selectedSemester;
     final selectServerTimetable = !isMyTimetable;
     _isLoading = true;
     _isLoaded = false;
     _loadFailed = false;
     _error = null;
-    _selectedTimetableIndex = myTimetableIndex;
-    _summaries = <TimetableListItem>[];
-    _timetables = <Timetable>[];
+    // Keep the last rendered timetable while fetching the next semester.
+    // isLoaded remains false so these displayed records cannot be edited.
+    _tempLecture = null;
     notifyListeners();
 
     try {
@@ -256,14 +259,8 @@ class TimetableModel extends ChangeNotifier {
       // term). Those refusals degrade to placeholders instead of failing
       // the load; connection-level errors still surface as load failures.
       final results = await Future.wait<Object?>(<Future<Object?>>[
-        _fetchMyTimetableLenient(
-          selectedSemester.year,
-          selectedSemester.semester,
-        ),
-        _fetchCollectionLenient(
-          selectedSemester.year,
-          selectedSemester.semester,
-        ),
+        _fetchMyTimetableLenient(semester.year, semester.semester),
+        _fetchCollectionLenient(semester.year, semester.semester),
       ]);
       final primary = results[0] as Timetable?;
       var collection = results[1] as TimetableCollection?;
@@ -278,13 +275,13 @@ class TimetableModel extends ChangeNotifier {
         // refuse creation just browse with the read-only my timetable.
         try {
           await _repository.create(
-            year: selectedSemester.year,
-            semester: selectedSemester.semester,
+            year: semester.year,
+            semester: semester.semester,
             lectureIds: <int>[],
           );
           collection = await _repository.fetchBySemester(
-            selectedSemester.year,
-            selectedSemester.semester,
+            semester.year,
+            semester.semester,
           );
         } catch (exception) {
           collection = TimetableCollection(
@@ -483,6 +480,7 @@ class TimetableModel extends ChangeNotifier {
   // The dedicated my-timetable response is read-only. The server collection
   // contains only editable user-created timetable summaries.
   bool get _hasEditableTimetable =>
+      _isLoaded &&
       !isMyTimetable &&
       _selectedTimetableIndex < _timetables.length &&
       _selectedTimetableIndex - _firstSavedTimetableIndex < _summaries.length;

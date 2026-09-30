@@ -9,6 +9,8 @@ import "package:otlplus/constants/enums.dart";
 import "package:otlplus/models/timetable.dart";
 import "package:otlplus/models/user.dart";
 import "package:otlplus/pages/timetable_page.dart";
+import "package:otlplus/widgets/semester_picker.dart";
+import "package:otlplus/widgets/timetable_tabs.dart";
 import "package:otlplus/providers/lecture_search_model.dart";
 import "package:otlplus/providers/timetable_model.dart";
 import "package:otlplus/repositories/department_repository.dart";
@@ -17,9 +19,7 @@ import "package:otlplus/repositories/timetable_repository.dart";
 import "package:provider/provider.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
-/// Regression for Sentry OTL-APP-G: switching to the previous semester
-/// notifies listeners while the timetable list is momentarily empty; the
-/// page's selectors must tolerate that window instead of indexing into it.
+/// Semester browsing preserves the rendered page while new data is fetched.
 class _ReloadFakeTimetableRepository extends TimetableRepository {
   _ReloadFakeTimetableRepository() : super(Dio());
 
@@ -80,7 +80,7 @@ void main() {
   });
 
   testWidgets(
-    "switching to the previous semester never crashes the page selectors",
+    "semester loading preserves the layout, tabs and scroll position",
     (tester) async {
       final repository = _ReloadFakeTimetableRepository();
       final model = TimetableModel(repository: repository, forTest: true);
@@ -115,8 +115,18 @@ void main() {
       }
       expect(tester.takeException(), isNull);
 
-      // Gate the reload so the empty-list notification window stays open
-      // for at least one frame, exactly like a slow network on device.
+      final pickerState = tester.state(find.byType(SemesterPicker));
+      final tabsState = tester.state(find.byType(TimetableTabs));
+      final previousTimetable = model.currentTimetable;
+      final scrollableFinder = find.descendant(
+        of: find.byType(SingleChildScrollView),
+        matching: find.byType(Scrollable),
+      );
+      final scrollable = tester.state<ScrollableState>(scrollableFinder);
+      scrollable.position.jumpTo(100);
+      await tester.pump();
+
+      // Hold the network response across several frames.
       repository.myTimetableCompleter = Completer<Timetable>();
       expect(model.goPreviousSemester(), isTrue);
       await tester.pump();
@@ -128,7 +138,17 @@ void main() {
             "selector re-evaluation during the reload window must not "
             "index into the empty timetable list",
       );
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byKey(const Key('timetable_semester_loading')), findsOneWidget);
+      expect(tester.state(find.byType(SemesterPicker)), same(pickerState));
+      expect(tester.state(find.byType(TimetableTabs)), same(tabsState));
+      expect(tester.state<ScrollableState>(scrollableFinder), same(scrollable));
+      expect(scrollable.position.pixels, 100);
+      expect(model.currentTimetable, same(previousTimetable));
+      expect(model.isLoaded, isFalse);
+      expect(model.isLoading, isTrue);
+      expect(await model.createTimetable(), isFalse);
+      expect(await model.deleteTimetable(), isFalse);
 
       await tester.runAsync(() async {
         repository.myTimetableCompleter!.complete(
@@ -141,6 +161,30 @@ void main() {
       }
       expect(tester.takeException(), isNull);
       expect(model.isLoaded, isTrue);
+      expect(find.byKey(const Key('timetable_semester_loading')), findsNothing);
+      expect(tester.state(find.byType(SemesterPicker)), same(pickerState));
+      expect(tester.state(find.byType(TimetableTabs)), same(tabsState));
+      expect(scrollable.position.pixels, 100);
+
+      // A failed switch keeps the semester controls available for recovery.
+      repository.myTimetableCompleter = Completer<Timetable>();
+      model.goNextSemester();
+      await tester.pump();
+      repository.myTimetableCompleter!.completeError(
+        DioException(requestOptions: RequestOptions(path: '/timetable')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(model.loadFailed, isTrue);
+      expect(find.byKey(const Key('timetable_error')), findsOneWidget);
+      expect(tester.state(find.byType(SemesterPicker)), same(pickerState));
+      repository.myTimetableCompleter = null;
+      await model.retryLoad();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(model.isLoaded, isTrue);
+      expect(find.byKey(const Key('timetable_error')), findsNothing);
+      expect(tester.state(find.byType(SemesterPicker)), same(pickerState));
+      expect(tester.takeException(), isNull);
     },
   );
 }

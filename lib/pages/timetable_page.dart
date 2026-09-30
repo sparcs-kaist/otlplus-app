@@ -32,12 +32,14 @@ class TimetablePage extends StatefulWidget {
 class _TimetablePageState extends State<TimetablePage> {
   final _selectedKey = GlobalKey();
   final _paintKey = GlobalKey();
+  bool _hasDisplayedTimetable = false;
 
   @override
   Widget build(BuildContext context) {
     final timetableModel = context.watch<TimetableModel>();
 
-    if (timetableModel.isLoaded) {
+    if (timetableModel.isLoaded) _hasDisplayedTimetable = true;
+    if (_hasDisplayedTimetable) {
       return KeyedSubtree(
         key: const Key('timetable_loaded'),
         child: _buildBody(context),
@@ -88,88 +90,142 @@ class _TimetablePageState extends State<TimetablePage> {
         selectedMode: context.watch<TimetableModel>().selectedMode,
         onTap: (mode) => context.read<TimetableModel>().setMode(mode),
       ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: ColoredBox(
-              color: OTLColor.grayF,
+      body: Stack(
+        children: [
+          IgnorePointer(
+            ignoring: !context.watch<TimetableModel>().isLoaded,
+            child: AnimatedOpacity(
+              opacity: context.watch<TimetableModel>().isLoading ? 0.45 : 1,
+              duration: const Duration(milliseconds: 150),
               child: Column(
                 children: <Widget>[
-                  SizedBox(
-                    height: 60,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            color: OTLColor.pinksLight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                color: OTLColor.grayF,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(16),
+                  Expanded(
+                    child: ColoredBox(
+                      color: OTLColor.grayF,
+                      child: Column(
+                        children: <Widget>[
+                          SizedBox(
+                            height: 60,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    color: OTLColor.pinksLight,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: OTLColor.grayF,
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(16),
+                                        ),
+                                      ),
+                                      child: _buildTimetableTabs(context),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              child: _buildTimetableTabs(context),
+                                if (mode == TimetableViewMode.classes)
+                                  GestureDetector(
+                                    behavior: HitTestBehavior.translucent,
+                                    onTap: () {
+                                      OTLNavigator.push(
+                                        context,
+                                        LectureSearchPage(openKeyboard: false),
+                                      );
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        12,
+                                        18,
+                                        16,
+                                        18,
+                                      ),
+                                      child: Icon(
+                                        Icons.search,
+                                        size: 24,
+                                        color: OTLColor.pinksMain,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const SizedBox(width: 16),
+                              ],
                             ),
                           ),
-                        ),
-                        if (mode == TimetableViewMode.classes)
-                          GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTap: () {
-                              OTLNavigator.push(
-                                context,
-                                LectureSearchPage(openKeyboard: false),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                12,
-                                18,
-                                16,
-                                18,
-                              ),
-                              child: Icon(
-                                Icons.search,
-                                size: 24,
-                                color: OTLColor.pinksMain,
-                              ),
-                            ),
-                          )
-                        else
-                          const SizedBox(width: 16),
-                      ],
+                          Expanded(
+                            child: () {
+                              switch (mode) {
+                                case TimetableViewMode.classes:
+                                  return _buildTimetableMode(
+                                    context,
+                                    lectures,
+                                    false,
+                                  );
+                                case TimetableViewMode.exams:
+                                  return _buildTimetableMode(
+                                    context,
+                                    lectures,
+                                    true,
+                                  );
+                                case TimetableViewMode.map:
+                                  return MapView(lectures: lectures);
+                              }
+                            }(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  Expanded(
-                    child: () {
-                      switch (mode) {
-                        case TimetableViewMode.classes:
-                          return _buildTimetableMode(context, lectures, false);
-                        case TimetableViewMode.exams:
-                          return _buildTimetableMode(context, lectures, true);
-                        case TimetableViewMode.map:
-                          return MapView(lectures: lectures);
-                      }
-                    }(),
+                  Visibility(
+                    visible: context.watch<LectureSearchModel>().resultOpened,
+                    child: Expanded(
+                      child: LectureSearch(
+                        onClosed: () async {
+                          context
+                              .read<LectureSearchModel>()
+                              .resetLectureFilter();
+                          context.read<TimetableModel>().setTempLecture(null);
+                          return true;
+                        },
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          Visibility(
-            visible: context.watch<LectureSearchModel>().resultOpened,
-            child: Expanded(
-              child: LectureSearch(
-                onClosed: () async {
-                  context.read<LectureSearchModel>().resetLectureFilter();
-                  context.read<TimetableModel>().setTempLecture(null);
-                  return true;
-                },
+          if (context.watch<TimetableModel>().isLoading)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(
+                key: Key('timetable_semester_loading'),
+                minHeight: 2,
+                color: OTLColor.pinksMain,
+                backgroundColor: OTLColor.pinksLight,
               ),
             ),
-          ),
+          if (context.watch<TimetableModel>().loadFailed)
+            Positioned.fill(
+              child: ColoredBox(
+                color: OTLColor.grayF,
+                child: Center(
+                  child: Column(
+                    key: const Key('timetable_error'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('error.load_timetable'.tr()),
+                      TextButton(
+                        onPressed: context.read<TimetableModel>().retryLoad,
+                        child: Text('common.retry'.tr()),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

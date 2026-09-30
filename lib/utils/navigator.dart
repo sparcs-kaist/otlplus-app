@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:otlplus/constants/color.dart';
 
@@ -57,18 +58,27 @@ class OTLNavigator {
     OTLNavigatorTransition transition = OTLNavigatorTransition.rightLeft,
   }) => _push(
     Navigator.of(context),
-    _buildRoute<T>(page, transition),
+    _buildRoute<T>(context, page, transition),
     transition,
   );
 
   static Route<T> _buildRoute<T extends Object?>(
+    BuildContext context,
     Widget page,
     OTLNavigatorTransition transition,
-  ) => switch (transition) {
-    OTLNavigatorTransition.rightLeft => buildRightLeftPageRoute<T>(page),
-    OTLNavigatorTransition.downUp => buildDownUpPageRoute<T>(page),
-    OTLNavigatorTransition.immediate => buildImmediatePageRoute<T>(page),
-  };
+  ) {
+    // Use native horizontal transitions for iOS pages so interactive edge-back
+    // works for both detail pages and settings. Root replacements stay instant.
+    if (Theme.of(context).platform == TargetPlatform.iOS &&
+        transition != OTLNavigatorTransition.immediate) {
+      return CupertinoPageRoute<T>(builder: (_) => page);
+    }
+    return switch (transition) {
+      OTLNavigatorTransition.rightLeft => buildRightLeftPageRoute<T>(page),
+      OTLNavigatorTransition.downUp => buildDownUpPageRoute<T>(page),
+      OTLNavigatorTransition.immediate => buildImmediatePageRoute<T>(page),
+    };
+  }
 
   static Future<T?> pushRoot<T extends Object?>(
     BuildContext context,
@@ -78,7 +88,7 @@ class OTLNavigator {
     final navigator = Navigator.of(context);
     _history.removeWhere((entry) => entry.route.navigator == navigator);
     return navigator.pushAndRemoveUntil(
-      _buildRoute<T>(page, transition),
+      _buildRoute<T>(context, page, transition),
       (route) => false,
     );
   }
