@@ -17,4 +17,15 @@
     <string name="next_lecture_name_preview">OTL 개론</string>
     <string name="next_lecture_professor_preview">○○○ 교수님</string>
     <string name="placeholder">{placeholder}</string>
+    <string name="widget_choose_timetable">위젯 시간표 선택</string>
+    <string name="widget_my_timetable">내 시간표</string>
+    <string name="widget_unnamed_timetable">이름 없음</string>
+    <string name="widget_previous_timetable">기존에 선택한 시간표</string>
+    <string name="widget_loading">시간표를 불러오는 중…</string>
+    <string name="widget_load_failed">시간표를 불러오지 못했습니다. 앱에서 로그인 상태를 확인하고 다시 시도해 주세요.</string>
+    <string name="widget_save">저장</string>
+    <string name="widget_cancel">취소</string>
+    <string name="widget_retry">다시 시도</string>
+    <string name="widget_earlier_events">↑ 이전 일정 %1$d개</string>
+    <string name="widget_later_events">↓ 이후 일정 %1$d개</string>
 </resources>

@@ -11,61 +11,17 @@ data class NextLectureInfo(
 )
 
 object NextLectureData {
-    fun getNextLecture(timetableData: TimetableData): NextLectureInfo? {
-        val calendar = Calendar.getInstance()
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-        val hours = calendar.get(Calendar.HOUR_OF_DAY)
-        val minutes = calendar.get(Calendar.MINUTE)
-        val totalMinutes = hours * 60 + minutes
-
-        // Calendar.MONDAY is 2, ..., Calendar.FRIDAY is 6
-        // Map to 0 (Mon) ... 4 (Fri)
-        val todayIndex = when (dayOfWeek) {
-            Calendar.MONDAY -> 0
-            Calendar.TUESDAY -> 1
-            Calendar.WEDNESDAY -> 2
-            Calendar.THURSDAY -> 3
-            Calendar.FRIDAY -> 4
-            Calendar.SATURDAY -> 5
-            Calendar.SUNDAY -> 6
-            else -> -1
+    fun getNextLecture(timetableData: TimetableData, calendar: Calendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Seoul"))): NextLectureInfo? {
+        val today = (calendar.get(Calendar.DAY_OF_WEEK) + 5) % 7
+        val minutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+        // Include next week's occurrence when today's only event has passed.
+        for (offset in 0..7) {
+            val day = (today + offset) % 7
+            val next = timetableData.schedule.filter { it.day == day && (offset != 0 || it.begin >= minutes) }.minByOrNull { it.begin } ?: continue
+            val time = TimeBlock(WeekDays.entries[day], LocalTime(next.begin / 60, next.begin % 60), LocalTime(next.end / 60, next.end % 60))
+            return NextLectureInfo(formatDateString(offset, time), next.name, next.place,
+                if (next.professor.isEmpty()) "" else next.professor + " 교수님", next.colorIndex)
         }
-
-        val weekDays = WeekDays.entries.toTypedArray()
-
-        // Find next lecture today or in the future
-        for (i in 0 until 7) {
-            val checkDayIndex = (todayIndex + i) % 7
-            if (checkDayIndex >= 5) continue // Skip Sat, Sun for now as OTL usually doesn't have them
-
-            val checkDay = weekDays[checkDayIndex]
-            
-            val upcomingLectures = timetableData.lectures.flatMap { lecture ->
-                lecture.timeBlocks
-                    .filter { it.weekday == checkDay }
-                    .map { it to lecture }
-            }.filter { (timeBlock, _) ->
-                if (i == 0) {
-                    // If today, must be after current time
-                    (timeBlock.start.hours * 60 + timeBlock.start.minutes) > totalMinutes
-                } else {
-                    true
-                }
-            }.sortedBy { it.first.start.hours * 60 + it.first.start.minutes }
-
-            if (upcomingLectures.isNotEmpty()) {
-                val (nextTimeBlock, nextLecture) = upcomingLectures.first()
-                val dateString = formatDateString(i, nextTimeBlock)
-                return NextLectureInfo(
-                    date = dateString,
-                    name = nextLecture.name,
-                    place = nextLecture.place,
-                    professor = nextLecture.professor + " 교수님",
-                    course = nextLecture.course,
-                )
-            }
-        }
-
         return null
     }
 
@@ -81,6 +37,8 @@ object NextLectureData {
                     WeekDays.Wed -> "수요일"
                     WeekDays.Thu -> "목요일"
                     WeekDays.Fri -> "금요일"
+                    WeekDays.Sat -> "토요일"
+                    WeekDays.Sun -> "일요일"
                     else -> ""
                 }
                 "$dayName $startTime"

@@ -10,15 +10,6 @@ import WidgetKit
 import SwiftUI
 import Intents
 
-struct WeekClassesWidgetData: Identifiable {
-    let id = UUID()
-    let title: String
-    let place: String
-    let height: Double
-    let y: Double
-    let colour: Color
-}
-
 struct WeekClassesWidgetEntryView : View {
     @Environment(\.colorScheme) var colorScheme
     
@@ -42,199 +33,84 @@ struct WeekClassesWidgetEntryView : View {
 
 struct WeekClassesWidgetView: View {
     @Environment(\.colorScheme) var colorScheme
-    
-    @State var background: Bool = false
+    var background: Bool = false
     var entry: Provider.Entry
-    
-    var widgetBackground: some View {
-        colorScheme == .dark ? Color(red: 51.0/255, green: 51.0/255, blue: 51.0/255) : Color(red: 249.0/255, green: 240.0/255, blue: 240.0/255)
-    }
-    
+
+    private var timetable: Timetable? { entry.timetableData?.first }
+    private var daysCount: Int { timetable?.scheduleItems.contains { $0.classes.contains { $0.day >= 5 } } == true ? 7 : 5 }
+
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
             if background {
-                widgetBackground
+                (colorScheme == .dark ? Color(red: 0.2, green: 0.2, blue: 0.2) : Color(red: 249.0/255, green: 240.0/255, blue: 240.0/255))
             }
             GeometryReader { proxy in
-                Group {
-                    VStack(spacing: 0) {
-                        Spacer()
-                            .frame(height: 17)
-                        Color.clear
-                            .overlay(
-                                HStack(spacing: 2) {
-                                    TimeLabelView()
-                                    ForEach(0..<5) { number in
-                                        ZStack(alignment: .topLeading) {
-                                            TableLineView()
-                                            if let data = entry.timetableData, !data.isEmpty {
-                                                ForEach(getLecturesData(data: getLecturesForDay(timetable: data[0], day: number))) { lectureData in
-                                                    WeekClassesLectureView(
-                                                        lectureName: lectureData.title,
-                                                        lecturePlace: lectureData.place,
-                                                        colour: lectureData.colour
-                                                    )
-                                                        .frame(height: lectureData.height)
-                                                        .offset(y: lectureData.y)
-                                                }
-                                            }
-                                        }
+                let hours = min(16, max(2, Int((proxy.size.height - 76) / 36)))
+                let window = widgetTimeWindow(timetable: timetable, date: entry.date, visibleHours: hours)
+                let times = timetable?.scheduleItems.flatMap(\.classes) ?? []
+                let earlier = times.filter { $0.begin < window.startHour * 60 }.count
+                let later = times.filter { $0.end > window.endHour * 60 }.count
+                let columnWidth = max(0, (proxy.size.width - 24 - 24 - CGFloat(daysCount * 2)) / CGFloat(daysCount))
+                VStack(spacing: 4) {
+                    Text(earlier > 0 ? widgetCountLabel("widget.earlier", count: earlier) : " ")
+                        .font(.system(size: 10)).foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, minHeight: 12, maxHeight: 12, alignment: .trailing)
+                    HStack(spacing: 2) {
+                        Color.clear.frame(width: 24)
+                        ForEach(0..<daysCount, id: \.self) { day in
+                            Text(getDayInString(day: day)).font(.system(size: 11))
+                                .frame(width: columnWidth)
+                        }
+                    }.frame(height: 14)
+                    HStack(alignment: .top, spacing: 2) {
+                        ZStack(alignment: .topTrailing) {
+                            ForEach(window.startHour...window.endHour, id: \.self) { hour in
+                                Text(String(format: "%02d", hour))
+                                    .font(.system(size: 10)).foregroundColor(.secondary)
+                                    .frame(width: 24, height: 12, alignment: .trailing)
+                                    .offset(y: CGFloat(hour - window.startHour) * 36 - 6)
+                            }
+                        }.frame(width: 24, height: CGFloat(hours) * 36, alignment: .topTrailing)
+                        ForEach(0..<daysCount, id: \.self) { day in
+                            ZStack(alignment: .topLeading) {
+                                ForEach(0...(hours * 2), id: \.self) { halfHour in
+                                    HorizontalLine()
+                                        .stroke(style: StrokeStyle(lineWidth: 1, dash: halfHour % 2 == 0 ? [] : [2]))
+                                        .foregroundColor(Color.primary.opacity(0.15))
+                                        .frame(height: 1)
+                                        .offset(y: CGFloat(halfHour) * 18)
+                                }
+                                ForEach(Array(widgetItemsForDay(timetable: timetable, day: day).enumerated()), id: \.offset) { _, occurrence in
+                                    let item = occurrence.1
+                                    let time = item.classes[occurrence.0]
+                                    let begin = max(time.begin, window.startHour * 60)
+                                    let end = min(time.end, window.endHour * 60)
+                                    if end > begin {
+                                        WeekClassesLectureView(lectureName: item.name + item.subtitle,
+                                            lecturePlace: time.place, colour: getColourForCourse(course: item.courseId))
+                                            .frame(width: columnWidth, height: Double(end - begin) * 0.6)
+                                            .offset(y: Double(begin - window.startHour * 60) * 0.6)
                                     }
                                 }
-                                , alignment: .top
-                            )
-                            .offset(y: getOffsetByDate(timetable: (entry.timetableData != nil && !entry.timetableData!.isEmpty) ? entry.timetableData![0] : nil, date: entry.date))
-                    }
-                }.padding(16)
-                    .mask(
-                        HStack(spacing: 0) {
-                            Rectangle()
-                                .frame(width: 45)
-                                .offset(y: 33)
-                            Rectangle()
-                                .offset(y: 37)
+                            }.frame(width: columnWidth, height: CGFloat(hours) * 36, alignment: .topLeading).clipped()
                         }
-                    )
-            }
-            GeometryReader { proxy in
-                ZStack {
-                    HStack {
-                        Spacer()
-                            .frame(width: 18)
-                        ForEach([String(localized: "mon"), String(localized: "tue"), String(localized: "wed"), String(localized: "thu"), String(localized: "fri")], id: \.self) { text in
-                            Text(text)
-                                .offset(y: -2)
-                                .frame(width: 50)
-                        }
-                    }.font(.custom("NotoSansKR-Regular", size: 12))
-                        .offset(y: 10)
-                }.padding(.horizontal, 16)
-            }
-            if (entry.timetableData == nil) {
-                ZStack {
-                    Color.clear
-                        .background(.ultraThinMaterial)
-                    VStack {
-                        Image("lock")
-                            .resizable()
-                        .frame(width: 44, height: 44)
-                        Text(LocalizedStringKey("widget.login"))
-                            .font(.custom("NotoSansKR-Bold", size: 12))
-                            .padding(.horizontal, 10.0)
-                            .padding(.vertical, 4)
-                            .foregroundColor(.white)
-                            .background(RoundedRectangle(cornerRadius: 30).foregroundColor(Color(red: 229.0/255, green: 76.0/255, blue: 100.0/255)))
-                    }
+                    }.frame(height: CGFloat(hours) * 36, alignment: .top)
+                    Text(later > 0 ? widgetCountLabel("widget.later", count: later) : " ")
+                        .font(.system(size: 10)).foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, minHeight: 12, maxHeight: 12, alignment: .trailing)
+                    Spacer(minLength: 0)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(12)
+            }
+            if entry.timetableData == nil {
+                LoginPromptView(showsWidgetBackground: true)
             }
         }
-    }
-    
-    func getOffsetByDate(timetable: Timetable?, date: Date) -> CGFloat {
-        if (timetable == nil || timetable?.lectures.count == 0) {
-            return 0
-        }
-        
-        var tmp = 0
-        let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: date) >= 2 ? calendar.component(.hour, from: date)-2 : calendar.component(.hour, from: date)
-        let minutes = calendar.component(.minute, from: date) + calendar.component(.hour, from: date) * 60
-        
-        if hour > 9 {
-            tmp = hour >= 18 ? -387 : -43*(hour-9)
-        }
-        
-        var end = 0
-        for lecture in timetable!.lectures {
-            for classtime in lecture.classes {
-                end = (classtime.end > end) ? classtime.end : end
-            }
-        }
-        
-        return (end >= minutes) ? CGFloat(tmp) : 0
-    }
-    
-    func getLecturesData(data: [(Int, Lecture)]) -> [WeekClassesWidgetData] {
-        var tmp = [WeekClassesWidgetData]()
-        
-        for (i, l) in data {
-            let c = l.classes[i]
-            
-            let title = l.name + l.subtitle
-            let place = [c.buildingCode.isEmpty ? nil : "(\(c.buildingCode))", c.roomName.isEmpty ? nil : c.roomName]
-                .compactMap { $0 }
-                .joined(separator: " ")
-            let minute = c.end - c.begin
-            var height = 0.6833 * Double(minute)
-            if minute/30 != 0 {
-                height = height + Double(minute/30 - 1)
-            }
-            let y = 0.7166 * Double(c.begin - 540) + 5
-            let colour = getColourForCourse(course: l.courseId)
-            
-            tmp.append(WeekClassesWidgetData(title: title, place: place, height: height, y: y, colour: colour))
-        }
-        
-        return tmp
     }
 }
-
-struct TimeLabelView: View {
-    @Environment(\.colorScheme) var colorScheme
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            ForEach(9..<25) { number in
-                HStack(spacing: 2) {
-                    Text("\(number%12 == 0 ? 12 : number%12)")
-                        .frame(width: 14, height: 18, alignment: .trailing)
-                        .font(.custom("NotoSansKR-Regular", size: 12))
-                    HorizontalLine()
-                        .stroke(style: StrokeStyle(lineWidth: 1))
-                        .frame(width: 0, height: 1)
-                        .foregroundColor(colorScheme == .dark ? Color.white.opacity(0.25) : Color.black.opacity(0.25))
-                }
-                if number != 24 {
-                    HStack(spacing: 2) {
-                        HorizontalLine()
-                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [2]))
-                            .frame(width: 0, height: 1)
-                            .foregroundColor(colorScheme == .dark ? Color.white.opacity(0.25) : Color.black.opacity(0.25))
-                    }
-                }
-            }
-        }.offset(y: -4)
-    }
-}
-
-struct TableLineView: View {
-    @Environment(\.colorScheme) var colorScheme
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            ForEach(9..<25) { number in
-                HStack(spacing: 0) {
-                    Text("\(number%12 == 0 ? 12 : number%12)")
-                        .frame(width: 0, height: 18, alignment: .trailing)
-                        .font(.custom("NotoSansKR-Regular", size: 12))
-                    HorizontalLine()
-                        .stroke(style: StrokeStyle(lineWidth: 1))
-                        .frame(height: 1)
-                        .foregroundColor(colorScheme == .dark ? Color.white.opacity(0.25) : Color.black.opacity(0.25))
-                }
-                if number != 24 {
-                    HStack(spacing: 0) {
-                        HorizontalLine()
-                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [2]))
-                            .frame(height: 1)
-                            .foregroundColor(colorScheme == .dark ? Color.white.opacity(0.25) : Color.black.opacity(0.25))
-                    }
-                }
-            }
-        }.offset(y: -4)
-    }
-}
-
 
 struct WeekClassesLectureView: View {
     @Environment(\.widgetRenderingMode) var renderingMode

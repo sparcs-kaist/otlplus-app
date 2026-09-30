@@ -121,6 +121,7 @@ void main() {
     );
     final editable = Timetable.fromV2Detail(<String, dynamic>{
       "lectures": <Map<String, dynamic>>[editableJson],
+      "timetableItems": <dynamic>[],
     }, summary: summary);
     final repository = MainPageTimetableRepository(
       primary: primary,

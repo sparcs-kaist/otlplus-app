@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import WidgetKit
 
 struct VerticalLine: Shape {
     func path(in rect: CGRect) -> Path {
@@ -92,27 +93,8 @@ func getDayInString(day: Int) -> String {
     }
 }
 
-func getLecturesForDay(timetable: Timetable?, day: Int) -> [(Int, Lecture)] {
-    var tmp: [(Int, Lecture)] = [(Int, Lecture)]()
-    if (timetable == nil) {
-        return tmp
-    }
-    
-    for l in timetable!.lectures {
-        for i in 0..<l.classes.count {
-            let c = l.classes[i]
-            if c.day == day {
-                tmp.append((i, l))
-            }
-        }
-    }
-    
-    // Sort by begin time
-    tmp.sort { (a, b) -> Bool in
-        return a.1.classes[a.0].begin < b.1.classes[b.0].begin
-    }
-    
-    return tmp
+func getLecturesForDay(timetable: Timetable?, day: Int) -> [(Int, WidgetScheduleItem)] {
+    widgetItemsForDay(timetable: timetable, day: day)
 }
 
 extension WidgetConfiguration {
@@ -123,4 +105,12 @@ extension WidgetConfiguration {
             return self
         }
     }
+}
+
+func widgetCountLabel(_ key: String, count: Int) -> String {
+    String(format: NSLocalizedString(key, comment: "Widget hidden event count"), count)
+}
+
+func widgetMinuteLabel(_ minutes: Int) -> String {
+    String(format: "%02d:%02d", minutes / 60, minutes % 60)
 }

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:otlplus/constants/enums.dart';
 import 'package:otlplus/constants/url.dart';
 import 'package:otlplus/models/lecture.dart';
+import 'package:otlplus/models/custom_block.dart';
 import 'package:otlplus/models/semester.dart';
 import 'package:otlplus/models/timetable.dart';
 import 'package:otlplus/models/user.dart';
@@ -304,21 +305,30 @@ class TimetableModel extends ChangeNotifier {
     await _loadTimetable();
   }
 
-  Future<bool> createTimetable({List<Lecture>? lectures}) async {
+  Future<bool> createTimetable({
+    List<Lecture>? lectures,
+    List<CustomBlock> customBlocks = const [],
+  }) async {
     if (_semesters.isEmpty || !_isLoaded || _timetables.isEmpty) return false;
+    final semester = selectedSemester;
+    final requestId = _loadRequestId;
     try {
       _error = null;
       final id = await _repository.create(
-        year: selectedSemester.year,
-        semester: selectedSemester.semester,
+        year: semester.year,
+        semester: semester.semester,
         lectureIds: (lectures ?? <Lecture>[])
             .map((lecture) => lecture.id)
             .toList(growable: false),
       );
+      for (final block in customBlocks) {
+        await _repository.customBlocks.create(id, block);
+      }
       final collection = await _repository.fetchBySemester(
-        selectedSemester.year,
-        selectedSemester.semester,
+        semester.year,
+        semester.semester,
       );
+      if (requestId != _loadRequestId) return true;
       _applyCollection(_timetables.first, collection, preferredTimetableId: id);
       _isLoaded = true;
       _loadFailed = false;
@@ -347,11 +357,90 @@ class TimetableModel extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  bool _lectureMutationBusy = false;
+  bool _customBlocksBusy = false;
+  bool get customBlocksBusy => _customBlocksBusy;
+
+  Future<bool> saveCustomBlock(int timetableId, CustomBlock block) async {
+    if (!block.isValid ||
+        !_hasEditableTimetable ||
+        currentTimetable.id != timetableId)
+      return false;
+    if (currentTimetable.customBlocks.any(
+      (other) => other.id != block.id && other.overlaps(block),
+    ))
+      return false;
+    return _mutateCustomBlocks(timetableId, (blocks) async {
+      if (block.id == 0) {
+        final id = await _repository.customBlocks.create(timetableId, block);
+        return [
+          ...blocks,
+          CustomBlock.fromJson({'id': id, ...block.toPayload()}),
+        ];
+      } else {
+        final updated = await _repository.customBlocks.update(
+          timetableId,
+          block,
+        );
+        return blocks
+            .map((other) => other.id == block.id ? updated : other)
+            .toList();
+      }
+    });
+  }
+
+  Future<bool> deleteCustomBlock(int timetableId, int blockId) =>
+      _mutateCustomBlocks(timetableId, (blocks) async {
+        await _repository.customBlocks.delete(timetableId, blockId);
+        return blocks.where((block) => block.id != blockId).toList();
+      });
+
+  Future<bool> _mutateCustomBlocks(
+    int timetableId,
+    Future<List<CustomBlock>> Function(List<CustomBlock>) action,
+  ) async {
+    if (_customBlocksBusy ||
+        _lectureMutationBusy ||
+        !_hasEditableTimetable ||
+        currentTimetable.id != timetableId)
+      return false;
+    final requestId = _loadRequestId;
+    final previousBlocks = currentTimetable.customBlocks;
+    _customBlocksBusy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final blocks = await action(previousBlocks);
+      if (requestId == _loadRequestId) {
+        final index = _timetables.indexWhere(
+          (table) => table.id == timetableId,
+        );
+        if (index > 0) {
+          _timetables[index] = Timetable(
+            id: timetableId,
+            lectures: _timetables[index].lectures,
+            customBlocks: blocks,
+          );
+        }
+      }
+      return true;
+    } catch (exception) {
+      if (requestId == _loadRequestId) _error = exception;
+      return false;
+    } finally {
+      _customBlocksBusy = false;
+      notifyListeners();
+    }
+  }
+
   Future<TimetableAddResult> addLecture({
     required Lecture lecture,
     bool replaceOverlaps = false,
   }) async {
-    if (!_hasEditableTimetable) return TimetableAddResult.failed;
+    if (!_hasEditableTimetable || _customBlocksBusy || _lectureMutationBusy)
+      return TimetableAddResult.failed;
+    final summary = _currentSummary;
+    final requestId = _loadRequestId;
     final hadError = _error != null;
     _error = null;
     final overlaps = overlappingLectures(lecture);
@@ -360,46 +449,55 @@ class TimetableModel extends ChangeNotifier {
       return TimetableAddResult.overlap;
     }
 
+    _lectureMutationBusy = true;
     try {
       for (final overlap in overlaps) {
         final updated = await _repository.updateLecture(
-          summary: _currentSummary,
+          summary: summary,
           lectureId: overlap.id,
           action: TimetableLectureAction.delete,
         );
-        _replaceCurrentTimetable(updated);
+        _replaceTimetable(updated, requestId);
       }
       final updated = await _repository.updateLecture(
-        summary: _currentSummary,
+        summary: summary,
         lectureId: lecture.id,
         action: TimetableLectureAction.add,
       );
-      _replaceCurrentTimetable(updated);
+      _replaceTimetable(updated, requestId);
       notifyListeners();
       return TimetableAddResult.added;
     } catch (exception) {
       _error = exception;
       notifyListeners();
       return TimetableAddResult.failed;
+    } finally {
+      _lectureMutationBusy = false;
     }
   }
 
   Future<bool> removeLecture({required Lecture lecture}) async {
-    if (!_hasEditableTimetable) return false;
+    if (!_hasEditableTimetable || _customBlocksBusy || _lectureMutationBusy)
+      return false;
+    final summary = _currentSummary;
+    final requestId = _loadRequestId;
+    _lectureMutationBusy = true;
     try {
       _error = null;
       final updated = await _repository.updateLecture(
-        summary: _currentSummary,
+        summary: summary,
         lectureId: lecture.id,
         action: TimetableLectureAction.delete,
       );
-      _replaceCurrentTimetable(updated);
+      _replaceTimetable(updated, requestId);
       notifyListeners();
       return true;
     } catch (exception) {
       _error = exception;
       notifyListeners();
       return false;
+    } finally {
+      _lectureMutationBusy = false;
     }
   }
 
@@ -435,11 +533,10 @@ class TimetableModel extends ChangeNotifier {
   TimetableListItem get _currentSummary =>
       _summaries[_selectedTimetableIndex - _firstSavedTimetableIndex];
 
-  void _replaceCurrentTimetable(Timetable timetable) {
-    if (timetable.id != _currentSummary.id) {
-      throw StateError('Updated timetable id does not match its summary');
-    }
-    _timetables[_selectedTimetableIndex] = timetable;
+  void _replaceTimetable(Timetable timetable, int requestId) {
+    if (requestId != _loadRequestId) return;
+    final index = _timetables.indexWhere((table) => table.id == timetable.id);
+    if (index >= _firstSavedTimetableIndex) _timetables[index] = timetable;
   }
 
   Future<bool> shareTimetable(
@@ -449,6 +546,7 @@ class TimetableModel extends ChangeNotifier {
   }) async {
     try {
       final lectures = List<Lecture>.of(currentTimetable.lectures);
+      final customBlocks = List<CustomBlock>.of(currentTimetable.customBlocks);
       final semester = selectedSemester;
       final exportName =
           name ??
@@ -460,12 +558,14 @@ class TimetableModel extends ChangeNotifier {
       final bytes = type == ShareType.image
           ? await TimetableExport.image(
               lectures: lectures,
+              customBlocks: customBlocks,
               semester: semester,
               name: exportName,
               language: language,
             )
           : TimetableExport.calendar(
               lectures: lectures,
+              customBlocks: customBlocks,
               semester: semester,
               name: exportName,
               language: language,

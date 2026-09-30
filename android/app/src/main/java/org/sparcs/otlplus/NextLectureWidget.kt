@@ -27,6 +27,15 @@ class NextLectureWidget : AppWidgetProvider() {
         WidgetRefreshDispatcher.refresh(context)
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        WidgetTimetablePreferences(context).delete(appWidgetIds)
+    }
+
+    override fun onRestored(context: Context, oldWidgetIds: IntArray, newWidgetIds: IntArray) {
+        WidgetTimetablePreferences(context).restore(oldWidgetIds, newWidgetIds)
+        WidgetRefreshDispatcher.refresh(context)
+    }
+
     override fun onEnabled(context: Context) {
         schedulePeriodicUpdate(context)
     }
@@ -66,6 +75,8 @@ internal fun updateNextLectureWidget(
 
     // Construct the RemoteViews object
     RemoteViews(context.packageName, R.layout.next_lecture_widget).let {
+        it.setOnClickPendingIntent(R.id.nextLecture, widgetConfigurationIntent(context, appWidgetId))
+        it.setContentDescription(R.id.nextLecture, context.getString(R.string.widget_choose_timetable))
         if (nextLectureInfo != null) {
             it.setTextViewText(R.id.nextLectureDate, nextLectureInfo.date)
             it.setTextViewText(R.id.nextLectureName, nextLectureInfo.name)

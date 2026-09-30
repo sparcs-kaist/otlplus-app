@@ -461,7 +461,109 @@
           }
         }
       }
+    },
+  "widget.earlier": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "↑ %d earlier events"
+        }
+      },
+      "ko": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "↑ 이전 일정 %d개"
+        }
+      }
     }
+  },
+  "widget.later": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "↓ %d later events"
+        }
+      },
+      "ko": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "↓ 이후 일정 %d개"
+        }
+      }
+    }
+  },
+  "widget.more": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%d more events today"
+        }
+      },
+      "ko": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "오늘 일정 %d개 더 있음"
+        }
+      }
+    }
+  },
+  "widget.today": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Today's schedule"
+        }
+      },
+      "ko": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "오늘 일정"
+        }
+      }
+    }
+  },
+  "widget.today.empty": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "No more events today"
+        }
+      },
+      "ko": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "오늘 남은 일정이 없어요"
+        }
+      }
+    }
+  },
+  "widget.ongoing": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Now"
+        }
+      },
+      "ko": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "진행 중"
+        }
+      }
+    }
+  }
   },
   "version" : "1.0"
 }
