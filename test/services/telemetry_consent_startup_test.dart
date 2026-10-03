@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:otlplus/providers/settings_model.dart';
-import 'package:otlplus/services/posthog_service.dart';
+import 'package:otlplus/services/channel_talk_analytics_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -61,9 +61,6 @@ void main() {
 class _NoOpAnalyticsClient implements AnalyticsClient {
   @override
   Future<void> capture(String eventName) async {}
-
-  @override
-  Future<void> identify(String distinctId) async {}
 
   @override
   Future<void> disable() async {}
