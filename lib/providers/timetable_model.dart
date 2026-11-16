@@ -154,6 +154,7 @@ class TimetableModel extends ChangeNotifier {
   Future<void> loadSemesters({
     required User user,
     required List<Semester> semesters,
+    Semester? currentSemester,
   }) async {
     _user = user;
     _summaries = <TimetableListItem>[];
@@ -163,7 +164,12 @@ class TimetableModel extends ChangeNotifier {
       _setLoadError(StateError('At least one semester is required'));
       return;
     }
-    _selectedSemesterIndex = _semesters.length - 1;
+    final currentSemesterIndex = currentSemester == null
+        ? -1
+        : _semesters.indexOf(currentSemester);
+    _selectedSemesterIndex = currentSemesterIndex >= 0
+        ? currentSemesterIndex
+        : _semesters.length - 1;
     await _loadTimetable();
   }
 
