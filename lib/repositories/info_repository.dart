@@ -12,6 +12,9 @@ class InfoRepository {
   Future<List<Semester>> fetchSemesters() =>
       SemesterRepository(_dio).fetchSemesters();
 
+  Future<Semester> fetchCurrentSemester() =>
+      SemesterRepository(_dio).fetchCurrent();
+
   Future<User> fetchSessionInfo() async {
     final response = await _dio.get(SESSION_INFO_URL);
     return User.fromJson(response.data);

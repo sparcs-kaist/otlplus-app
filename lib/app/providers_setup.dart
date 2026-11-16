@@ -79,6 +79,7 @@ Widget buildAppProviders({
             model.loadSemesters(
               user: infoModel.user,
               semesters: infoModel.semesters,
+              currentSemester: infoModel.currentSemester,
             );
           }
           return model;

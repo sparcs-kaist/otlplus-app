@@ -177,6 +177,40 @@ void main() {
     expect(model.isLoaded, isTrue);
   });
 
+  test(
+    "load selects the current semester instead of the last semester",
+    () async {
+      final currentSemester = Semester(
+        year: 2026,
+        semester: Season.spring.code,
+        beginning: DateTime(2026, 2, 1),
+        end: DateTime(2026, 6, 30),
+      );
+      repository.collections.add(
+        TimetableCollection(
+          summaries: <TimetableListItem>[],
+          timetables: <Timetable>[],
+        ),
+      );
+
+      await model.loadSemesters(
+        user: user,
+        semesters: <Semester>[currentSemester, semester],
+        currentSemester: Semester(
+          year: currentSemester.year,
+          semester: currentSemester.semester,
+          beginning: currentSemester.beginning,
+          end: currentSemester.end,
+        ),
+      );
+
+      expect(model.selectedSemester, currentSemester);
+      expect(repository.fetchCalls, <(int, int)>[
+        (currentSemester.year, currentSemester.semester),
+      ]);
+    },
+  );
+
   test("connection-level failures still surface the retry screen", () async {
     repository.myTimetableError = DioException(
       requestOptions: RequestOptions(path: "/api/v2/timetables/my-timetable"),

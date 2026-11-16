@@ -310,6 +310,9 @@ class _LoadedInfoModel extends InfoModel {
   ];
 
   @override
+  Future<Semester> getCurrentSemester() async => (await getSemesters()).single;
+
+  @override
   Future<User> getUser() async => User(
     id: 42,
     email: 'test@example.com',
@@ -354,6 +357,9 @@ class _SequencedInfoModel extends InfoModel {
       end: DateTime(2026, 12, 31),
     ),
   ];
+
+  @override
+  Future<Semester> getCurrentSemester() async => (await getSemesters()).single;
 
   @override
   Future<User> getUser() async => _users[_userIndex++];

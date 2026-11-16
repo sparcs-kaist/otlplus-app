@@ -80,6 +80,9 @@ class InfoModel extends ChangeNotifier {
   List<Semester> _semesters = <Semester>[];
   List<Semester> get semesters => _semesters;
 
+  Semester? _currentSemester;
+  Semester? get currentSemester => _currentSemester;
+
   Map<String, dynamic>? _currentSchedule;
   Map<String, dynamic>? get currentSchedule => _currentSchedule;
 
@@ -92,6 +95,7 @@ class InfoModel extends ChangeNotifier {
   void clearData() {
     // _user = null;
     _semesters = [];
+    _currentSemester = null;
     _currentSchedule = null;
     _years = {};
     _hasData = false;
@@ -163,6 +167,7 @@ class InfoModel extends ChangeNotifier {
     }
     try {
       _semesters = await getSemesters();
+      _currentSemester = await getCurrentSemester();
       _years = _semesters.map((semester) => semester.year).toSet();
       _user = await getUser();
       _currentSchedule = getCurrentSchedule();
@@ -181,6 +186,9 @@ class InfoModel extends ChangeNotifier {
   }
 
   Future<List<Semester>> getSemesters() => _infoRepository.fetchSemesters();
+
+  Future<Semester> getCurrentSemester() =>
+      _infoRepository.fetchCurrentSemester();
 
   Future<User> getUser() => _infoRepository.fetchSessionInfo();
 
