@@ -103,6 +103,9 @@ class TimetableModel extends ChangeNotifier {
 
   List<Timetable> _timetables = <Timetable>[];
   List<Timetable> get timetables => List<Timetable>.unmodifiable(_timetables);
+  final Set<int> _loadedTimetableIds = <int>{};
+  final Map<int, Future<Timetable>> _pendingTimetableLoads =
+      <int, Future<Timetable>>{};
 
   Lecture? _tempLecture;
   Lecture? get tempLecture => _tempLecture;
@@ -195,6 +198,7 @@ class TimetableModel extends ChangeNotifier {
     if (index < 0 || index >= _timetables.length) return;
     _selectedTimetableIndex = index;
     notifyListeners();
+    unawaited(_loadSelectedTimetable(index));
   }
 
   void setMode(TimetableViewMode mode) {
@@ -251,6 +255,9 @@ class TimetableModel extends ChangeNotifier {
         collection,
         selectServerTimetable: selectServerTimetable,
       );
+      await _loadSelectedTimetable(_selectedTimetableIndex);
+      if (requestId != _loadRequestId) return false;
+      if (_loadFailed) return false;
       _isLoading = false;
       _isLoaded = true;
       notifyListeners();
@@ -281,6 +288,9 @@ class TimetableModel extends ChangeNotifier {
 
     _summaries = List<TimetableListItem>.of(collection.summaries);
     _timetables = <Timetable>[primary, ...collection.timetables];
+    _loadedTimetableIds
+      ..clear()
+      ..addAll(collection.loadedTimetableIds);
 
     if (preferredTimetableId != null) {
       final summaryIndex = _summaries.indexWhere(
@@ -304,6 +314,7 @@ class TimetableModel extends ChangeNotifier {
     _selectedTimetableIndex = myTimetableIndex;
     _summaries = <TimetableListItem>[];
     _timetables = <Timetable>[];
+    _loadedTimetableIds.clear();
     notifyListeners();
   }
 
@@ -336,6 +347,8 @@ class TimetableModel extends ChangeNotifier {
       );
       if (requestId != _loadRequestId) return true;
       _applyCollection(_timetables.first, collection, preferredTimetableId: id);
+      await _loadSelectedTimetable(_selectedTimetableIndex);
+      if (!_loadedTimetableIds.contains(id)) return false;
       _isLoaded = true;
       _loadFailed = false;
       notifyListeners();
@@ -512,6 +525,7 @@ class TimetableModel extends ChangeNotifier {
     try {
       _error = null;
       final deletedIndex = _selectedTimetableIndex;
+      final deletedId = currentTimetable.id;
       await _repository.delete(currentTimetable.id);
       _summaries.removeAt(deletedIndex - _firstSavedTimetableIndex);
       _timetables.removeAt(deletedIndex);
@@ -519,6 +533,8 @@ class TimetableModel extends ChangeNotifier {
       if (_selectedTimetableIndex >= _timetables.length) {
         _selectedTimetableIndex = _timetables.length - 1;
       }
+      _loadedTimetableIds.remove(deletedId);
+      await _loadSelectedTimetable(_selectedTimetableIndex);
       notifyListeners();
       return true;
     } catch (exception) {
@@ -534,7 +550,8 @@ class TimetableModel extends ChangeNotifier {
       _isLoaded &&
       !isMyTimetable &&
       _selectedTimetableIndex < _timetables.length &&
-      _selectedTimetableIndex - _firstSavedTimetableIndex < _summaries.length;
+      _selectedTimetableIndex - _firstSavedTimetableIndex < _summaries.length &&
+      _loadedTimetableIds.contains(currentTimetable.id);
 
   TimetableListItem get _currentSummary =>
       _summaries[_selectedTimetableIndex - _firstSavedTimetableIndex];
@@ -542,7 +559,55 @@ class TimetableModel extends ChangeNotifier {
   void _replaceTimetable(Timetable timetable, int requestId) {
     if (requestId != _loadRequestId) return;
     final index = _timetables.indexWhere((table) => table.id == timetable.id);
-    if (index >= _firstSavedTimetableIndex) _timetables[index] = timetable;
+    if (index >= _firstSavedTimetableIndex) {
+      _timetables[index] = timetable;
+      _loadedTimetableIds.add(timetable.id);
+    }
+  }
+
+  Future<void> _loadSelectedTimetable(int index) async {
+    if (isMyTimetableIndex(index) ||
+        index < _firstSavedTimetableIndex ||
+        index >= _timetables.length) {
+      return;
+    }
+    final summaryIndex = index - _firstSavedTimetableIndex;
+    if (summaryIndex >= _summaries.length) return;
+    final summary = _summaries[summaryIndex];
+    if (_loadedTimetableIds.contains(summary.id)) return;
+
+    final semesterLoadRequestId = _loadRequestId;
+    _isLoading = true;
+    _loadFailed = false;
+    _error = null;
+    notifyListeners();
+    try {
+      final request = _pendingTimetableLoads.putIfAbsent(
+        summary.id,
+        () => _repository.fetchDetail(summary),
+      );
+      final timetable = await request;
+      if (semesterLoadRequestId != _loadRequestId) return;
+      final timetableIndex = _timetables.indexWhere(
+        (candidate) => candidate.id == summary.id,
+      );
+      if (timetableIndex >= _firstSavedTimetableIndex) {
+        _timetables[timetableIndex] = timetable;
+        _loadedTimetableIds.add(summary.id);
+      }
+    } catch (exception) {
+      if (semesterLoadRequestId == _loadRequestId) {
+        _error = exception;
+        _loadFailed = true;
+      }
+    } finally {
+      _pendingTimetableLoads.remove(summary.id);
+      if (semesterLoadRequestId == _loadRequestId &&
+          _selectedTimetableIndex == index) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
   }
 
   Future<bool> shareTimetable(
