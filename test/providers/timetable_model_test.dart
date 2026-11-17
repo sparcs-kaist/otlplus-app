@@ -26,6 +26,7 @@ class FakeTimetableRepository extends TimetableRepository {
 
   final collections = Queue<TimetableCollection>();
   final fetchCalls = <(int, int)>[];
+  final detailFetchCalls = <int>[];
   final myTimetableCalls = <(int, int)>[];
   Timetable myTimetable = Timetable(id: -1, lectures: <Lecture>[]);
   Completer<Timetable>? myTimetableCompleter;
@@ -62,6 +63,12 @@ class FakeTimetableRepository extends TimetableRepository {
     final collectionParseFailure = collectionParseError;
     if (collectionParseFailure != null) throw collectionParseFailure;
     return collections.removeFirst();
+  }
+
+  @override
+  Future<Timetable> fetchDetail(TimetableListItem summary) async {
+    detailFetchCalls.add(summary.id);
+    return serverTimetables[summary.id]!;
   }
 
   @override
@@ -317,6 +324,37 @@ void main() {
     expect(model.timetables.map((timetable) => timetable.id), <int>[-1, 7, 8]);
     expect(model.currentTimetable.lectures, <Lecture>[primaryLecture]);
     expect(model.selectedIndex, 0);
+  });
+
+  test("load does not fetch saved timetable details until selected", () async {
+    final firstSummary = _summary(7, order: 0);
+    final secondSummary = _summary(8, order: 1);
+    repository.serverTimetables.addAll(<int, Timetable>{
+      7: Timetable(id: 7, lectures: <Lecture>[firstLecture]),
+      8: Timetable(id: 8, lectures: <Lecture>[secondLecture]),
+    });
+    repository.collections.add(
+      TimetableCollection(
+        summaries: <TimetableListItem>[firstSummary, secondSummary],
+        timetables: <Timetable>[
+          Timetable(id: 7, lectures: const <Lecture>[]),
+          Timetable(id: 8, lectures: const <Lecture>[]),
+        ],
+        loadedTimetableIds: const <int>{},
+      ),
+    );
+
+    await model.loadSemesters(user: user, semesters: <Semester>[semester]);
+
+    expect(repository.detailFetchCalls, isEmpty);
+    expect(model.currentTimetable.id, -1);
+
+    model.setIndex(2);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(repository.detailFetchCalls, <int>[8]);
+    expect(model.currentTimetable.id, 8);
+    expect(model.currentTimetable.lectures, <Lecture>[secondLecture]);
   });
 
   test(

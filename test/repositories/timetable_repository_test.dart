@@ -74,7 +74,7 @@ void main() {
   });
 
   group("TimetableRepository.fetchBySemester", () {
-    test("loads ten unnamed 2025 timetables using GET requests only", () async {
+    test("loads ten unnamed 2025 timetable summaries with one GET", () async {
       final summaries = List.generate(
         10,
         (index) => <String, dynamic>{
@@ -88,15 +88,18 @@ void main() {
       adapter.register("GET", "/$API_V2_TIMETABLES_URL?semester=1&year=2025", {
         "timetables": summaries,
       });
-      for (final summary in summaries) {
-        adapter.register("GET", "/$API_V2_TIMETABLES_URL/${summary['id']}", {
-          "lectures": <dynamic>[],
-          "timetableItems": <dynamic>[],
-        });
-      }
       final result = await repository.fetchBySemester(2025, 1);
       expect(result.summaries, hasLength(10));
       expect(result.timetables, hasLength(10));
+      expect(result.loadedTimetableIds, isEmpty);
+      expect(
+        result.timetables.map((timetable) => timetable.id),
+        List<int>.generate(10, (index) => index + 1),
+      );
+      expect(
+        result.timetables.expand((timetable) => timetable.lectures),
+        isEmpty,
+      );
       expect(
         result.summaries.map((summary) => summary.name),
         everyElement(isEmpty),
@@ -105,15 +108,10 @@ void main() {
         adapter.requests.map((request) => request.method),
         everyElement("GET"),
       );
+      expect(adapter.requests, hasLength(1));
     });
 
-    test("fetches details concurrently and preserves summary order", () async {
-      adapter = CapturingHttpAdapter(
-        detailDelay: const Duration(milliseconds: 20),
-      );
-      final dio = Dio(BaseOptions(baseUrl: "http://test/"))
-        ..httpClientAdapter = adapter;
-      repository = TimetableRepository(dio);
+    test("preserves summary order without fetching details", () async {
       final firstSummary = Map<String, dynamic>.from(
         (listFixture["timetables"] as List<dynamic>).single
             as Map<String, dynamic>,
@@ -132,14 +130,6 @@ void main() {
         "/$API_V2_TIMETABLES_URL?semester=3&year=2026",
         listResponse,
       );
-      for (final id in <int>[7, 3]) {
-        adapter.register(
-          "GET",
-          "/${API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", id.toString())}",
-          detailFixture,
-        );
-      }
-
       final collection = await repository.fetchBySemester(2026, 3);
 
       expect(collection.summaries.map((summary) => summary.id), <int>[7, 3]);
@@ -151,28 +141,16 @@ void main() {
         7,
         3,
       ]);
-      expect(collection.timetables.first.lectures.single.year, 2026);
-      expect(collection.timetables.first.lectures.single.semester, 3);
-      expect(adapter.requests, hasLength(3));
-      expect(
-        adapter.requests.map((request) => request.method).toList(),
-        <String>["GET", "GET", "GET"],
-      );
+      expect(collection.loadedTimetableIds, isEmpty);
+      expect(adapter.requests, hasLength(1));
       expect(
         adapter.requests.map((request) => request.uri.path).toList(),
-        <String>[
-          "/$API_V2_TIMETABLES_URL",
-          "/${API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", "7")}",
-          "/${API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", "3")}",
-        ],
+        <String>["/$API_V2_TIMETABLES_URL"],
       );
       expect(adapter.requests.first.queryParameters, <String, dynamic>{
         "year": 2026,
         "semester": 3,
       });
-      expect(adapter.requests[1].queryParameters, isEmpty);
-      expect(adapter.requests[2].queryParameters, isEmpty);
-      expect(adapter.maxActiveDetailRequests, 2);
     });
 
     test("does not request details when the summary list is empty", () async {
@@ -231,13 +209,12 @@ void main() {
     });
   });
 
-  test('detail parses custom items without a second list request', () async {
-    adapter.register(
-      'GET',
-      '/$API_V2_TIMETABLES_URL?semester=3&year=2026',
-      listFixture,
+  test('fetchDetail parses custom items', () async {
+    final summary = TimetableListItem.fromV2Json(
+      (listFixture['timetables'] as List<dynamic>).single
+          as Map<String, dynamic>,
     );
-    final id = (listFixture['timetables'] as List).single['id'];
+    final id = summary.id;
     adapter.register('GET', '/$API_V2_TIMETABLES_URL/$id', {
       ...detailFixture,
       'timetableItems': [
@@ -258,35 +235,28 @@ void main() {
         },
       ],
     });
-    final result = await repository.fetchBySemester(2026, 3);
-    expect(
-      result.timetables.single.customBlocks.single.occurrences,
-      hasLength(2),
-    );
-    expect(adapter.requests, hasLength(2));
+    final result = await repository.fetchDetail(summary);
+    expect(result.customBlocks.single.occurrences, hasLength(2));
+    expect(adapter.requests, hasLength(1));
   });
 
   test(
     'older detail loads custom blocks through collection endpoint',
     () async {
-      adapter.register(
-        'GET',
-        '/$API_V2_TIMETABLES_URL?semester=3&year=2026',
-        listFixture,
+      final summary = TimetableListItem.fromV2Json(
+        (listFixture['timetables'] as List<dynamic>).single
+            as Map<String, dynamic>,
       );
-      final id = (listFixture['timetables'] as List).single['id'];
+      final id = summary.id;
       adapter.register('GET', '/$API_V2_TIMETABLES_URL/$id', {'lectures': []});
       adapter.register('GET', '/$API_V2_TIMETABLES_URL/$id/custom-blocks', {
         'custom_blocks': [],
       });
       expect(
-        (await repository.fetchBySemester(
-          2026,
-          3,
-        )).timetables.single.customBlocks,
+        (await repository.fetchDetail(summary)).customBlocks,
         isEmpty,
       );
-      expect(adapter.requests, hasLength(3));
+      expect(adapter.requests, hasLength(2));
     },
   );
 

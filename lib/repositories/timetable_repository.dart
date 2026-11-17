@@ -7,11 +7,16 @@ class TimetableCollection {
   TimetableCollection({
     required List<TimetableListItem> summaries,
     required List<Timetable> timetables,
+    Set<int>? loadedTimetableIds,
   }) : summaries = List<TimetableListItem>.unmodifiable(summaries),
-       timetables = List<Timetable>.unmodifiable(timetables);
+       timetables = List<Timetable>.unmodifiable(timetables),
+       loadedTimetableIds = Set<int>.unmodifiable(
+         loadedTimetableIds ?? timetables.map((timetable) => timetable.id),
+       );
 
   final List<TimetableListItem> summaries;
   final List<Timetable> timetables;
+  final Set<int> loadedTimetableIds;
 }
 
 enum TimetableLectureAction { add, delete }
@@ -38,9 +43,17 @@ class TimetableRepository {
             TimetableListItem.fromV2Json(summary as Map<String, dynamic>),
       ),
     );
-    final timetables = await Future.wait(summaries.map(_fetchDetail));
+    // Keep one slot per summary so timetable tabs can be rendered without
+    // eagerly fanning out a detail request for every saved timetable.
+    final timetables = summaries
+        .map((summary) => Timetable(id: summary.id, lectures: const []))
+        .toList(growable: false);
 
-    return TimetableCollection(summaries: summaries, timetables: timetables);
+    return TimetableCollection(
+      summaries: summaries,
+      timetables: timetables,
+      loadedTimetableIds: const <int>{},
+    );
   }
 
   Future<Timetable> fetchMyTimetable(int year, int semester) async {
@@ -95,7 +108,7 @@ class TimetableRepository {
       path,
       data: <String, dynamic>{"lectureId": lectureId, "action": action.name},
     );
-    return _fetchDetail(summary);
+    return fetchDetail(summary);
   }
 
   Future<void> delete(int id) async {
@@ -106,7 +119,7 @@ class TimetableRepository {
     );
   }
 
-  Future<Timetable> _fetchDetail(TimetableListItem summary) async {
+  Future<Timetable> fetchDetail(TimetableListItem summary) async {
     final response = await _dio.get<Map<String, dynamic>>(
       API_V2_TIMETABLE_DETAIL_URL.replaceFirst("{id}", summary.id.toString()),
     );
