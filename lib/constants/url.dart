@@ -1,4 +1,4 @@
-const BASE_AUTHORITY = "otl.kaist.ac.kr";
+const BASE_AUTHORITY = "otl.sparcs.org";
 
 // Retained v1 endpoints: session only.
 const SESSION_URL = "session/";

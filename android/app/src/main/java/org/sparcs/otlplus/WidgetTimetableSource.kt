@@ -11,7 +11,7 @@ internal data class WidgetSemester(val year: Int, val semester: Int)
 /** Zero identifies the read-only current-semester timetable, as on iOS. */
 internal class WidgetTimetableSource(
     private val get: (String) -> ApiLoadResult,
-    private val baseUrl: String = "https://otl.kaist.ac.kr",
+    private val baseUrl: String = "https://otl.sparcs.org",
 ) {
     fun currentSemester(): Pair<WidgetSemester?, ApiLoadResult> {
         val result = get("$baseUrl/api/v2/semesters/current")

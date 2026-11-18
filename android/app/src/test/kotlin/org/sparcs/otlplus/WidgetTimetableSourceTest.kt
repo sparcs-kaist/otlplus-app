@@ -19,8 +19,8 @@ class WidgetTimetableSourceTest {
         })
         val table = org.sparcs.otlplus.api.TimetableData(source.timetable(72, null).body!!)
         assertEquals("Study", table.schedule.single().name)
-        assertEquals(listOf("https://otl.kaist.ac.kr/api/v2/timetables/72",
-            "https://otl.kaist.ac.kr/api/v2/timetables/72/custom-blocks"), urls)
+        assertEquals(listOf("https://otl.sparcs.org/api/v2/timetables/72",
+            "https://otl.sparcs.org/api/v2/timetables/72/custom-blocks"), urls)
     }
 
     @Test
@@ -30,15 +30,15 @@ class WidgetTimetableSourceTest {
         source.timetable(0, WidgetSemester(2026, 3))
         source.timetable(72, null)
         assertEquals(listOf(
-            "https://otl.kaist.ac.kr/api/v2/timetables/my-timetable?year=2026&semester=3",
-            "https://otl.kaist.ac.kr/api/v2/timetables/72",
+            "https://otl.sparcs.org/api/v2/timetables/my-timetable?year=2026&semester=3",
+            "https://otl.sparcs.org/api/v2/timetables/72",
         ), urls)
     }
 
     @Test
     fun `options preserve server ids names and order including unnamed tables`() {
         val source = WidgetTimetableSource({ url ->
-            assertEquals("https://otl.kaist.ac.kr/api/v2/timetables?year=2026&semester=3", url)
+            assertEquals("https://otl.sparcs.org/api/v2/timetables?year=2026&semester=3", url)
             ApiLoadResult(body = """{"timetables":[{"id":72,"name":"Study"},{"id":13,"name":""}]}""")
         })
         assertEquals(listOf(WidgetTimetableOption(72, "Study"), WidgetTimetableOption(13, "")),
