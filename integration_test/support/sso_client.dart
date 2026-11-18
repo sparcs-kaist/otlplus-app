@@ -59,10 +59,10 @@ class SsoClient {
   }
 
   static final Uri _startUri = Uri.parse(
-    'https://otl.kaist.ac.kr/session/login/',
+    'https://otl.sparcs.org/session/login/',
   );
   static const Set<String> _allowedHosts = <String>{
-    'otl.kaist.ac.kr',
+    'otl.sparcs.org',
     'sparcssso.kaist.ac.kr',
   };
   static const int _maximumRedirectHops = 12;

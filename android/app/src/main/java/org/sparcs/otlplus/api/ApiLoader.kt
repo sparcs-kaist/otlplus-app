@@ -159,7 +159,7 @@ class ApiLoader {
     }
 
     private companion object {
-        const val DEFAULT_BASE_URL = "https://otl.kaist.ac.kr"
+        const val DEFAULT_BASE_URL = "https://otl.sparcs.org"
         val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
         val REFRESH_LOCK = Any()
 

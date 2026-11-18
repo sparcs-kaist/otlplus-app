@@ -8,18 +8,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../integration_test/support/sso_client.dart';
 
-const _startUrl = 'https://otl.kaist.ac.kr/session/login/';
+const _startUrl = 'https://otl.sparcs.org/session/login/';
 const _ssoRequireUrl =
     'https://sparcssso.kaist.ac.kr/api/v2/token/require/'
     '?client_id=otlplus&state=abc&preferred_url=https%3A%2F%2F'
-    'otl.kaist.ac.kr%2Fsession%2Flogin%2Fcallback%2F';
+    'otl.sparcs.org%2Fsession%2Flogin%2Fcallback%2F';
 const _loginPageLocation =
     '/account/login/?next=/api/v2/token/require/'
     '%3Fclient_id%3Dotlplus%26state%3Dabc';
 const _loginPageUrl = 'https://sparcssso.kaist.ac.kr$_loginPageLocation';
 const _fixtureNext =
     '/api/v2/token/require/%3Fclient_id%3Dotlplus%26state%3Dfixture-state'
-    '%26preferred_url%3Dhttps%253A%252F%252Fotl.kaist.ac.kr%252Fsession'
+    '%26preferred_url%3Dhttps%253A%252F%252Fotl.sparcs.org%252Fsession'
     '%252Flogin%252Fcallback%252F';
 
 class RecordedRequest {
@@ -189,7 +189,7 @@ void main() {
           '?client_id=otlplus&state=abc',
         );
         return _redirect(
-          'https://otl.kaist.ac.kr/session/login/callback/'
+          'https://otl.sparcs.org/session/login/callback/'
           '?code=xyz&state=abc',
         );
       },
@@ -197,7 +197,7 @@ void main() {
         expect(request.method, 'GET');
         expect(
           request.uri.toString(),
-          'https://otl.kaist.ac.kr/session/login/callback/'
+          'https://otl.sparcs.org/session/login/callback/'
           '?code=xyz&state=abc',
         );
         return _redirect(
@@ -255,7 +255,7 @@ void main() {
         return (_) => _redirect(
           index.isEven
               ? 'https://sparcssso.kaist.ac.kr/loop/$index?state=secret-$index'
-              : 'https://otl.kaist.ac.kr/loop/$index?state=secret-$index',
+              : 'https://otl.sparcs.org/loop/$index?state=secret-$index',
         );
       }),
     );
@@ -388,11 +388,11 @@ void main() {
       (_) => _html(loginForm),
       (request) {
         expect(request.method, 'POST');
-        return _redirect('https://otl.kaist.ac.kr/login/success?next=%2F');
+        return _redirect('https://otl.sparcs.org/login/success?next=%2F');
       },
       (request) async {
         sawSuccessPage = true;
-        expect(request.uri.host, 'otl.kaist.ac.kr');
+        expect(request.uri.host, 'otl.sparcs.org');
         return _html(successPage);
       },
     ]);

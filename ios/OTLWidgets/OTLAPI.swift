@@ -10,7 +10,7 @@ import Foundation
 import Alamofire
 
 struct URLs {
-    static let base = "https://otl.kaist.ac.kr/"
+    static let base = "https://otl.sparcs.org/"
 
     static var sessionRefresh: String { base + "session/refresh" }
     static var apiMyTimetable: String { base + "api/v2/timetables/my-timetable" }
