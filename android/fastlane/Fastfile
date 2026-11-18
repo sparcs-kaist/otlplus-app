@@ -23,25 +23,10 @@ platform :android do
       File.open(yaml_file_path, 'w') { |f| YAML.dump(data, f) }
   end
 
-  def posthog_build_defines
-  require 'shellwords'
-  pairs = {
-    'POSTHOG_API_KEY' => ENV['POSTHOG_API_KEY'],
-    'POSTHOG_HOST' => ENV.fetch('POSTHOG_HOST', 'https://us.i.posthog.com'),
-    'POSTHOG_PROJECT_ID' => ENV['POSTHOG_PROJECT_ID'],
-    'POSTHOG_REGION' => ENV['POSTHOG_REGION'],
-  }
-  pairs.filter_map { |key, value|
-    next if value.nil? || value.empty?
-    "--dart-define=#{Shellwords.escape("#{key}=#{value}")}"
-  }.join(' ')
-end
-
 desc "Deploy a alpha version to the Google Play"
   lane :alpha do
     set_timestamp_version
-    posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
-    sh "flutter build appbundle #{posthog_build_defines}"
+    sh "flutter build appbundle"
     upload_to_play_store(
       aab: "../build/app/outputs/bundle/release/app-release.aab",
       track: "alpha",
@@ -51,8 +36,7 @@ desc "Deploy a alpha version to the Google Play"
   desc "Deploy a production version to the Google Play with a full rollout"
   lane :production do
     set_timestamp_version
-    posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
-    sh "flutter build appbundle #{posthog_build_defines}"
+    sh "flutter build appbundle"
     upload_to_play_store(
       aab: "../build/app/outputs/bundle/release/app-release.aab",
       track: "production",
@@ -63,8 +47,7 @@ desc "Deploy a alpha version to the Google Play"
   desc "Submit a staged production release for Google Play review"
   lane :production_review do
     set_timestamp_version
-    posthog_host = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
-    sh "flutter build appbundle #{posthog_build_defines}"
+    sh "flutter build appbundle"
     upload_to_play_store(
       aab: "../build/app/outputs/bundle/release/app-release.aab",
       track: "production",

@@ -11,14 +11,14 @@ import 'package:otlplus/providers/auth_model.dart';
 import 'package:otlplus/providers/settings_model.dart';
 import 'package:otlplus/services/channel_talk_readiness.dart';
 import 'package:otlplus/services/optional_bootstrap.dart';
-import 'package:otlplus/services/posthog_service.dart';
+import 'package:otlplus/services/channel_talk_analytics_service.dart';
 import 'package:otlplus/services/sentry_consent_gate.dart';
 import 'package:otlplus/services/storage_service.dart';
 import 'package:otlplus/services/telemetry_coordinator.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 final telemetryCoordinator = TelemetryCoordinator(
-  analytics: PostHogService(),
+  analytics: ChannelTalkAnalyticsService(),
   crashReporting: const FirebaseCrashReportingClient(),
 );
 final sentryConsentGate = SentryConsentGate();
